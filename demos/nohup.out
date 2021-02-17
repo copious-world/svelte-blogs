@@ -1,0 +1,171 @@
+
+> svelte-app@1.0.0 start /media/richard/ELEMENTS/node_prj/blog
+> sirv public
+
+[H[2J
+  [32mYour application is ready~! 🚀
+
+[39m  [1m- Local:[22m      http://localhost:5000
+  [1m- Network:[22m    [2mAdd `--host` to expose[22m
+
+[7m LOGS [27m
+
+
+> svelte-app@1.0.0 start /media/richard/ELEMENTS/node_prj/blog
+> sirv public
+
+[H[2J
+  [32mYour application is ready~! 🚀
+
+[39m  [1m- Local:[22m      http://localhost:5000
+  [1m- Network:[22m    [2mAdd `--host` to expose[22m
+
+[7m LOGS [27m
+
+  [[35m13:24:41[39m] [32m200[39m[90m ─ [39m[37m[1m11.56ms[39m[22m[90m ─ [39m/
+  [[35m13:24:41[39m] [32m200[39m[90m ─ [39m[37m[1m3.06ms[39m[22m[90m ─ [39m/build/bundle.css
+  [[35m14:22:15[39m] [32m200[39m[90m ─ [39m[37m[1m3.48ms[39m[22m[90m ─ [39m/
+  [[35m14:22:15[39m] [32m200[39m[90m ─ [39m[37m[1m2.83ms[39m[22m[90m ─ [39m/build/bundle.css
+  [[35m14:22:15[39m] [32m200[39m[90m ─ [39m[37m[1m2.92ms[39m[22m[90m ─ [39m/build/bundle.js
+  [[35m14:54:10[39m] [32m200[39m[90m ─ [39m[37m[1m3.63ms[39m[22m[90m ─ [39m/
+  [[35m14:54:10[39m] [32m200[39m[90m ─ [39m[37m[1m2.62ms[39m[22m[90m ─ [39m/global.css
+  [[35m14:54:10[39m] [32m200[39m[90m ─ [39m[37m[1m2.69ms[39m[22m[90m ─ [39m/build/bundle.css
+  [[35m14:54:10[39m] [32m200[39m[90m ─ [39m[37m[1m1.95ms[39m[22m[90m ─ [39m/build/bundle.js
+  [[35m14:54:42[39m] [32m200[39m[90m ─ [39m[37m[1m3.51ms[39m[22m[90m ─ [39m/
+  [[35m14:54:42[39m] [32m200[39m[90m ─ [39m[37m[1m2.71ms[39m[22m[90m ─ [39m/global.css
+  [[35m14:54:42[39m] [32m200[39m[90m ─ [39m[37m[1m2.91ms[39m[22m[90m ─ [39m/build/bundle.css
+  [[35m14:54:42[39m] [32m200[39m[90m ─ [39m[37m[1m2.51ms[39m[22m[90m ─ [39m/build/bundle.js
+  [[35m14:54:43[39m] [32m200[39m[90m ─ [39m[37m[1m3.07ms[39m[22m[90m ─ [39m/favicon.png
+  [[35m15:01:14[39m] [32m200[39m[90m ─ [39m[37m[1m1.26ms[39m[22m[90m ─ [39m/build/bundle.js
+  [[35m15:01:14[39m] [32m200[39m[90m ─ [39m[37m[1m4.62ms[39m[22m[90m ─ [39m/build/bundle.css
+  [[35m15:05:05[39m] [32m200[39m[90m ─ [39m[37m[1m2.51ms[39m[22m[90m ─ [39m/
+  [[35m15:05:06[39m] [32m200[39m[90m ─ [39m[37m[1m2.65ms[39m[22m[90m ─ [39m/build/bundle.js
+  [[35m15:05:06[39m] [32m200[39m[90m ─ [39m[37m[1m2.63ms[39m[22m[90m ─ [39m/favicon.png
+  [[35m15:12:12[39m] [32m200[39m[90m ─ [39m[37m[1m2.76ms[39m[22m[90m ─ [39m/build/bundle.css
+  [[35m19:45:26[39m] [32m200[39m[90m ─ [39m[37m[1m2.93ms[39m[22m[90m ─ [39m/
+  [[35m19:45:26[39m] [32m200[39m[90m ─ [39m[37m[1m2.68ms[39m[22m[90m ─ [39m/build/bundle.css
+  [[35m19:45:26[39m] [32m200[39m[90m ─ [39m[37m[1m2.31ms[39m[22m[90m ─ [39m/build/bundle.js
+  [[35m19:46:19[39m] [32m200[39m[90m ─ [39m[37m[1m3.24ms[39m[22m[90m ─ [39m/
+  [[35m19:46:20[39m] [32m200[39m[90m ─ [39m[37m[1m1.22ms[39m[22m[90m ─ [39m/build/bundle.css
+  [[35m19:46:20[39m] [32m200[39m[90m ─ [39m[37m[1m1.18ms[39m[22m[90m ─ [39m/global.css
+  [[35m19:46:20[39m] [32m200[39m[90m ─ [39m[37m[1m4.09ms[39m[22m[90m ─ [39m/build/bundle.js
+  [[35m19:46:20[39m] [32m200[39m[90m ─ [39m[37m[1m2.95ms[39m[22m[90m ─ [39m/favicon.png
+  [[35m19:56:35[39m] [32m200[39m[90m ─ [39m[37m[1m2.51ms[39m[22m[90m ─ [39m/
+  [[35m22:06:40[39m] [32m200[39m[90m ─ [39m[37m[1m3.23ms[39m[22m[90m ─ [39m/
+  [[35m22:06:40[39m] [32m200[39m[90m ─ [39m[37m[1m2.87ms[39m[22m[90m ─ [39m/global.css
+  [[35m22:06:40[39m] [32m200[39m[90m ─ [39m[37m[1m2.12ms[39m[22m[90m ─ [39m/build/bundle.css
+  [[35m22:06:40[39m] [32m200[39m[90m ─ [39m[37m[1m2.65ms[39m[22m[90m ─ [39m/build/bundle.js
+  [[35m22:06:40[39m] [32m200[39m[90m ─ [39m[37m[1m3.05ms[39m[22m[90m ─ [39m/favicon.png
+  [[35m02:16:15[39m] [32m200[39m[90m ─ [39m[37m[1m2.06ms[39m[22m[90m ─ [39m/
+  [[35m02:16:15[39m] [32m200[39m[90m ─ [39m[37m[1m2.81ms[39m[22m[90m ─ [39m/build/bundle.js
+  [[35m02:16:15[39m] [32m200[39m[90m ─ [39m[37m[1m2.75ms[39m[22m[90m ─ [39m/build/bundle.css
+  [[35m08:30:15[39m] [32m200[39m[90m ─ [39m[37m[1m2.68ms[39m[22m[90m ─ [39m/
+  [[35m11:31:10[39m] [32m200[39m[90m ─ [39m[37m[1m3.20ms[39m[22m[90m ─ [39m/
+  [[35m11:31:11[39m] [32m200[39m[90m ─ [39m[37m[1m2.91ms[39m[22m[90m ─ [39m/build/bundle.css
+  [[35m11:31:11[39m] [32m200[39m[90m ─ [39m[37m[1m2.79ms[39m[22m[90m ─ [39m/build/bundle.js
+Killed
+npm ERR! code ELIFECYCLE
+npm ERR! errno 137
+npm ERR! svelte-app@1.0.0 start: `sirv public`
+npm ERR! Exit status 137
+npm ERR! 
+npm ERR! Failed at the svelte-app@1.0.0 start script.
+npm ERR! This is probably not a problem with npm. There is likely additional logging output above.
+
+npm ERR! A complete log of this run can be found in:
+npm ERR!     /home/richard/.npm/_logs/2021-01-08T19_35_32_049Z-debug.log
+
+> svelte-app@1.0.0 start /media/richard/ELEMENTS/node_prj/blog
+> sirv public
+
+[H[2J
+  [32mYour application is ready~! 🚀
+
+[39m  [1m- Local:[22m      http://localhost:5000
+  [1m- Network:[22m    [2mAdd `--host` to expose[22m
+
+[7m LOGS [27m
+
+  [[35m13:57:14[39m] [32m200[39m[90m ─ [39m[37m[1m11.47ms[39m[22m[90m ─ [39m/
+  [[35m13:57:14[39m] [32m200[39m[90m ─ [39m[37m[1m2.60ms[39m[22m[90m ─ [39m/build/bundle.css
+  [[35m13:57:14[39m] [32m200[39m[90m ─ [39m[37m[1m6.05ms[39m[22m[90m ─ [39m/build/bundle.js
+  [[35m13:57:36[39m] [32m200[39m[90m ─ [39m[37m[1m3.68ms[39m[22m[90m ─ [39m/
+  [[35m13:57:36[39m] [32m200[39m[90m ─ [39m[37m[1m2.65ms[39m[22m[90m ─ [39m/build/bundle.js
+  [[35m13:57:36[39m] [32m200[39m[90m ─ [39m[37m[1m6.30ms[39m[22m[90m ─ [39m/build/bundle.css
+  [[35m14:17:38[39m] [32m200[39m[90m ─ [39m[37m[1m3.93ms[39m[22m[90m ─ [39m/
+  [[35m14:17:39[39m] [32m200[39m[90m ─ [39m[37m[1m3.10ms[39m[22m[90m ─ [39m/global.css
+  [[35m14:17:39[39m] [32m200[39m[90m ─ [39m[37m[1m2.98ms[39m[22m[90m ─ [39m/build/bundle.css
+  [[35m14:17:39[39m] [32m200[39m[90m ─ [39m[37m[1m2.83ms[39m[22m[90m ─ [39m/build/bundle.js
+  [[35m14:17:39[39m] [32m200[39m[90m ─ [39m[37m[1m3.25ms[39m[22m[90m ─ [39m/favicon.png
+  [[35m14:33:20[39m] [32m200[39m[90m ─ [39m[37m[1m3.29ms[39m[22m[90m ─ [39m/
+  [[35m14:33:21[39m] [32m200[39m[90m ─ [39m[37m[1m3.12ms[39m[22m[90m ─ [39m/build/bundle.css
+  [[35m14:33:21[39m] [32m200[39m[90m ─ [39m[37m[1m2.72ms[39m[22m[90m ─ [39m/build/bundle.js
+  [[35m16:26:25[39m] [32m200[39m[90m ─ [39m[37m[1m3.30ms[39m[22m[90m ─ [39m/
+  [[35m16:26:25[39m] [32m200[39m[90m ─ [39m[37m[1m3.27ms[39m[22m[90m ─ [39m/build/bundle.js
+  [[35m16:26:25[39m] [32m200[39m[90m ─ [39m[37m[1m2.60ms[39m[22m[90m ─ [39m/build/bundle.css
+  [[35m16:26:26[39m] [32m200[39m[90m ─ [39m[37m[1m3.12ms[39m[22m[90m ─ [39m/favicon.png
+  [[35m04:51:29[39m] [32m200[39m[90m ─ [39m[37m[1m267.64ms[39m[22m[90m ─ [39m/
+  [[35m08:32:05[39m] [32m200[39m[90m ─ [39m[37m[1m3.09ms[39m[22m[90m ─ [39m/
+
+> svelte-app@1.0.0 dev /media/richard/ELEMENTS/node_prj/demos
+> rollup -c -w
+
+
+> svelte-app@1.0.0 dev /media/richard/ELEMENTS/node_prj/demos
+> rollup -c -w
+
+
+> svelte-app@1.0.0 start /media/richard/ELEMENTS/node_prj/demos
+> sirv public --port=5010
+
+[H[2J
+  [32mYour application is ready~! 🚀
+
+[39m  [1m- Local:[22m      http://localhost:5010
+  [1m- Network:[22m    [2mAdd `--host` to expose[22m
+
+[7m LOGS [27m
+
+  [[35m16:33:00[39m] [32m200[39m[90m ─ [39m[37m[1m11.14ms[39m[22m[90m ─ [39m/
+  [[35m16:33:00[39m] [32m200[39m[90m ─ [39m[37m[1m2.29ms[39m[22m[90m ─ [39m/build/bundle.js
+  [[35m16:33:00[39m] [32m200[39m[90m ─ [39m[37m[1m4.91ms[39m[22m[90m ─ [39m/build/bundle.css
+  [[35m19:37:58[39m] [32m200[39m[90m ─ [39m[37m[1m4.21ms[39m[22m[90m ─ [39m/
+  [[35m19:37:59[39m] [32m200[39m[90m ─ [39m[37m[1m3.18ms[39m[22m[90m ─ [39m/global.css
+  [[35m19:37:59[39m] [32m200[39m[90m ─ [39m[37m[1m1.48ms[39m[22m[90m ─ [39m/build/bundle.css
+  [[35m19:37:59[39m] [32m200[39m[90m ─ [39m[37m[1m5.28ms[39m[22m[90m ─ [39m/build/bundle.js
+  [[35m19:37:59[39m] [32m200[39m[90m ─ [39m[37m[1m3.31ms[39m[22m[90m ─ [39m/favicon.png
+  [[35m19:38:49[39m] [32m200[39m[90m ─ [39m[37m[1m3.69ms[39m[22m[90m ─ [39m/
+  [[35m19:38:49[39m] [32m200[39m[90m ─ [39m[37m[1m3.01ms[39m[22m[90m ─ [39m/global.css
+  [[35m19:38:49[39m] [32m200[39m[90m ─ [39m[37m[1m3.01ms[39m[22m[90m ─ [39m/build/bundle.css
+  [[35m19:38:49[39m] [32m200[39m[90m ─ [39m[37m[1m3.44ms[39m[22m[90m ─ [39m/build/bundle.js
+  [[35m19:38:50[39m] [32m200[39m[90m ─ [39m[37m[1m3.13ms[39m[22m[90m ─ [39m/favicon.png
+Killed
+npm ERR! code ELIFECYCLE
+npm ERR! errno 137
+npm ERR! svelte-app@1.0.0 start: `sirv public --port=5010`
+npm ERR! Exit status 137
+npm ERR! 
+npm ERR! Failed at the svelte-app@1.0.0 start script.
+npm ERR! This is probably not a problem with npm. There is likely additional logging output above.
+
+npm ERR! A complete log of this run can be found in:
+npm ERR!     /home/richard/.npm/_logs/2021-01-11T04_17_47_959Z-debug.log
+
+> svelte-app@1.0.0 start /media/richard/ELEMENTS/node_prj/demos
+> sirv public --port=5010
+
+[H[2J
+  [32mYour application is ready~! 🚀
+
+[39m  [1m- Local:[22m      http://localhost:5010
+  [1m- Network:[22m    [2mAdd `--host` to expose[22m
+
+[7m LOGS [27m
+
+  [[35m22:00:59[39m] [32m200[39m[90m ─ [39m[37m[1m11.17ms[39m[22m[90m ─ [39m/
+  [[35m22:01:00[39m] [32m200[39m[90m ─ [39m[37m[1m2.97ms[39m[22m[90m ─ [39m/global.css
+  [[35m22:01:00[39m] [32m200[39m[90m ─ [39m[37m[1m3.73ms[39m[22m[90m ─ [39m/build/bundle.css
+  [[35m22:01:00[39m] [32m200[39m[90m ─ [39m[37m[1m6.74ms[39m[22m[90m ─ [39m/build/bundle.js
+  [[35m22:01:18[39m] [32m200[39m[90m ─ [39m[37m[1m4.62ms[39m[22m[90m ─ [39m/
+  [[35m22:01:19[39m] [32m200[39m[90m ─ [39m[37m[1m2.88ms[39m[22m[90m ─ [39m/build/bundle.css
+  [[35m22:01:19[39m] [32m200[39m[90m ─ [39m[37m[1m2.66ms[39m[22m[90m ─ [39m/build/bundle.js
