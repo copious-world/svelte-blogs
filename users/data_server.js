@@ -1,32 +1,98 @@
-
+// data server under users     USERS
+// viewing data server
+//
 
 const fs = require('fs')
+const fsPromises = require('fs/promises')
 const path = require('path'); 
-const express = require('express')
+const express = require('express');
+const { generateKeyPair } = require('crypto');
+const {MessageRelayer} = require("message-relay-services");
+const { rejects } = require('assert');
 
-//
-//
-//
 
-
-let g_subdir = '/media/richard/ELEMENTS/data/demos' 
-
-if ( process.argv[4] !== undefined ) {
-    g_subdir = process.argv[4]
-}
-
+// ---- ---- ---- ---- ---- ---- ---- ---- ----
+// ---- ---- ---- ---- ---- ---- ---- ---- ----
+// // // // // 
+// ---- ---- ---- ---- COMMAND LINE PARAMETERS ---- ---- ---- ---- ----
+let port = 3000
 let shrink = 3.2
-if ( process.argv[2] !== undefined ) {
+let g_update_dir = '/media/richard/ELEMENTS/data/users/records' 
+let g_subdir = '/media/richard/ELEMENTS/data/users/records' 
+//
+if ( process.argv[2] !== undefined ) {          // Shrink
     shrink = process.argv[2]
 }
-
-const SCORE_SHRINKAGE_FACTOR = shrink
-
-let port = 3000
-
-if ( process.argv[3] !== undefined ) {
+if ( process.argv[3] !== undefined ) {          // port
     port = parseInt(process.argv[3])
 }
+if ( process.argv[4] !== undefined ) {          // g_subdir  --- location of new data
+    g_subdir = process.argv[4]
+}
+const SCORE_SHRINKAGE_FACTOR = shrink
+//
+// ---- ---- ---- ---- ---- ---- ---- ---- ----
+// ---- ---- ---- ---- ---- ---- ---- ---- ----
+
+
+
+let conf = {
+    'port' : 5114,
+    'address' : 'localhost',
+    'file_shunting' : false
+}
+
+let conf_file = process.argv[5]
+if ( conf_file !== undefined ) {
+    conf = JSON.parse(fs.readFileSync(conf_file,'ascii').toString())
+}
+
+
+let g_message_relayer = new MessageRelayer(conf)
+
+
+// ---- ----  ---- ---- WATH SUBDIRECTORY....
+//
+let g_watch_for_new_files = fs.watch(g_update_dir)  // watch for files in only one specific directory...
+// ---- ---- ---- ---- ---- ---- ---- ---- ----
+// ---- ---- ---- ---- ---- ---- ---- ---- ----
+
+let sg_file_watcher = (eventType, filename) => {  // new or changed file
+    // console.log(`event type is: ${eventType}`);
+    if ( filename ) {
+        let path = g_update_dir + '/' + filename
+        let is_file = false
+        try {
+            fs.statSync(path)
+            is_file = true
+        } catch (e) {
+            // suppress error
+        }
+        if ( is_file ) {
+            console.log(`filename provided: ${filename}`);
+            // READ NEW FILE
+            fs.readFile(path,(err,data) => {
+                if ( err ) { console.log(err); return; }
+                // 
+                add_just_one_new(data.toString())       //  ----  ADD ONE NEW RECORD.....
+                //
+            })
+            // ---- ---- ---- ---- ---- ---- ---- ---- ---- ----
+        } else {
+            console.log("file gone")
+        }
+    } else {
+      console.log('filename not provided');
+    }
+}
+//
+// FILE CHANGE LISTENER
+g_watch_for_new_files.on('change',sg_file_watcher);
+
+// 
+// when creating assets for a new user, use templates and put them in user specific directories
+// 
+// 
 
 
 //  
@@ -39,50 +105,56 @@ let g_global_file_list_by = {
 }
 
 
-
-class QueryResult {
-
-    constructor(query,restore) {
-        if ( restore === undefined ) {
-            let [data,normalized_query] = run_query_stat(query)
-            this.stored_data = data
-            this.query = normalized_query
-            this.when = Date.now()
-        } else {
-            this.stored_data = restore.stored_data
-            this.query = restore.query
-            this.when = Date.now()
-        }
-    }
-    //
-    access(offset,box_count) {
-        this.when = Date.now()
-        //
-        let n = this.stored_data.length
-        offset = Math.min(n,offset)
-
-        let returned_data = this.stored_data.slice(offset,offset + box_count)
-        let count = this.stored_data.length
-
-        return {
-            "data" : returned_data,  // the current small bucket set of data to fit the user view
-            "length" : returned_data.length,
-            "offset" : offset,
-            "count" : count         // number of possible results to view
-        }
-    }
+let g_template_package = {
+    "profile" : "",
+    "dashboard" : ""
 }
 
 
+function load_template_package(templatedir,noisy) {
+
+    fs.readdir(templatedir, (err, files) => {
+        console.log("loading user templates ... reading files")
+        if (err)  {
+            console.log(err);
+            process.exit(0)
+        } else { 
+            // console.log("\Filenames with the .txt extension:"); 
+            files.forEach(file => { 
+                let ext = path.extname(file)
+                if ( path.extname(file) == ".json" ) {
+                    if ( noisy ) {
+                        console.log(file)
+                    }
+                    //
+                    let fpath = dirpath + '/' + file
+                    let fdata = fs.readFileSync(fpath).toString()
+                    try {
+                        let f_obj = JSON.parse(fdata)
+                        let stem_index = file.lastIndexOf('-')
+                        stem_index = stem_index < 0 ? 0 : (stem_index + 1)
+                        let key = file.replace(ext,'').substr(stem_index)
+                        g_template_package[key] = f_obj;
+                    } catch(e) {
+                        console.log(file)
+                    }
+                    //
+                } 
+            })
+            //
+        }
+    })
+
+}
 
 
 function load_directory(dirpath,noisy) {
-    console.log("loading blog entries")
+    console.log("loading user entries")
 
     g_global_file_list = []
 
     fs.readdir(dirpath, (err, files) => {
-        console.log("loading blog entries ... reading files")
+        console.log("loading user entries ... reading files")
         if (err)  {
             console.log(err);
             process.exit(0)
@@ -129,18 +201,199 @@ function load_directory(dirpath,noisy) {
 }
 
 
-function add_just_one(fdata) {
+// ---- ---- ---- ---- ---- ---- ---- ---- ----
+// ---- ---- ---- ---- ---- ---- ---- ---- ----
+// ---- ---- ---- ---- ---- ---- ---- ---- ----
+load_template_package()
+
+
+// to be spawned --- do not want to keep this in process... 
+const Handlebars = require('handlebars')
+
+
+async function generate_user_custom_file(path,template_src,user_obj) {
+    try {
+        let template = Handlebars.compile(template_src);
+        let content = template(user_obj);
+        await fsPromises.writeFile(path,content)    
+    } catch (e) {
+    }
+}
+
+async function publish_static(user_obj) {
+    //
+    let topic = 'user-assets'
+    let result = await g_message_relayer.publish(topic,user_obj)
+    console.log(result)
+    //
+}
+
+
+async function add_user_subdir(which_dir,subir) {
+    // create the dir if it is not there...
+    try {
+        await fsPromises.mkdir(which_dir)
+        if ( subir ) {
+            await fsPromises.mkdir(which_dir + '/' + subir)
+        }    
+    } catch (e) {
+    }
+}
+
+var g_public_keys = ['picture', 'bio', 'name', 'key-words']
+//
+function public_view_user(f_obj) {
+    let pub_view = {}
+    for ( let ky in f_obj ) {
+        if ( ky in g_public_keys ) {
+            pub_view[ky] = f_obj[ky]
+        }
+    }
+    return pub_view
+}
+
+
+async function add_just_one_new(fdata) {
     try {
         let f_obj = JSON.parse(fdata)
-        g_global_file_list.push(f_obj)
+        let user_dir = f_obj.dirpath
+        //
+        if ( user_dir ) {
+            //
+            await add_user_subdir(user_dir)
+            //
+            let template_dashboard = g_template_package.dashboard
+            let dash_path = user_dir + '/' + g_template_package.dashboard_file
+            generate_user_custom_file(dash_path,template_dashboard,f_obj)
+
+            f_obj.dashboard = dash_path
+
+            let template_profile = g_template_package.profile
+            let profile_path = user_dir + '/'  + g_template_package.profile_file
+            generate_user_custom_file(profile_path,template_profile,f_obj)
+            f_obj.profile = profile_path
+            //
+            publish_static(f_obj)
+
+            add_user_subdir(user_dir,"assets")       // profile pictures, jingles, etc. peculiar to identifying the user, etc.
+            add_user_subdir(user_dir,"blog")         // nonpublic publication
+            add_user_subdir(user_dir,"streams")      // private stream collection (or playlist)
+            add_user_subdir(user_dir,"demos")        // work in progress demos 
+            add_user_subdir(user_dir,"ownership")    // assests created by the likes of (Song Catcher ... blockchain interfaces)
+        }
+        //
+        let searchable = public_view_user(f_obj)
+        //
+        g_global_file_list.push(searchable)
         f_obj.entry = g_global_file_list.length
         f_obj.score = 1.0
-        g_global_file_list_by["create_date"].push(f_obj)
-        g_global_file_list_by["update_date"].push(f_obj)    
+        g_global_file_list_by["create_date"].push(searchable)
+        g_global_file_list_by["update_date"].push(searchable)
+        g_currently_loaded_users[f_obj.uid] = f_obj
     } catch (e) {
         console.log(e)
     }
 }
+
+
+
+function add_just_one(fdata) {
+    try {
+        let f_obj = JSON.parse(fdata)
+        let searchable = public_view_user(f_obj)
+        //
+        g_global_file_list.push(seachable)
+        f_obj.entry = g_global_file_list.length
+        f_obj.score = 1.0
+        g_global_file_list_by["create_date"].push(searchable)
+        g_global_file_list_by["update_date"].push(searchable)
+        g_currently_loaded_users[f_obj.uid] = f_obj
+    } catch (e) {
+        console.log(e)       
+    }
+}
+
+
+//
+//
+//
+
+
+
+
+
+g_currently_loaded_users = {}
+
+function user_get(uid) {
+    let user = g_currently_loaded_users[uid]
+    if ( user ) {
+        return user
+    }
+    if ( exists_user_dir(uid) ) {
+        let path = g_subdir + '/' + filename
+        console.log(path)
+        let is_file = false
+        try {
+            fs.statSync(path)
+            is_file = true
+        } catch (e) {
+            // suppress error
+        }
+        if ( is_file ) {
+            console.log(`filename provided: ${filename}`);
+            fs.readFile(path,(err,data) => {
+                if ( err ) {
+                    console.log(err)
+                } else {
+                    add_just_one(data.toString())
+                }
+            })
+        } else {
+            console.log("file gone")
+        }
+    }
+}
+
+
+
+
+class QueryResult {
+
+    constructor(query,restore) {
+        if ( restore === undefined ) {
+            let [data,normalized_query] = run_query_stat(query)
+            this.stored_data = data
+            this.query = normalized_query
+            this.when = Date.now()
+        } else {
+            this.stored_data = restore.stored_data
+            this.query = restore.query
+            this.when = Date.now()
+        }
+    }
+    //
+    access(offset,box_count) {
+        this.when = Date.now()
+        //
+        let n = this.stored_data.length
+        offset = Math.min(n,offset)
+
+        let returned_data = this.stored_data.slice(offset,offset + box_count)
+        let count = this.stored_data.length
+
+        return {
+            "data" : returned_data,  // the current small bucket set of data to fit the user view
+            "length" : returned_data.length,
+            "offset" : offset,
+            "count" : count         // number of possible results to view
+        }
+    }
+}
+
+
+
+
+
 
 
 function from_all_files(orderby) {
@@ -194,37 +447,6 @@ const TIMEOUT_THRESHHOLD_INTERVAL = (1000*60)*PRUNE_MINUTES
 // ----
 
 load_directory(g_subdir)
-
-let g_check_for_new_files = fs.watch(g_subdir)
-g_check_for_new_files.on('change',(eventType, filename) => {
-    console.log(`event type is: ${eventType}`);
-    if ( filename ) {
-        let path = g_subdir + '/' + filename
-        console.log(path)
-        let is_file = false
-        try {
-            fs.statSync(path)
-            is_file = true
-        } catch (e) {
-            // suppress error
-        }
-        if ( is_file ) {
-            console.log(`filename provided: ${filename}`);
-            fs.readFile(path,(err,data) => {
-                if ( err ) {
-                    console.log(err)
-                } else {
-                    add_just_one(data.toString())
-                }
-            })
-        } else {
-            console.log("file gone")
-        }
-    } else {
-      console.log('filename not provided');
-    }
-});
-
 
 
 
@@ -504,6 +726,13 @@ app.get('/:uid/:query/:bcount/:offset', async (req, res) => {
 //
 app.post('/:uid/:query/:bcount/:offset', async (req, res) => {
     let uid = req.params.uid;
+    let data = await user_get(uid)
+    res.send(data)
+})
+
+
+app.post('/user/:uid', async (req, res) => {
+    let uid = req.params.uid;
     if ( rate_limited(uid) ) {
         return rate_limit_redirect(req,res)
     }
@@ -511,6 +740,7 @@ app.post('/:uid/:query/:bcount/:offset', async (req, res) => {
     let data = await process_search(req)
     res.send(data)
 })
+
 
 
 
