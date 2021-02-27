@@ -114,11 +114,6 @@ process.on('SIGINT',(signal) => {
 })
 
 
-// USER INFORMATION
-const g_public_viewable_user_fields = ['picture', 'bio', 'name', 'key-words']
-var g_currently_loaded_users = {}
-
-
 // ---- ---- ---- ---- ---- ---- ---- ---- ----
 // // // // // 
 // ---- ---- ---- ---- COMMAND LINE PARAMETERS ---- ---- ---- ---- ----
@@ -195,6 +190,20 @@ function addCustomSearch(owner) {
     g_particular_user_searches[owner] = new SearchesByUser(AppSearching,owner,g_conf)
 }
 
+function addToCustomSearch(f_obj,is_new) {
+    if ( f_obj.uid ) {
+        let owner = f_obj.uid 
+        let user_search =  g_particular_user_searches[owner]
+        if ( user_search === undefined ) {
+            addCustomSearch(owner)
+        }
+        user_search =  g_particular_user_searches[owner]
+        if ( user_search ) {
+            user_search.add_just_one(f_obj,is_new)
+        }
+    }
+}
+
 async function run_custom_operation(owner,op) {
     let result = { "status" : "emtpy" } 
     try {
@@ -226,33 +235,21 @@ async function paritcular_interface_info(item_key) {
 // transitional frontend services...
 let g_message_relayer = new MessageRelayer(g_conf.persistence)
 
+// SUBSCRIBE to the publication events destined for this service....
+if ( g_conf.subscribe ) {
+    g_message_relayer.subscribe(g_conf.subscribe,{},(obj) => {
+        // should be about a new blog entry....
+        if ( obj.topic === g_conf.subscribe ) {
+            if ( obj.user_only ) {
+                let user_key = obj.user_only
+                let searcher = g_particular_user_searches[user_key]
+                searcher.searches.addCustomSearch
 
-async function publish_static(user_obj) {
-    //
-    try {
-        // PUBLISH PROFILE
-        let topic = 'user-profile'
-        let profile_obj = Object.assign({},user_obj)
-        let fpath = g_user_assets_dir + user_obj.dir_paths.profile
-        profile_obj.profile = (await fsPromises.readFile(fpath)).toString()
-        profile_obj.profile = encodeURIComponent(profile_obj.profile)
-        let result = await g_message_relayer.publish(topic,profile_obj)
-        console.log(result)
-        //
-        // PUBLISH DASHBOARD
-        topic = 'user-dashboard'
-        let dash_obj = Object.assign({},user_obj)
-        fpath = g_user_assets_dir + user_obj.dir_paths.dashboard
-        dash_obj.dashboard = (await fsPromises.readFile(fpath)).toString()
-        dash_obj.dashboard = encodeURIComponent(dash_obj.dashboard)
-        result = await g_message_relayer.publish(topic,dash_obj)
-        console.log(result)
-        //
-    } catch(e) {
-        console.error(e)
-    }
-   //
+            }
+        }
+    })
 }
+
 
 // ---- ----  ---- ---- WATCH SUBDIRECTORY....
 //
@@ -263,62 +260,26 @@ let g_watch_for_new_files = fs.watch(g_update_dir)  // watch for files in only o
 
 // FILE CHANGE LISTENER
 g_watch_for_new_files.on('change', (eventType, filename) => {
-                                                                user_record_add_or_update(filename)
+                                                                asset_record_add_or_update(filename)
                                                             });
 
 // ---- ---- ---- ---- ---- ---- ---- ---- ----
-// 
-
-
-
 //
-function user_record_add_or_update(filename) {
+//
+function asset_record_add_or_update(filename) {
     // require this to be a json file
     if ( path.extname(filename) === '.json' ) {
         let fpath = g_update_dir + '/' + filename
-        file_watch_handler(fpath,add_just_one_new_user)
+        file_watch_handler(fpath,add_just_one_new_asset)
     }
 }
 
-//
-function public_view_user(f_obj) {
-    let pub_view = {}
-    for ( let ky in f_obj ) {
-        if ( ky in g_public_viewable_user_fields ) {
-            pub_view[ky] = f_obj[ky]
-        }
-    }
-    return pub_view
-}
 
-
-async function add_just_one_new_user(fdata) {
+async function add_just_one_new_asset(fdata) {
     try {
         let f_obj = JSON.parse(fdata)
-        let user_dir = f_obj.dir_paths
-        //
-        if ( f_obj.dates === undefined ) {
-            f_obj.dates = {
-                "created" : Date.now(),
-                "updated" : Date.now()
-            }
-        }
-        //
-        // PUBLISH STATIC FILES -- this module subscribes to a "presitence" endpoint....
-        if ( user_dir ) {
-            publish_static(f_obj)           // PUBLISH STATIC FILES FOR THIS NEW USER....
-        }
-        //
-        let searchable = public_view_user(f_obj)
-        //
-        g_global_file_list.push(searchable)
-        f_obj.entry = g_global_file_list.length
-        f_obj.score = 1.0
-        g_global_file_list_by["create_date"].push(searchable)
-        g_global_file_list_by["update_date"].push(searchable)
-        g_currently_loaded_users[f_obj.uid] = f_obj
-        //
-        addCustomSearch(f_obj.uid)                      /// custom search for users in memory
+        g_search_interface.add_just_one(f_obj)
+        addToCustomSearch(f_obj,is_new)                      /// custom search for users in memory
     } catch (e) {
         console.log(e)
     }
@@ -415,15 +376,6 @@ app.get('/custom/:op/:owner/:uid/:query/:bcount/:offset', async (req, res) => {
     //
     res.send(data)
 })
-
-// { uid: '12345', query: 'any', bcount: '1', offset: '1' }
-//
-app.post('/:uid/:query/:bcount/:offset', async (req, res) => {
-    let uid = req.params.uid;
-    let data = await user_get(uid)
-    res.send(data)
-})
-
 
 
 app.post('/custom/:op/:owner', async (req, res) => {

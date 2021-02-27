@@ -364,6 +364,39 @@ class Searching {
         }
     }
 
+    add_just_one(f_obj,from_new) {
+        let is_new = from_new == undefined ? false : from_new
+        if ( f_obj.dates === undefined ) {
+            is_new = true
+            f_obj.dates = {
+                "created" : Date.now(),
+                "updated" : Date.now()
+            }
+        }
+        //
+        if ( is_new ) {
+            this.global_file_list.unshift(f_obj)
+            f_obj.entry = this.global_file_list.length
+            f_obj.score = 1.0
+            this.global_file_list_by["create_date"].unshift(f_obj)
+            this.global_file_list_by["update_date"].unshift(f_obj)    
+        } else {
+            if ( f_obj.is_updating ) {
+                let n = this.global_file_list.length
+                for ( let i = 0; i < n; i++ ) {
+                    if ( this.global_file_list[i].asset_id === f_obj.asset_id ) {
+                        this.global_file_list[i] = f_obj
+                    }
+                }
+                this.update_global_file_list_quotes_by()
+            } else {
+                this.global_file_list.push(f_obj)
+                f_obj.entry = this.global_file_list.length
+                f_obj.score = 1.0
+                this.update_global_file_list_quotes_by()
+            }
+        }
+    }
 }
 
 
