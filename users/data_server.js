@@ -9,19 +9,95 @@ const express = require('express');
 const { generateKeyPair } = require('crypto');
 const {MessageRelayer} = require("message-relay-services");
 const { rejects } = require('assert');
-
+//
 const {file_watch_handler,load_directory} = require('./object_file_util');
-const { promises } = require('dns');
+const AppSearching = require('./application_searching.js')
 
+
+
+class SearchesByUser {
+    //
+    //
+    constructor(SearchClass,owner,conf) {
+        this.searches = new SearchClass(conf)
+        this.owner = owner
+        //
+        this.global_file_list = []
+        this.global_file_list_by = {}
+        this.searches.set_global_file_list_refs(this.global_file_list,this.global_file_list_by)
+        this.user_info = {}
+    }
+
+
+    set_user_info(info) {
+        if ( info === undefined ) return
+        this.user_info  = info
+    }
+
+    async run_op(op) {
+        switch ( op.cmd ) {
+            case "search" : {
+                let req = op.req
+                return await this.process_search(req)
+            }
+            case "remove" : {
+                let req = op.req
+                this.searches.clear(req.body.query)
+                break
+            }
+            case "info" : {
+                return({ "status" : "OK", "data" : JSON.stringify(this.user_info) })
+            }
+            case "item" : {
+                let item
+                let req = op.req
+                let key = req.body.key
+                let field = req.body.field
+                //
+                let linear = global_file_list_by["update_date"]
+                let n = linear.length
+                let start = 0
+                for ( let i = start; i < n; i++ ) {
+                    item = linear[i]
+                    if ( item ) {
+                        if ( item[field] === key ) {
+                            return({ "status" : "OK", "data" : JSON.stringify(item) })
+                        }
+                    }
+                }
+            }
+        }
+        return({ "status" : "OK" })
+    }
+
+    async process_search(req) {
+        let query = req.params.query;
+        let box_count = parseInt(req.params.bcount);
+        let offset = parseInt(req.params.offset);
+        //
+        let search_results = this.searches.get_search(query,offset,box_count);
+        return(search_results)
+    }
+    
+}
+
+
+
+var bodyParser = require('body-parser');
+var cors = require('cors')
+
+// create application/json parser
+var jsonParser = bodyParser.json()
+// create application/x-www-form-urlencoded parser
+var urlencodedParser = bodyParser.urlencoded({ extended: false })
 
 // //
 // setup app
 const app = express()
+app.use(urlencodedParser)
+app.use(jsonParser)
+app.use(cors)
 // ----
-
-
-// Entry into searches that are cached
-let g_local_active_searches = {}
 
 //
 const PRUNE_MINUTES = 30
@@ -46,8 +122,8 @@ var g_currently_loaded_users = {}
 // ---- ---- ---- ---- ---- ---- ---- ---- ----
 // // // // // 
 // ---- ---- ---- ---- COMMAND LINE PARAMETERS ---- ---- ---- ---- ----
-let port = 3000
-let shrink = 3.2
+let g_port = 3000
+let g_address = "localhost"
 let g_update_dir = '/media/richard/ELEMENTS/data/users/records' 
 let g_subdir = '/media/richard/ELEMENTS/data/users/records' 
 let g_conf_file = '/media/richard/ELEMENTS/endpoint-services/user/config.json'
@@ -61,18 +137,37 @@ let g_conf = {
 //
 // The plan here is to never use the defaults (except in testing) 
 // So, command line processing is almost nothing. 
-const PAR_SHRINK = 2
-const PAR_PORT = 3
-const PAR_RECORD_DIRECTORY = 4
-const PAR_UPDATE_DIRECTORY = 5
-const PAR_ASSET_DIRECTORY = 6
-const PAR_COM_CONFIG = 7
+const PAR_COM_CONFIG = 2
+
+const PAR_SHRINK = 3
+const PAR_PORT = 4
+const PAR_RECORD_DIRECTORY = 5
+const PAR_UPDATE_DIRECTORY = 6
+const PAR_ASSET_DIRECTORY = 7
+
+if ( process.argv[PAR_COM_CONFIG] !== undefined ) {             // g_conf_file  --- location of communication configuration
+    g_conf_file = process.argv[PAR_COM_CONFIG]
+}
+
+if ( g_conf_file !== undefined ) {
+    g_conf = JSON.parse(fs.readFileSync(g_conf_file,'ascii').toString())
+            // if this fails the app crashes. So, the conf has to be true JSON
+}
+//
+// // //
+g_subdir = g_conf.records_dir
+g_update_dir = g_conf.updating_records_directory
+g_user_assets_dir = g_conf.assets_directory
+g_port = g_conf.port
+g_address = g_conf.address
+//
+//
 //
 if ( process.argv[PAR_SHRINK] !== undefined ) {         // Shrink -- multiplier for search metric
-    shrink = parseFloat(process.argv[PAR_SHRINK])
+    g_conf.shrinkage = parseFloat(process.argv[PAR_SHRINK])
 }
 if ( process.argv[PAR_PORT] !== undefined ) {           // port --- port of the service provided in this module
-    port = parseInt(process.argv[PAR_PORT])
+    g_port = parseInt(process.argv[PAR_PORT])
 }
 if ( process.argv[PAR_RECORD_DIRECTORY] !== undefined ) {       // g_subdir  --- location of searchable records and new data
     g_subdir = process.argv[PAR_RECORD_DIRECTORY]
@@ -85,32 +180,59 @@ if ( process.argv[PAR_ASSET_DIRECTORY] !== undefined ) {       // g_update_dir  
     g_user_assets_dir = process.argv[PAR_ASSET_DIRECTORY]
     if ( g_user_assets_dir === 'same' ) g_user_assets_dir = g_subdir
 }
-if ( process.argv[PAR_COM_CONFIG] !== undefined ) {             // g_conf_file  --- location of communication configuration
-    g_conf_file = process.argv[PAR_COM_CONFIG]
-}
+
 
 
 // ---- ---- ---- ---- ---- ---- ---- ---- ----
 // 
+const g_search_interface = new AppSearching(g_conf)        // see initialization below
 
-const SCORE_SHRINKAGE_FACTOR = shrink
+let g_particular_user_searches = {
+    'admin' : new SearchesByUser(AppSearching,'admin',g_conf)
+}
+
+function addCustomSearch(owner) {
+    g_particular_user_searches[owner] = new SearchesByUser(AppSearching,owner,g_conf)
+}
+
+async function run_custom_operation(owner,op) {
+    let result = { "status" : "emtpy" } 
+    try {
+        let custom = g_particular_user_searches[owner]
+        if ( custom ) {
+            let custom = g_particular_user_searches[owner]
+            result = await custom.run_op(op)
+        }
+    } catch(e) {}
+    return result
+}
+
+async function paritcular_interface_info(item_key) {
+    let custom = g_particular_user_searches[item_key]
+    let op = { "cmd" : "info" } 
+    result = await custom.run_op(op)
+    return(result)
+}
 
 
 // ---- ----  ---- ---- MESSAGE RELAY....(for publishing assets)
 // ---- ----  ---- ---- configure
 
-if ( g_conf_file !== undefined ) {
-    g_conf = JSON.parse(fs.readFileSync(g_conf_file,'ascii').toString())
-            // if this fails the app crashes. So, the conf has to be true JSON
-}
 
 // ---- ----  ---- ---- create communication object (talks to an endpoint server)
-let g_message_relayer = new MessageRelayer(g_conf)
+ // most of the user in formation coming into this service is through file watching...
+ // but some information may be obtained by direct query to a user endpoint
+let g_message_relayer_users = new MessageRelayer(g_conf.users) 
+//
+// The persistence endpoint that relays files out to dashboard, profiles, and other user specific
+// transitional frontend services...
+let g_message_relayer = new MessageRelayer(g_conf.persistence)
 
 
 async function publish_static(user_obj) {
     //
     try {
+        // PUBLISH PROFILE
         let topic = 'user-profile'
         let profile_obj = Object.assign({},user_obj)
         let fpath = g_user_assets_dir + user_obj.dir_paths.profile
@@ -119,6 +241,7 @@ async function publish_static(user_obj) {
         let result = await g_message_relayer.publish(topic,profile_obj)
         console.log(result)
         //
+        // PUBLISH DASHBOARD
         topic = 'user-dashboard'
         let dash_obj = Object.assign({},user_obj)
         fpath = g_user_assets_dir + user_obj.dir_paths.dashboard
@@ -176,8 +299,16 @@ async function add_just_one_new_user(fdata) {
         let f_obj = JSON.parse(fdata)
         let user_dir = f_obj.dir_paths
         //
+        if ( f_obj.dates === undefined ) {
+            f_obj.dates = {
+                "created" : Date.now(),
+                "updated" : Date.now()
+            }
+        }
+        //
+        // PUBLISH STATIC FILES -- this module subscribes to a "presitence" endpoint....
         if ( user_dir ) {
-            publish_static(f_obj)
+            publish_static(f_obj)           // PUBLISH STATIC FILES FOR THIS NEW USER....
         }
         //
         let searchable = public_view_user(f_obj)
@@ -188,6 +319,8 @@ async function add_just_one_new_user(fdata) {
         g_global_file_list_by["create_date"].push(searchable)
         g_global_file_list_by["update_date"].push(searchable)
         g_currently_loaded_users[f_obj.uid] = f_obj
+        //
+        addCustomSearch(f_obj.uid)                      /// custom search for users in memory
     } catch (e) {
         console.log(e)
     }
@@ -201,7 +334,7 @@ async function user_get(uid) {
         return public_view_user(user)
     }
     //
-    let user_record = await g_message_relayer.remote_fetch_message(uid)
+    let user_record = await g_message_relayer_users.remote_fetch_message(uid)
     add_just_one_new_user(user_record)
     user = g_currently_loaded_users[uid]
     return public_view_user(f_obj)
@@ -220,267 +353,17 @@ async function user_get(uid) {
 let g_global_file_list = []
 let g_global_file_list_by = {}
 
+g_search_interface.set_global_file_list_refs(g_global_file_list,g_global_file_list_by)
+
+
+
 function inject_user_object(u_obj) {
     g_global_file_list.push(u_obj)    
 }
 
 function after_loading() {
-
-    let c_results = sort_by_created(g_global_file_list)
-    let u_results = sort_by_updated(g_global_file_list)
-    //
-    g_global_file_list_by["create_date"] = c_results.map((item,index)=> {
-        item.entry = index + 1
-        item.score = 1.0
-        return(item)
-    })
-    //
-    g_global_file_list_by["update_date"] = u_results.map((item,index)=> {
-        item.entry = index + 1
-        item.score = 1.0
-        return(item)
-    })
-    //
+    g_search_interface.update_global_file_list_quotes_by()
     console.log("done loading blog entries ... ready")
-}
-
-
-function from_all_files(orderby) {
-    if ( orderby in g_global_file_list_by ) {
-        return g_global_file_list_by[orderby]
-    }
-    return g_global_file_list_by["create_date"]
-}
-
-
-function sort_by_updated(results) {
-    results = results.sort((a,b) => {
-        if ( b.dates && a.dates ) {
-            if ( b.dates.updated && a.dates.updated ) {
-                return(b.dates.updated - a.dates.updated)
-            }
-        }
-        return 0
-    })
-    return results
-}
-
-
-function sort_by_created(results) {
-    results = results.sort((a,b) => {
-        if ( b.dates && a.dates ) {
-            if ( b.dates.created && a.dates.created ) {
-                return(b.dates.created - a.dates.created)
-            }
-        }
-        return 0
-    })
-    return results
-}
-
-
-function sort_by_score(results) {
-    results = results.sort((a,b) => {
-        return(b.score - a.score)
-    })
-    return results
-}
-
-//  ----  SEARCHING
-
-class QueryResult {
-
-    constructor(query,restore) {
-        if ( restore === undefined ) {
-            let [data,normalized_query] = run_query_stat(query)
-            this.stored_data = data
-            this.query = normalized_query
-            this.when = Date.now()
-        } else {
-            this.stored_data = restore.stored_data
-            this.query = restore.query
-            this.when = Date.now()
-        }
-    }
-    //
-    access(offset,box_count) {
-        this.when = Date.now()
-        //
-        let n = this.stored_data.length
-        offset = Math.min(n,offset)
-
-        let returned_data = this.stored_data.slice(offset,offset + box_count)
-        let count = this.stored_data.length
-
-        return {
-            "data" : returned_data,  // the current small bucket set of data to fit the user view
-            "length" : returned_data.length,
-            "offset" : offset,
-            "count" : count         // number of possible results to view
-        }
-    }
-}
-
-
-
-// ----
-function backup_searches(do_halt) {
-
-    console.log("backing up searches")
-    let output = JSON.stringify(g_local_active_searches)
-    fs.writeFile('./backup_searched.json',output,'ascii',(err) => {
-        if ( err ) {
-            console.log(err)
-        }
-        console.log("done ... backing up searches" + do_halt)
-        if ( do_halt == true ) {
-            console.log("halting ... backing up searches")
-            process.exit(0)
-        }
-    })
-}
-
-
-function restore_searches() {
-    console.log("restoring searches")
-    try {
-        let searchbkp = fs.readFileSync('./backup_searched.json','ascii').toString()
-
-        g_local_active_searches = {}
-
-        let stored_obj = JSON.parse(searchbkp)    
-        for ( let k in stored_obj ) {
-            let restored = stored_obj[k]
-            let q = new QueryResult('',restored)
-            g_local_active_searches[k] = q
-        }
-
-    } catch (e) {
-        console.log(e)
-    }
-}
-
-
-const SCORE_THRESHOLD = 0.5
-
-function count_occurances(check_txt,term) {
-    let cnt = 0
-    let cumm_index = 0
-    let n = Math.max(check_txt.length,1)
-
-    let i = 0
-    while ( (i = check_txt.indexOf(term,i)) >= 0 ) {
-        i++
-        cnt++
-        cumm_index +=(n - i)
-    }
-
-    return([cnt,cumm_index/n])
-}
-
-function score_match(check_txt,q_list,mult) {
-    let score = 0
-    let index_score = 0
-    
-    q_list.forEach(term => {
-        let [cnt,iscr] = count_occurances(check_txt,term)
-        score += cnt
-        index_score += iscr
-    })
-
-    score = (score + index_score)/Math.max(q_list.length,1)
-    //console.log(`score: ${score}`)
-    return(score*mult)
-}
-
-function good_match(f_obj,match_text) {
-
-    let q_list = match_text.split(' ')
-
-    let score = 0.0
-
-    let check_txt = f_obj.title
-    score += score_match(check_txt,q_list,3)
-    check_txt = f_obj.subject
-    score += score_match(check_txt,q_list,4)
-    check_txt = f_obj.keys.join(' ')
-    score += score_match(check_txt,q_list,3)
-    check_txt = f_obj.txt_full
-    score += score_match(check_txt,q_list,1)
-
-    let final_score = score/SCORE_SHRINKAGE_FACTOR
-
-    f_obj.score = final_score
-
-    return(final_score > SCORE_THRESHOLD)
-}
-
-
-function run_query_stat(query_desr_str) {
-
-    let orderby = 'create_date'
-    let match_text = 'any'
-
-    try {
-        let qparts = query_desr_str.split("|")
-        match_text = decodeURIComponent(qparts[0])
-        orderby = qparts[1]
-    } catch (e) {
-        console.log(e)
-        return;
-    }
-
-    if ( match_text === 'any' || match_text === "" ) {
-        if ( [ 'update_date', 'score', 'create_date'].indexOf(orderby) < 0 ) {
-            orderby = 'create_date'
-            query_desr_str = `${match_text}|create_date`
-        }
-        let results = from_all_files(orderby)
-        return [results, query_desr_str]
-    }
-
-    try {
-    
-        let results = g_global_file_list.reduce((prev,current) => {
-            if ( good_match(current,match_text) ) {
-                prev.push(current)
-            }
-            return(prev)
-        },[])
-
-        switch ( orderby ) {
-            case 'update_date' :  {
-                //console.log('update_date ' + orderby)
-                query_desr_str = `${match_text}|update_date`
-                results = sort_by_updated(results)
-                break;
-            }
-            case 'score' : {
-                //console.log('score ' + orderby)
-                query_desr_str = `${match_text}|score`
-                results = sort_by_score(results)
-                break;
-            }
-            case 'create_date' :
-            default: {
-                //console.log('create_date ' + orderby)
-                query_desr_str = `${match_text}|create_date`
-                results = sort_by_created(results)
-                break;
-            }
-        }
-
-        results = results.map((item,index)=> {
-            let c_item = JSON.parse(JSON.stringify(item))
-            c_item.entry = index + 1
-            return(c_item)
-        })
-
-        return [results,query_desr_str]
-    } catch(e) {
-        console.log(e)
-        return([])
-    }
 }
 
 
@@ -490,55 +373,20 @@ function run_query_stat(query_desr_str) {
 function prune_searches() {
     //
     console.log("pruning searches")
-    let prune_time = Date.now()
-    //
-    let searches = Object.keys(g_local_active_searches)
-    //
-    let count = 0
-    searches.forEach(srch => {
-        let q_obj = g_local_active_searches[srch]
-        let when = q_obj.when
-        if ( (prune_time - TIMEOUT_THRESHHOLD) > when ) {
-            delete g_local_active_searches[srch]
-            count++
-        }
-    })
+    let count = g_search_interface.prune(TIMEOUT_THRESHHOLD)
     //
     console.log(`searches pruned: ${count}`)
 }
 
 
-async function run_query(query) {
-    let q = new QueryResult(query)
-    return [q,q.query]
-}
-
-
-async function get_search(query,offset,box_count) {
-    let result = g_local_active_searches[query]
-    if (  result !== undefined  ) {
-        let data_descr = result.access(offset,box_count)
-        return data_descr
-    } else {
-        // create one...
-        let [q_obj, normalized_query] = await run_query(query)
-        g_local_active_searches[normalized_query] = q_obj
-        let data_descr = q_obj.access(offset,box_count)
-        return data_descr
-    }
-
-}
 
 
 async function process_search(req) {
-    //console.log(req.body)
-    //console.log(req.params)
     let query = req.params.query;
     let box_count = parseInt(req.params.bcount);
     let offset = parseInt(req.params.offset);
     //
-    let search_results = await get_search(query,offset,box_count);
-    //
+    let search_results = await g_search_interface.get_search(query,offset,box_count);
     return(search_results)
 }
 
@@ -567,6 +415,24 @@ app.get('/:uid/:query/:bcount/:offset', async (req, res) => {
     res.send(data)
 })
 
+app.get('/custom/:op/:owner/:uid/:query/:bcount/:offset', async (req, res) => {
+    let uid = req.params.uid;
+    let owner = req.params.owner;
+    if ( rate_limited(owner) ) {
+        return rate_limit_redirect(req,res)
+    }
+    let data = []
+    try {
+        let custom = g_particular_user_searches[owner]
+        if ( custom ) {
+            data = await custom.process_search(req)
+        }
+    } catch (e) {
+    }
+    //
+    //
+    res.send(data)
+})
 
 // { uid: '12345', query: 'any', bcount: '1', offset: '1' }
 //
@@ -576,15 +442,30 @@ app.post('/:uid/:query/:bcount/:offset', async (req, res) => {
     res.send(data)
 })
 
-app.post('/user/:uid', async (req, res) => {
-    let uid = req.params.uid;
-    if ( rate_limited(uid) ) {
+
+
+app.post('/custom/:op/:owner', async (req, res) => {
+    let uid = req.params.owner;
+    if ( rate_limited(owner) ) {
         return rate_limit_redirect(req,res)
     }
-
-    let data = await process_search(req)
+    let cmd = req.params.op
+    let owner = req.params.owner
+    if ( cmd === 'user-info' ) {
+        let uid = req.body.uid
+        let response = await paritcular_interface_info(owner,uid)  // paritcular_interface_info shall check for role access
+        return response
+    }
+    //
+    let op = {
+        "cmd" : req.params.op,
+        "req" : req
+    }
+    //
+    let data = await run_custom_operation(owner,op)
     res.send(data)
 })
+
 
 app.get('/cycle/:halt', (req, res) => {
     let do_halt = req.params.halt
@@ -605,13 +486,13 @@ app.get('/reload',(req, res) => {
 load_directory(g_subdir,true,inject_user_object,after_loading)
 //
 //
-restore_searches()
+g_search_interface.restore_searches()
 //
 // //
 g_prune_timeout = setInterval(prune_searches,TIMEOUT_THRESHHOLD_INTERVAL)
 //
 //
-app.listen(port, () => {
-  console.log(`Example app listening at http://localhost:${port}`)
+app.listen(g_port, () => {
+  console.log(`Example app listening at http://localhost:${g_port}`)
 })
 

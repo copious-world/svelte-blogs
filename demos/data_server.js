@@ -1,400 +1,351 @@
-
+// data server under users     USERS
+// viewing data server
+//
 
 const fs = require('fs')
+const fsPromises = require('fs/promises')
 const path = require('path'); 
-const express = require('express')
-
+const express = require('express');
+const { generateKeyPair } = require('crypto');
+const {MessageRelayer} = require("message-relay-services");
+const { rejects } = require('assert');
 //
-//
-//
-
-
-// // // // // // // // // // // // // // 
-let shrink = 3.2
-let title_weight = 3
-let subject_weight = 3
-let key_weight = 3
-let text_weight = 3
-let component_weight = 3
-// // // // // // // // // // // // // // 
+const {file_watch_handler,load_directory} = require('./object_file_util');
+const AppSearching = require('./application_searching.js')
 
 
 
-
-let g_subdir = '/media/richard/ELEMENTS/data/demos' 
-
-if ( process.argv[4] !== undefined ) {
-    g_subdir = process.argv[4]
-}
-
-if ( process.argv[2] !== undefined ) {
-    shrink = process.argv[2]
-}
-
-const SCORE_SHRINKAGE_FACTOR = shrink
-
-let port = 3010
-
-if ( process.argv[3] !== undefined ) {
-    port = parseInt(process.argv[3])
-}
-
-//  
-
-let g_global_file_list = []
-
-let g_global_file_list_by = {
-    "create_date" : [],
-    "update_date" : []
-}
-
-
-
-class QueryResult {
-
-    constructor(query,restore) {
-        if ( restore === undefined ) {
-            let [data,normalized_query] = run_query_stat(query)
-            this.stored_data = data
-            this.query = normalized_query
-            this.when = Date.now()
-        } else {
-            this.stored_data = restore.stored_data
-            this.query = restore.query
-            this.when = Date.now()
-        }
-    }
+class SearchesByUser {
     //
-    access(offset,box_count) {
-        this.when = Date.now()
+    //
+    constructor(SearchClass,owner,conf) {
+        this.searches = new SearchClass(conf)
+        this.owner = owner
         //
-        let n = this.stored_data.length
-        offset = Math.min(n,offset)
+        this.global_file_list = []
+        this.global_file_list_by = {}
+        this.searches.set_global_file_list_refs(this.global_file_list,this.global_file_list_by)
+        this.user_info = {}
+    }
 
-        let returned_data = this.stored_data.slice(offset,offset + box_count)
-        let count = this.stored_data.length
 
-        return {
-            "data" : returned_data,  // the current small bucket set of data to fit the user view
-            "length" : returned_data.length,
-            "offset" : offset,
-            "count" : count         // number of possible results to view
+    set_user_info(info) {
+        if ( info === undefined ) return
+        this.user_info  = info
+    }
+
+    async run_op(op) {
+        switch ( op.cmd ) {
+            case "search" : {
+                let req = op.req
+                return await this.process_search(req)
+            }
+            case "remove" : {
+                let req = op.req
+                this.searches.clear(req.body.query)
+                break
+            }
+            case "info" : {
+                return({ "status" : "OK", "data" : JSON.stringify(this.user_info) })
+            }
+            case "item" : {
+                let item
+                let req = op.req
+                let key = req.body.key
+                let field = req.body.field
+                //
+                let linear = global_file_list_by["update_date"]
+                let n = linear.length
+                let start = 0
+                for ( let i = start; i < n; i++ ) {
+                    item = linear[i]
+                    if ( item ) {
+                        if ( item[field] === key ) {
+                            return({ "status" : "OK", "data" : JSON.stringify(item) })
+                        }
+                    }
+                }
+            }
         }
+        return({ "status" : "OK" })
     }
-}
 
-
-
-
-function load_directory(dirpath,noisy) {
-    console.log("loading blog entries")
-
-    g_global_file_list = []
-
-    fs.readdir(dirpath, (err, files) => {
-        console.log("loading blog entries ... reading files")
-        if (err)  {
-            console.log(err);
-            process.exit(0)
-        } else { 
-            // console.log("\Filenames with the .txt extension:"); 
-            files.forEach(file => { 
-                if ( path.extname(file) == ".json" ) {
-                    if ( noisy ) {
-                        console.log(file)
-                    }
-                    //
-                    let fpath = dirpath + '/' + file
-                    let fdata = fs.readFileSync(fpath).toString()
-                    try {
-                        let f_obj = JSON.parse(fdata)
-                        g_global_file_list.push(f_obj)    
-                    } catch(e) {
-                        console.log(file)
-                    }
-                    //
-                } 
-            })
-            //
-
-            //
-            let c_results = sort_by_created(g_global_file_list)
-            let u_results = sort_by_updated(g_global_file_list)
-            //
-            g_global_file_list_by["create_date"] = c_results.map((item,index)=> {
-                item.entry = index + 1
-                item.score = 1.0
-                return(item)
-            })
-            //
-            g_global_file_list_by["update_date"] = u_results.map((item,index)=> {
-                item.entry = index + 1
-                item.score = 1.0
-                return(item)
-            })
-            //
-            console.log("done loading blog entries ... ready")
-        } 
-    }) 
-  
-}
-
-
-function from_all_files(orderby) {
-    if ( orderby in g_global_file_list_by ) {
-        return g_global_file_list_by[orderby]
+    async process_search(req) {
+        let query = req.params.query;
+        let box_count = parseInt(req.params.bcount);
+        let offset = parseInt(req.params.offset);
+        //
+        let search_results = this.searches.get_search(query,offset,box_count);
+        return(search_results)
     }
-    return g_global_file_list_by["create_date"]
+    
 }
 
 
-function sort_by_updated(results) {
-    results = results.sort((a,b) => {
-        return(b.dates.updated - a.dates.updated)
-    })
-    return results
-}
 
+var bodyParser = require('body-parser');
+var cors = require('cors')
 
-function sort_by_created(results) {
-    results = results.sort((a,b) => {
-        return(b.dates.created - a.dates.created)
-    })
-    return results
-}
-
-
-function sort_by_score(results) {
-    results = results.sort((a,b) => {
-        return(b.score - a.score)
-    })
-    return results
-}
+// create application/json parser
+var jsonParser = bodyParser.json()
+// create application/x-www-form-urlencoded parser
+var urlencodedParser = bodyParser.urlencoded({ extended: false })
 
 // //
 // setup app
 const app = express()
-
-// // // 
-
-
-
+app.use(urlencodedParser)
+app.use(jsonParser)
+app.use(cors)
 // ----
-let g_local_active_searches = {}
 
-let g_prune_timeout = null
+//
 const PRUNE_MINUTES = 30
 const TIMEOUT_THRESHHOLD = 8*60*60     // in seconds
 const TIMEOUT_THRESHHOLD_INTERVAL = (1000*60)*PRUNE_MINUTES
 
 
-// ----
+let g_prune_timeout = null
+process.on('SIGINT',(signal) => {
+    if ( g_prune_timeout !== null ) {
+        clearInterval(g_prune_timeout)
+    }
+    process.exit(0)
+})
 
-load_directory(g_subdir)
 
-// ----
-function backup_searches(do_halt) {
+// USER INFORMATION
+const g_public_viewable_user_fields = ['picture', 'bio', 'name', 'key-words']
+var g_currently_loaded_users = {}
 
-    console.log("backing up searches")
-    let output = JSON.stringify(g_local_active_searches)
-    fs.writeFile('./backup_searched.json',output,'ascii',(err) => {
-        if ( err ) {
-            console.log(err)
-        }
-        console.log("done ... backing up searches" + do_halt)
-        if ( do_halt == true ) {
-            console.log("halting ... backing up searches")
-            process.exit(0)
-        }
-    })
+
+// ---- ---- ---- ---- ---- ---- ---- ---- ----
+// // // // // 
+// ---- ---- ---- ---- COMMAND LINE PARAMETERS ---- ---- ---- ---- ----
+let g_port = 3000
+let g_address = "localhost"
+let g_update_dir = '/media/richard/ELEMENTS/data/users/records' 
+let g_subdir = '/media/richard/ELEMENTS/data/users/records' 
+let g_conf_file = '/media/richard/ELEMENTS/endpoint-services/user/config.json'
+let g_user_assets_dir = '/media/richard/ELEMENTS/data/users/assets'
+let g_conf = {
+    'port' : 5114,
+    'address' : 'localhost',
+    'file_shunting' : false
+}
+
+//
+// The plan here is to never use the defaults (except in testing) 
+// So, command line processing is almost nothing. 
+const PAR_COM_CONFIG = 2
+
+const PAR_SHRINK = 3
+const PAR_PORT = 4
+const PAR_RECORD_DIRECTORY = 5
+const PAR_UPDATE_DIRECTORY = 6
+const PAR_ASSET_DIRECTORY = 7
+
+if ( process.argv[PAR_COM_CONFIG] !== undefined ) {             // g_conf_file  --- location of communication configuration
+    g_conf_file = process.argv[PAR_COM_CONFIG]
+}
+
+if ( g_conf_file !== undefined ) {
+    g_conf = JSON.parse(fs.readFileSync(g_conf_file,'ascii').toString())
+            // if this fails the app crashes. So, the conf has to be true JSON
+}
+//
+// // //
+g_subdir = g_conf.records_dir
+g_update_dir = g_conf.updating_records_directory
+g_user_assets_dir = g_conf.assets_directory
+g_port = g_conf.port
+g_address = g_conf.address
+//
+//
+//
+if ( process.argv[PAR_SHRINK] !== undefined ) {         // Shrink -- multiplier for search metric
+    g_conf.shrinkage = parseFloat(process.argv[PAR_SHRINK])
+}
+if ( process.argv[PAR_PORT] !== undefined ) {           // port --- port of the service provided in this module
+    g_port = parseInt(process.argv[PAR_PORT])
+}
+if ( process.argv[PAR_RECORD_DIRECTORY] !== undefined ) {       // g_subdir  --- location of searchable records and new data
+    g_subdir = process.argv[PAR_RECORD_DIRECTORY]
+}
+if ( process.argv[PAR_UPDATE_DIRECTORY] !== undefined ) {       // g_update_dir  --- location of new data
+    g_update_dir = process.argv[PAR_UPDATE_DIRECTORY]
+    if ( g_update_dir === 'same' ) g_update_dir = g_subdir
+}
+if ( process.argv[PAR_ASSET_DIRECTORY] !== undefined ) {       // g_update_dir  --- location of new data
+    g_user_assets_dir = process.argv[PAR_ASSET_DIRECTORY]
+    if ( g_user_assets_dir === 'same' ) g_user_assets_dir = g_subdir
 }
 
 
-function restore_searches() {
-    console.log("restoring searches")
+
+// ---- ---- ---- ---- ---- ---- ---- ---- ----
+// 
+const g_search_interface = new AppSearching(g_conf)        // see initialization below
+
+let g_particular_user_searches = {
+    'admin' : new SearchesByUser(AppSearching,'admin',g_conf)
+}
+
+function addCustomSearch(owner) {
+    g_particular_user_searches[owner] = new SearchesByUser(AppSearching,owner,g_conf)
+}
+
+async function run_custom_operation(owner,op) {
+    let result = { "status" : "emtpy" } 
     try {
-        let searchbkp = fs.readFileSync('./backup_searched.json','ascii').toString()
-
-        g_local_active_searches = {}
-
-        let stored_obj = JSON.parse(searchbkp)    
-        for ( let k in stored_obj ) {
-            let restored = stored_obj[k]
-            let q = new QueryResult('',restored)
-            g_local_active_searches[k] = q
+        let custom = g_particular_user_searches[owner]
+        if ( custom ) {
+            let custom = g_particular_user_searches[owner]
+            result = await custom.run_op(op)
         }
+    } catch(e) {}
+    return result
+}
 
-    } catch (e) {
-        console.log(e)
+async function paritcular_interface_info(item_key) {
+    let custom = g_particular_user_searches[item_key]
+    let op = { "cmd" : "info" } 
+    result = await custom.run_op(op)
+    return(result)
+}
+
+
+// ---- ----  ---- ---- MESSAGE RELAY....(for publishing assets)
+// ---- ----  ---- ---- configure
+
+// ---- ----  ---- ---- create communication object (talks to an endpoint server)
+ // most of the user in formation coming into this service is through file watching...
+ // but some information may be obtained by direct query to a user endpoint
+//
+// The persistence endpoint that relays files out to dashboard, profiles, and other user specific
+// transitional frontend services...
+let g_message_relayer = new MessageRelayer(g_conf.persistence)
+
+
+async function publish_static(user_obj) {
+    //
+    try {
+        // PUBLISH PROFILE
+        let topic = 'user-profile'
+        let profile_obj = Object.assign({},user_obj)
+        let fpath = g_user_assets_dir + user_obj.dir_paths.profile
+        profile_obj.profile = (await fsPromises.readFile(fpath)).toString()
+        profile_obj.profile = encodeURIComponent(profile_obj.profile)
+        let result = await g_message_relayer.publish(topic,profile_obj)
+        console.log(result)
+        //
+        // PUBLISH DASHBOARD
+        topic = 'user-dashboard'
+        let dash_obj = Object.assign({},user_obj)
+        fpath = g_user_assets_dir + user_obj.dir_paths.dashboard
+        dash_obj.dashboard = (await fsPromises.readFile(fpath)).toString()
+        dash_obj.dashboard = encodeURIComponent(dash_obj.dashboard)
+        result = await g_message_relayer.publish(topic,dash_obj)
+        console.log(result)
+        //
+    } catch(e) {
+        console.error(e)
+    }
+   //
+}
+
+// ---- ----  ---- ---- WATCH SUBDIRECTORY....
+//
+console.log("watchging dir " + g_update_dir)
+let g_watch_for_new_files = fs.watch(g_update_dir)  // watch for files in only one specific directory...
+// ---- ---- ---- ---- ---- ---- ---- ---- ----
+// ---- ---- ---- ---- ---- ---- ---- ---- ----
+
+// FILE CHANGE LISTENER
+g_watch_for_new_files.on('change', (eventType, filename) => {
+                                                                user_record_add_or_update(filename)
+                                                            });
+
+// ---- ---- ---- ---- ---- ---- ---- ---- ----
+// 
+
+
+
+//
+function user_record_add_or_update(filename) {
+    // require this to be a json file
+    if ( path.extname(filename) === '.json' ) {
+        let fpath = g_update_dir + '/' + filename
+        file_watch_handler(fpath,add_just_one_new_user)
     }
 }
 
 //
-restore_searches()
-
-
-/*
-
-{
-"id" : thing_counter, "color": "grey",
-"title" : "",
-"dates" : {
-    "created" : "never",
-    "updated" : "never"
-},
-"subject" : "",
-"keys" : [  ],
-"t_type" : "",
-"txt_full" : "",
-"score" : 0.0,
-"components" : {
-    "graphic" : [],
-    "boxes" : []
-}
-}
-
-*/
-
-
-const SCORE_THRESHOLD = 0.5
-
-function count_occurances(check_txt,term) {
-    let cnt = 0
-    let cumm_index = 0
-    let n = Math.max(check_txt.length,1)
-
-    let i = 0
-    while ( (i = check_txt.indexOf(term,i)) >= 0 ) {
-        i++
-        cnt++
-        cumm_index +=(n - i)
+function public_view_user(f_obj) {
+    let pub_view = {}
+    for ( let ky in f_obj ) {
+        if ( ky in g_public_viewable_user_fields ) {
+            pub_view[ky] = f_obj[ky]
+        }
     }
-
-    return([cnt,cumm_index/n])
-}
-
-function score_match(check_txt,q_list,mult) {
-    //
-    if ( (check_txt === undefined) || (check_txt.length === 0 ) ) return 0.0
-    let score = 0
-    let index_score = 0
-    //
-    q_list.forEach(term => {
-        let [cnt,iscr] = count_occurances(check_txt,term)
-        score += cnt
-        index_score += iscr
-    })
-    //
-    score = (score + index_score)/Math.max(q_list.length,1)
-    //console.log(`score: ${score}`)
-    return(score*mult)
-}
-
-function component_score_match(component_part,q_list,mult) {
-    let score = 0.0
-    let n = component_part.graphic.length
-    //
-    for ( let i = 0; i < n; i++ ) {
-        let check_txt = component_part.graphic[i]
-        score += score_match(check_txt,q_list,mult)
-    }
-    return(score/n)
+    return pub_view
 }
 
 
-
-function good_match(f_obj,match_text) {
-
-    let q_list = match_text.split(' ')
-
-    let score = 0.0
-
-    let check_txt = f_obj.title
-    score += score_match(check_txt,q_list,title_weight)
-    check_txt = f_obj.subject
-    score += score_match(check_txt,q_list,subject_weight)
-    check_txt = f_obj.keys.join(' ')
-    score += score_match(check_txt,q_list,key_weight)
-    check_txt = f_obj.txt_full
-    score += score_match(check_txt,q_list,text_weight)
-    let check_obj = f_obj.components
-    score += component_score_match(check_obj,q_list,component_weight)
-
-
-    let final_score = score/SCORE_SHRINKAGE_FACTOR
-
-    f_obj.score = final_score
-
-    return(final_score > SCORE_THRESHOLD)
-}
-
-
-function run_query_stat(query_desr_str) {
-
-    let orderby = 'create_date'
-    let match_text = 'any'
-
+async function add_just_one_new_user(fdata) {
     try {
-        let qparts = query_desr_str.split("|")
-        match_text = decodeURIComponent(qparts[0])
-        orderby = qparts[1]
+        let f_obj = JSON.parse(fdata)
+        let user_dir = f_obj.dir_paths
+        //
+        if ( f_obj.dates === undefined ) {
+            f_obj.dates = {
+                "created" : Date.now(),
+                "updated" : Date.now()
+            }
+        }
+        //
+        // PUBLISH STATIC FILES -- this module subscribes to a "presitence" endpoint....
+        if ( user_dir ) {
+            publish_static(f_obj)           // PUBLISH STATIC FILES FOR THIS NEW USER....
+        }
+        //
+        let searchable = public_view_user(f_obj)
+        //
+        g_global_file_list.push(searchable)
+        f_obj.entry = g_global_file_list.length
+        f_obj.score = 1.0
+        g_global_file_list_by["create_date"].push(searchable)
+        g_global_file_list_by["update_date"].push(searchable)
+        g_currently_loaded_users[f_obj.uid] = f_obj
+        //
+        addCustomSearch(f_obj.uid)                      /// custom search for users in memory
     } catch (e) {
         console.log(e)
-        return;
     }
+}
 
 
-    if ( match_text === 'any' || match_text === "" ) {
-        if ( [ 'update_date', 'score', 'create_date'].indexOf(orderby) < 0 ) {
-            orderby = 'create_date'
-            query_desr_str = `${match_text}|create_date`
-        }
-        let results = from_all_files(orderby)
-        return [results, query_desr_str]
-    }
+// 
+// when creating assets for a new user, use templates and put them in user specific directories
+// 
+// 
 
-    try {
-    
-        let results = g_global_file_list.reduce((prev,current) => {
-            if ( good_match(current,match_text) ) {
-                prev.push(current)
-            }
-            return(prev)
-        },[])
 
-        switch ( orderby ) {
-            case 'update_date' :  {
-                //console.log('update_date ' + orderby)
-                query_desr_str = `${match_text}|update_date`
-                results = sort_by_updated(results)
-                break;
-            }
-            case 'score' : {
-                //console.log('score ' + orderby)
-                query_desr_str = `${match_text}|score`
-                results = sort_by_score(results)
-                break;
-            }
-            case 'create_date' :
-            default: {
-                //console.log('create_date ' + orderby)
-                query_desr_str = `${match_text}|create_date`
-                results = sort_by_created(results)
-                break;
-            }
-        }
+//  ----
+let g_global_file_list = []
+let g_global_file_list_by = {}
 
-        results = results.map((item,index)=> {
-            let c_item = JSON.parse(JSON.stringify(item))
-            c_item.entry = index + 1
-            return(c_item)
-        })
+g_search_interface.set_global_file_list_refs(g_global_file_list,g_global_file_list_by)
 
-        return [results,query_desr_str]
-    } catch(e) {
-        console.log(e)
-        return([])
-    }
+
+
+function inject_user_object(u_obj) {
+    g_global_file_list.push(u_obj)    
+}
+
+function after_loading() {
+    g_search_interface.update_global_file_list_quotes_by()
+    console.log("done loading blog entries ... ready")
 }
 
 
@@ -404,76 +355,36 @@ function run_query_stat(query_desr_str) {
 function prune_searches() {
     //
     console.log("pruning searches")
-    let prune_time = Date.now()
-    //
-    let searches = Object.keys(g_local_active_searches)
-    //
-    let count = 0
-    searches.forEach(srch => {
-        let q_obj = g_local_active_searches[srch]
-        let when = q_obj.when
-        if ( (prune_time - TIMEOUT_THRESHHOLD) > when ) {
-            delete g_local_active_searches[srch]
-            count++
-        }
-    })
+    let count = g_search_interface.prune(TIMEOUT_THRESHHOLD)
     //
     console.log(`searches pruned: ${count}`)
 }
 
-//
-// 
-// //
-g_prune_timeout = setInterval(prune_searches,TIMEOUT_THRESHHOLD_INTERVAL)
 
 
 
-async function run_query(query) {
-    let q = new QueryResult(query)
-    return [q,q.query]
+async function process_search(req) {
+    let query = req.params.query;
+    let box_count = parseInt(req.params.bcount);
+    let offset = parseInt(req.params.offset);
+    //
+    let search_results = await g_search_interface.get_search(query,offset,box_count);
+    return(search_results)
 }
 
 
-
-async function get_search(query,offset,box_count) {
-    let result = g_local_active_searches[query]
-    if (  result !== undefined  ) {
-        let data_descr = result.access(offset,box_count)
-        return data_descr
-    } else {
-        // create one...
-        let [q_obj, normalized_query] = await run_query(query)
-        g_local_active_searches[normalized_query] = q_obj
-        let data_descr = q_obj.access(offset,box_count)
-        return data_descr
-    }
-
-}
-
-
+// ---- ---- ---- ---- 
 
 function rate_limited(uid) {
     return false
 }
 
 
-
 function rate_limit_redirect(req,res) {
     return res.redirect('/')
 }
 
-
-async function process_search(req) {
-    //console.log(req.body)
-    //console.log(req.params)
-    let query = req.params.query;
-    let box_count = parseInt(req.params.bcount);
-    let offset = parseInt(req.params.offset);
-    //
-    let search_results = await get_search(query,offset,box_count);
-    //
-    return(search_results)
-}
+// ---- ---- ---- ---- HTML APPLICATION PATHWAYS  ---- ---- ---- ---- ---- ---- ----
 
 
 app.get('/:uid/:query/:bcount/:offset', async (req, res) => {
@@ -486,19 +397,56 @@ app.get('/:uid/:query/:bcount/:offset', async (req, res) => {
     res.send(data)
 })
 
+app.get('/custom/:op/:owner/:uid/:query/:bcount/:offset', async (req, res) => {
+    let uid = req.params.uid;
+    let owner = req.params.owner;
+    if ( rate_limited(owner) ) {
+        return rate_limit_redirect(req,res)
+    }
+    let data = []
+    try {
+        let custom = g_particular_user_searches[owner]
+        if ( custom ) {
+            data = await custom.process_search(req)
+        }
+    } catch (e) {
+    }
+    //
+    //
+    res.send(data)
+})
 
 // { uid: '12345', query: 'any', bcount: '1', offset: '1' }
 //
 app.post('/:uid/:query/:bcount/:offset', async (req, res) => {
     let uid = req.params.uid;
-    if ( rate_limited(uid) ) {
-        return rate_limit_redirect(req,res)
-    }
-
-    let data = await process_search(req)
+    let data = await user_get(uid)
     res.send(data)
 })
 
+
+
+app.post('/custom/:op/:owner', async (req, res) => {
+    let uid = req.params.owner;
+    if ( rate_limited(owner) ) {
+        return rate_limit_redirect(req,res)
+    }
+    let cmd = req.params.op
+    let owner = req.params.owner
+    if ( cmd === 'user-info' ) {
+        let uid = req.body.uid
+        let response = await paritcular_interface_info(owner,uid)  // paritcular_interface_info shall check for role access
+        return response
+    }
+    //
+    let op = {
+        "cmd" : req.params.op,
+        "req" : req
+    }
+    //
+    let data = await run_custom_operation(owner,op)
+    res.send(data)
+})
 
 
 app.get('/cycle/:halt', (req, res) => {
@@ -514,9 +462,19 @@ app.get('/reload',(req, res) => {
 })
 
 
-
-
-app.listen(port, () => {
-  console.log(`Example app listening at http://localhost:${port}`)
+// ---- ---- ---- ---- RUN  ---- ---- ---- ---- ---- ---- ---- ----
+// // // 
+// 
+load_directory(g_subdir,true,inject_user_object,after_loading)
+//
+//
+g_search_interface.restore_searches()
+//
+// //
+g_prune_timeout = setInterval(prune_searches,TIMEOUT_THRESHHOLD_INTERVAL)
+//
+//
+app.listen(g_port, () => {
+  console.log(`Example app listening at http://localhost:${g_port}`)
 })
 
