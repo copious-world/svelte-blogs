@@ -14,7 +14,6 @@ const {file_watch_handler,load_directory} = require('./object_file_util');
 const AppSearching = require('./application_searching.js')
 
 
-
 class SearchesByUser {
     //
     //
@@ -191,8 +190,8 @@ function addCustomSearch(owner) {
 }
 
 function addToCustomSearch(f_obj,is_new) {
-    if ( f_obj.uid ) {
-        let owner = f_obj.uid 
+    if ( f_obj._id ) {
+        let owner = f_obj._id 
         let user_search =  g_particular_user_searches[owner]
         if ( user_search === undefined ) {
             addCustomSearch(owner)

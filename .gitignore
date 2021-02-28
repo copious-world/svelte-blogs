@@ -1,4 +1,5 @@
 /node_modules/
+/services/node_modules/*
+/services/user*/
 /public/build/
-
 .DS_Store
