@@ -238,6 +238,8 @@ async function publish_static(user_obj) {
         let fpath = g_user_assets_dir + user_obj.dir_paths.profile
         profile_obj.profile = (await fsPromises.readFile(fpath)).toString()
         profile_obj.profile = encodeURIComponent(profile_obj.profile)
+console.log("publish_static " + topic)
+console.dir(profile_obj)
         let result = await g_message_relayer.publish(topic,profile_obj)
         console.log(result)
         //
@@ -247,6 +249,8 @@ async function publish_static(user_obj) {
         fpath = g_user_assets_dir + user_obj.dir_paths.dashboard
         dash_obj.dashboard = (await fsPromises.readFile(fpath)).toString()
         dash_obj.dashboard = encodeURIComponent(dash_obj.dashboard)
+console.log("publish_static " + topic)
+console.dir(dash_obj)
         result = await g_message_relayer.publish(topic,dash_obj)
         console.log(result)
         //
