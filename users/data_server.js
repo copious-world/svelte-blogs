@@ -499,4 +499,3 @@ g_prune_timeout = setInterval(prune_searches,TIMEOUT_THRESHHOLD_INTERVAL)
 app.listen(g_port, () => {
   console.log(`Example app listening at http://localhost:${g_port}`)
 })
-
