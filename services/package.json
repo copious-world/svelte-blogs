@@ -9,6 +9,7 @@
   "author": "R. Leddy",
   "license": "ISC",
   "dependencies": {
-    "xxhash-addon": "^1.3.0"
+    "xxhash-addon": "^1.3.0",
+    "message-relay-services" : "https://github.com/copious-world/message-relay-services.git"
   }
 }
