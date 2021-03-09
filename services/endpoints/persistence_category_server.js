@@ -113,18 +113,49 @@ ss = {
 }
 */
 
+
+function faux_random_enough() {
+    let rr = Math.random()
+    rr = Math.floor(rr*1897271171)
+    return "dashing" + rr
+}
+
 class TransitionsPersistenceEndpoint extends PersistenceMessageEndpoint {
 
     //
     constructor(conf) {
         super(conf)
+        this.app_subscriptions_ok = true
+        this.add_to_topic("command-publish",'self',false)
+        this.add_to_topic("command-recind",'self',false)
+        this.add_to_topic("command-delete",'self',false)
+        this.add_to_topic("command-send",'self',false)
     }
     //
+
+
+    app_subscription_handler(topic,msg_obj) {
+        if ( topic === 'command-publish' ) {
+            msg_obj._tx_op = 'P'
+        } else if ( topic === 'command-recind' ) {
+            msg_obj._tx_op = 'U'
+        } else if ( topic === 'command-delete' ) {
+            msg_obj._tx_op = 'D'
+        }
+        //
+        this.app_message_handler(msg_obj)
+    }
+
 
     make_path(u_obj) {
         let key_field = u_obj.key_field ?  u_obj.key_field : u_obj._transition_path
         let asset_info = u_obj[key_field]   // dashboard+striking@pp.com
         if ( !(asset_info) ) return(false)
+        if ( asset_info.indexOf('+') < 0 ) {
+            console.log(`malformed file specifier in ${__filename}`)
+            console.dir(u_obj)
+            return(false)
+        }
         asset_info = asset_info.split('+')
         let user_path = this.user_directory
         let user_id = asset_info.pop()
@@ -141,6 +172,31 @@ class TransitionsPersistenceEndpoint extends PersistenceMessageEndpoint {
         }
 console.log(user_path)
         return(user_path)
+    }
+
+    application_data_update(u_obj,data) {
+        try {
+            let d_obj = JSON.parse(data)
+            //
+            let key_field = u_obj.key_field ?  u_obj.key_field : u_obj._transition_path
+            let asset_info = u_obj[key_field]   // dashboard+striking@pp.com
+            if ( asset_info )  {
+                asset_info = asset_info.split('+')
+                let user_id = asset_info.pop()
+                d_obj.owner = user_id
+                d_obj.email = user_id
+                d_obj._id = asset_info
+                d_obj.which_dashboard = faux_random_enough()
+                data = {
+                    "mime_type" : "application/json",
+                    "string" : JSON.stringify(d_obj)
+                }
+                data = JSON.stringify(data)
+            }
+        } catch (e) {
+            return(data)
+        }
+        return(data)
     }
 
     // ----
