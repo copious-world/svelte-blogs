@@ -22,7 +22,7 @@ class SearchesByUser {
         this.owner = owner
         //
         this.global_file_list = []
-        this.global_file_list_by = {}
+        this.global_file_list_by = { "create_date" : [], "update_date" : []}
         this.searches.set_global_file_list_refs(this.global_file_list,this.global_file_list_by)
         this.user_info = {}
     }
@@ -33,21 +33,21 @@ class SearchesByUser {
         this.user_info  = info
     }
 
-    async run_op(op) {
+    async run_op(op) {          // these are operations on the query...
         switch ( op.cmd ) {
-            case "search" : {
+            case "search" : {           // run the search
                 let req = op.req
                 return await this.process_search(req)
             }
-            case "remove" : {
+            case "remove" : {           // clear this search from memory
                 let req = op.req
                 this.searches.clear(req.body.query)
                 break
             }
-            case "info" : {
+            case "info" : {             // tell us about the user
                 return({ "status" : "OK", "data" : JSON.stringify(this.user_info) })
             }
-            case "item" : {
+            case "item" : {             // retrieve a particular item....
                 let item
                 let req = op.req
                 let key = req.body.key
@@ -78,6 +78,9 @@ class SearchesByUser {
         return(search_results)
     }
     
+    add_just_one(f_obj,is_new) {
+        this.searches.add_just_one(f_obj,is_new)
+    }
 }
 
 
@@ -95,7 +98,7 @@ var urlencodedParser = bodyParser.urlencoded({ extended: false })
 const app = express()
 app.use(urlencodedParser)
 app.use(jsonParser)
-app.use(cors)
+//app.use(cors)
 // ----
 
 //
@@ -127,6 +130,7 @@ let g_conf = {
     'address' : 'localhost',
     'file_shunting' : false
 }
+
 
 //
 // The plan here is to never use the defaults (except in testing) 
@@ -191,7 +195,7 @@ function addCustomSearch(owner) {
 
 function addToCustomSearch(f_obj,is_new) {
     if ( f_obj._id ) {
-        let owner = f_obj._id 
+        let owner = f_obj.email
         let user_search =  g_particular_user_searches[owner]
         if ( user_search === undefined ) {
             addCustomSearch(owner)
@@ -232,18 +236,18 @@ async function paritcular_interface_info(item_key) {
 //
 // The persistence endpoint that relays files out to dashboard, profiles, and other user specific
 // transitional frontend services...
-let g_message_relayer = new MessageRelayer(g_conf.persistence)
+let g_message_relayer = g_conf.persistence ? new MessageRelayer(g_conf.persistence) : false
 
 // SUBSCRIBE to the publication events destined for this service....
-if ( g_conf.subscribe ) {
+if ( g_message_relayer && g_conf.subscribe ) {
     g_message_relayer.subscribe(g_conf.subscribe,{},(obj) => {
         // should be about a new blog entry....
         if ( obj.topic === g_conf.subscribe ) {
             if ( obj.user_only ) {
                 let user_key = obj.user_only
                 let searcher = g_particular_user_searches[user_key]
-                searcher.searches.addCustomSearch
-
+                //searcher.searches.addCustomSearch
+                //
             }
         }
     })
@@ -259,14 +263,20 @@ let g_watch_for_new_files = fs.watch(g_update_dir)  // watch for files in only o
 
 // FILE CHANGE LISTENER
 g_watch_for_new_files.on('change', (eventType, filename) => {
-                                                                asset_record_add_or_update(filename)
+                                                                if ( eventType === 'change' ) {
+                                                                    let fname = filename.trim()
+                                                                    if ( fname.substr(0,2) === '._' ) return
+                                                                    asset_record_add_or_update(fname)
+                                                                }
                                                             });
 
 // ---- ---- ---- ---- ---- ---- ---- ---- ----
 //
 //
 function asset_record_add_or_update(filename) {
+    console.log(` ....  ${filename}` )
     // require this to be a json file
+    if ( filename.substr(0,2) === '._' ) return
     if ( path.extname(filename) === '.json' ) {
         let fpath = g_update_dir + '/' + filename
         file_watch_handler(fpath,add_just_one_new_asset)
@@ -275,12 +285,15 @@ function asset_record_add_or_update(filename) {
 
 
 async function add_just_one_new_asset(fdata) {
-    try {
-        let f_obj = JSON.parse(fdata)
-        g_search_interface.add_just_one(f_obj)
-        addToCustomSearch(f_obj,is_new)                      /// custom search for users in memory
-    } catch (e) {
-        console.log(e)
+    if ( fdata.length > 1 ) {
+        try {
+            let f_obj = JSON.parse(fdata)
+            g_search_interface.add_just_one(f_obj)
+            let is_new = true
+            addToCustomSearch(f_obj,is_new)                      /// custom search for users in memory
+        } catch (e) {
+            console.log(e)
+        }    
     }
 }
 
@@ -346,8 +359,15 @@ function rate_limit_redirect(req,res) {
 
 // ---- ---- ---- ---- HTML APPLICATION PATHWAYS  ---- ---- ---- ---- ---- ---- ----
 
+app.get('/',(req, res) => {
+    res.end("THIS SERVER IS WORKING")
+})
+
 
 app.get('/:uid/:query/:bcount/:offset', async (req, res) => {
+
+    console.dir(req.params)
+    //
     let uid = req.params.uid;
     if ( rate_limited(uid) ) {
         return rate_limit_redirect(req,res)
@@ -357,8 +377,9 @@ app.get('/:uid/:query/:bcount/:offset', async (req, res) => {
     res.send(data)
 })
 
-app.get('/custom/:op/:owner/:uid/:query/:bcount/:offset', async (req, res) => {
-    let uid = req.params.uid;
+
+
+app.get('/custom/:owner/:query/:bcount/:offset', async (req, res) => {
     let owner = req.params.owner;
     if ( rate_limited(owner) ) {
         return rate_limit_redirect(req,res)
@@ -376,6 +397,7 @@ app.get('/custom/:op/:owner/:uid/:query/:bcount/:offset', async (req, res) => {
     res.send(data)
 })
 
+// _tracking	"e9cb10ba-1bf4-4078-9561-b267cf096c72"
 
 app.post('/custom/:op/:owner', async (req, res) => {
     let uid = req.params.owner;
@@ -406,12 +428,13 @@ app.get('/cycle/:halt', (req, res) => {
     res.send("OK")
 })
 
+/*
+*/
 
 app.get('/reload',(req, res) => {
     load_directory(g_subdir)
     res.send("OK")
 })
-
 
 // ---- ---- ---- ---- RUN  ---- ---- ---- ---- ---- ---- ---- ----
 // // // 

@@ -4,7 +4,7 @@
 
 const {Searching} = require('./searching.js')
 
-
+const SCORE_THRESHOLD = 0.5
 
 
 // utility : count_occurances

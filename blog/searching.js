@@ -7,7 +7,7 @@ class QueryResult {
     constructor(query,restore) {
         this.original_query = query // for record keeping
         if ( restore === undefined ) {
-            let normalized_query = this.normalize_query(query_desr_str)
+            let normalized_query = this.normalize_query(query)
             this.stored_data = []  // will be set later
             this.query = normalized_query
             this.when = Date.now()
@@ -44,13 +44,13 @@ class QueryResult {
     //      'dates' { 'create_date' : <number>, 'update_date' : <number> }
     //  }
 
-    normalize_query(query_desr_str) {
+    normalize_query(query_descr_str) {
         let orderby = 'create_date'
         let match_text = 'any'
 
-        query_desr_str = query_desr_str.trim()
+        query_descr_str = query_descr_str.trim()
         try {
-            let qparts = query_desr_str.split("|")
+            let qparts = query_descr_str.split("|")
             qparts = qparts.map(apart => { return apart.trim() })
             match_text = decodeURIComponent(qparts[0])
             orderby = qparts[1]
@@ -62,7 +62,7 @@ class QueryResult {
         if ( match_text === 'any' || match_text === "" ) {  // only got the second part (ordering) 'any|something' or '|something'
             if ( [ 'update_date', 'score', 'create_date'].indexOf(orderby) < 0 ) {
                 orderby = 'create_date'
-                query_desr_str = `${match_text}|create_date`
+                query_descr_str = `${match_text}|create_date`
             }
         }
 
@@ -72,21 +72,25 @@ class QueryResult {
 
         switch ( orderby ) {
             case 'update_date' :  {
-                query_desr_str = `${match_text}|update_date`
+                query_descr_str = `${match_text}|update_date`
                 break;
             }
             case 'score' : {
-                query_desr_str = `${match_text}|score`
+                query_descr_str = `${match_text}|score`
                 break;
             }
-            case 'create_date' :
+            case 'create_date' : {
+                query_descr_str = `${match_text}|create_date`
+                break;
+            }
             default: {
-                query_desr_str = `${match_text}|create_date`
+                orderby = orderby.trim()
+                query_descr_str = `${match_text}|${orderby}`
                 break;
             }
         }
 
-        return(query_desr_str)
+        return(query_descr_str)
     }
 
 
@@ -103,6 +107,12 @@ class QueryResult {
         let returned_data = this.stored_data.slice(offset,offset + box_count)
         let count = this.stored_data.length
 
+        returned_data = returned_data.map(item_holder => {
+            let out = Object.assign({},item_holder.item_ref)
+            out.entry = item_holder.entry
+            return out
+        })
+
         return {
             "data" : returned_data,  // the current small bucket set of data to fit the user view
             "length" : returned_data.length,
@@ -110,11 +120,17 @@ class QueryResult {
             "count" : count         // number of possible results to view
         }
     }
-    
 
 }
 
 
+
+
+const SPECIAL_KEY_LENGTH = '_zz_srch_X_field:'.length
+const SPECIAL_KEY_NAME = '_zz_srch_X_field:'
+
+const SPECIAL_FUNC_KEY_LENGTH = '_zz_srch_X_func..'.length
+const SPECIAL_FUNC_KEY_NAME = '_zz_srch_X_func..'
 
 
 
@@ -123,7 +139,7 @@ class Searching {
     //
     constructor(conf,QueryInterfaceClass) {
         //  these are to be external references -- set_global_file_list_refs or no searching...
-        this.global_file_list = {}
+        this.global_file_list = []
         this.global_file_list_by = {}
         //
         this.local_active_searches = {}
@@ -145,8 +161,11 @@ class Searching {
         let q = new QueryResult(query)
         let [match_text,orderby] = q.query.split('|')
         let data = this._run_query(match_text,orderby)
-        q.set_data(data)
-        return [q,q.query]
+        if ( data.length ) {
+            q.set_data(data)
+            return [q,q.query]    
+        }
+        return [false,false]
     }
 
 
@@ -161,9 +180,12 @@ class Searching {
         } else {
             // could not find one so create a new one...
             let [q_obj, normalized_query] = await this.run_query(query)
-            this.local_active_searches[normalized_query] = q_obj
-            let data_descr = q_obj.access(offset,box_count)
-            return data_descr
+            if ( q_obj === false ) return []
+            else {
+                this.local_active_searches[normalized_query] = q_obj
+                let data_descr = q_obj.access(offset,box_count)
+                return data_descr    
+            }
         }
     }
 
@@ -176,6 +198,43 @@ class Searching {
         return this.global_file_list_by["create_date"]
     }
 
+
+    search_one_all_files(field,match_text) {
+        let list = this.global_file_list_by["update_date"]
+        let n = list.length
+        for ( let i = 0; i < n; i++ ) {
+            let item = list[i]
+            if ( item[field] ===  match_text ) {
+                return [ item ]
+            }
+        }
+        return []
+    }
+
+
+    search_by_field_all_files(field,match_text) {
+        let results = this.global_file_list.reduce((prev,current) => {
+            if ( current[field] ===  match_text ) {
+                prev.push(current)
+            }
+            return(prev)
+        },[])
+        return results
+    }
+
+    search_by_function_all_files(funcdef) {
+        let results = this.global_file_list.reduce((prev,current) => {
+            try {
+                if ( funcdef(current) ) {
+                    prev.push(current)
+                }    
+            } catch (e) {}
+            return(prev)
+        },[])
+        return results
+    }
+
+    
 
     
     // ORDERING....
@@ -217,7 +276,7 @@ class Searching {
    
     // implement in descendant
     score_match(check_txt,q_list,mult) {
-        let scort = 1.0
+        let score = 1.0
         return(score*mult)
     }
     
@@ -231,48 +290,72 @@ class Searching {
     // _run_query
     _run_query(match_text,orderby) {
 
+        let results = []
+
         if ( match_text === 'any' ) {
-            let results = this.from_all_files(orderby)
-            return results
+            //
+            results = this.from_all_files(orderby)
+            //
+        } else if ( orderby === '_zz_srch_X_id' ) {
+            //
+            results = this.search_one_all_files("_id",match_text)
+            //
+        } else if ( orderby.substr(0,SPECIAL_KEY_LENGTH) === SPECIAL_KEY_NAME ) {
+            //
+            let field = orderby.substr(SPECIAL_KEY_LENGTH)
+            results = this.search_by_field_all_files(field,match_text)
+            //
+        } else if ( orderby.substr(0,SPECIAL_FUNC_KEY_LENGTH) === SPECIAL_FUNC_KEY_NAME ) {
+            let funcdef
+            try {
+                eval(match_text)
+                results = this.search_by_function_all_files(funcdef)
+            } catch (e) {}
+        } else {
+
+            try {
+
+                results = this.global_file_list.reduce((prev,current) => {
+                    if ( this.good_match(current,match_text) ) {
+                        prev.push(current)
+                    }
+                    return(prev)
+                },[])
+    
+                switch ( orderby ) {
+                    case 'update_date' :  {
+                        results = this.sort_by_updated(results)
+                        break;
+                    }
+                    case 'score' : {
+                        results = this.sort_by_score(results)
+                        break;
+                    }
+                    case 'create_date' :
+                    default: {
+                        results = this.sort_by_created(results)
+                        break;
+                    }
+                }
+            } catch(e) {
+                console.log(e)
+                return([])  // something went wrong... so nothing
+            }
+    
         }
 
-        try {
-
-            let results = this.global_file_list.reduce((prev,current) => {
-                if ( this.good_match(current,match_text) ) {
-                    prev.push(current)
-                }
-                return(prev)
-            },[])
-
-            switch ( orderby ) {
-                case 'update_date' :  {
-                    results = this.sort_by_updated(results)
-                    break;
-                }
-                case 'score' : {
-                    results = this.sort_by_score(results)
-                    break;
-                }
-                case 'create_date' :
-                default: {
-                    results = this.sort_by_created(results)
-                    break;
-                }
-            }
-
-            // creating copies of the objects 
+        if ( results.length ) {
+            // don't create copies... keep a index for the viewer.. but ref the object fix it on delivery
             results = results.map((item,index)=> {
-                let c_item = Object.assign({},item)
-                c_item.entry = index + 1
+                let c_item = {
+                    "entry" : index + 1,
+                    "item_ref" : item
+                }
                 return(c_item)
             })
-
-            return results      // the list of matching items
-        } catch(e) {
-            console.log(e)
-            return([])  // something went wrong... so nothing
         }
+        //
+        return results      // the list of matching items
     }
 
 
@@ -346,7 +429,7 @@ class Searching {
             let stored_obj = JSON.parse(searchbkp)    
             for ( let k in stored_obj ) {
                 let restored = stored_obj[k]
-                let q = new QueryResult('',false,false,restored)
+                let q = new QueryResult('',restored)
                 this.local_active_searches[k] = q
             }
 
@@ -381,12 +464,21 @@ class Searching {
             this.global_file_list_by["create_date"].unshift(f_obj)
             this.global_file_list_by["update_date"].unshift(f_obj)    
         } else {
-            if ( f_obj.is_updating ) {
+            if ( f_obj._tracking ) {
+                let found = false
                 let n = this.global_file_list.length
                 for ( let i = 0; i < n; i++ ) {
-                    if ( this.global_file_list[i].asset_id === f_obj.asset_id ) {
-                        this.global_file_list[i] = f_obj
+                    if ( this.global_file_list[i]._tracking === f_obj._tracking ) {
+                        let stored = this.global_file_list[i]
+                        Object.assign(stored,f_obj)
+                        found = true
+                        break;
                     }
+                }
+                if ( !found ) {
+                    this.global_file_list.push(f_obj)
+                    f_obj.entry = this.global_file_list.length
+                    f_obj.score = 1.0    
                 }
                 this.update_global_file_list_quotes_by()
             } else {
