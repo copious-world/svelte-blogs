@@ -108,9 +108,16 @@ class QueryResult {
         let count = this.stored_data.length
 
         returned_data = returned_data.map(item_holder => {
+            if ( (item_holder.item_ref._tracking === false) && (item_holder.item_ref._xxzz_removed = trues) ) {
+                return null
+            }
             let out = Object.assign({},item_holder.item_ref)
-            out.entry = item_holder.entry
+            out.entry = item_holder.entry            
             return out
+        })
+
+        returned_data = returned_data.filter(item => {
+            return (item !== null)
         })
 
         return {
@@ -488,6 +495,21 @@ class Searching {
                 this.update_global_file_list_quotes_by()
             }
         }
+    }
+
+
+    remove_just_one(f_obj) {
+        if ( f_obj._tracking ) {
+            let found = false
+            let n = this.global_file_list.length
+            for ( let i = 0; i < n; i++ ) {
+                if ( this.global_file_list[i]._tracking === f_obj._tracking ) {
+                    let stored = this.global_file_list[i]
+                    stored._tracking = false
+                    stored._xxzz_removed = true
+                }
+            }
+        }      
     }
 }
 
