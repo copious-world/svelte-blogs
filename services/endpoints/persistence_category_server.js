@@ -48,7 +48,7 @@ class TransitionsPersistenceEndpoint extends PersistenceMessageEndpoint {
 
     make_path(u_obj) {
         let key_field = u_obj.key_field ?  u_obj.key_field : u_obj._transition_path
-        let asset_info = u_obj[key_field]   // dashboard+striking@pp.com
+        let asset_info = u_obj[key_field]   // dashboard+striking@pp.com  profile+striking@pp.com
         if ( !(asset_info) ) return(false)
         if ( asset_info.indexOf('+') < 0 ) {
             console.log(`malformed file specifier in ${__filename}`)
@@ -78,13 +78,13 @@ console.log(user_path)
             let d_obj = JSON.parse(data)
             //
             let key_field = u_obj.key_field ?  u_obj.key_field : u_obj._transition_path
-            let asset_info = u_obj[key_field]   // dashboard+striking@pp.com
+            let asset_info = u_obj[key_field]   // dashboard+striking@pp.com  profile+striking@pp.com
             if ( asset_info )  {
                 asset_info = asset_info.split('+')
                 let user_id = asset_info.pop()
                 d_obj.owner = user_id
                 d_obj.email = user_id
-                d_obj._id = asset_info
+                d_obj.id = asset_info
                 d_obj.which_dashboard = faux_random_enough()
                 data = {
                     "mime_type" : "application/json",
@@ -102,23 +102,23 @@ console.log(user_path)
     async user_action_keyfile(op,u_obj,field,value) {
         switch ( op ) {
             case 'C' : {
-                let key_field = u_obj.key_field ?  u_obj.key_field : u_obj._transition_path
-                let asset_info = u_obj[key_field]   // dashboard+striking@pp.com
+                let key_field = u_obj.key_field ? u_obj.key_field : u_obj._transition_path
+                let asset_info = u_obj[key_field]   // dashboard+striking@pp.com  profile+striking@pp.com
         
                 asset_info = asset_info.split('+')
                 //
                 let user_path = this.user_directory
                 let user_id = asset_info.pop()
+                let entry_type = asset_info.pop()
+                let file = asset_info.pop()
+                //
                 user_path += '/' + user_id
                 //
-                let entries_file = user_path + "/dashboard.json"
+                let entries_file = user_path + `/${file}.json`
                 let entries_record = await fsPromises.readFile(entries_file)
                 entries_record = JSON.parse(entries_record.toString())
                 //
-                let entry_type = asset_info.pop()
                 user_path += '/' + entry_type
-                //
-                let file = asset_info.pop()
                 user_path += '/' + file + ".json"
                 //
                 u_obj.file_name = user_path
@@ -128,28 +128,29 @@ console.log(user_path)
                 entries_record.entries[entry_type].push(u_obj)
                 entries_record = JSON.stringify(entries_record)
                 await fsPromises.writeFile(entries_file,entries_record)
-                this.app_publish('user-dashboard',dashboard)
+                let topic = 'user-' + file
+                this.app_publish(topic,dashboard)
                 break;
             }
             case 'U' : {
                 let key_field = u_obj.key_field ?  u_obj.key_field : u_obj._transition_path
-                let asset_info = u_obj[key_field]   // dashboard+striking@pp.com
+                let asset_info = u_obj[key_field]   // dashboard+striking@pp.com  profile+striking@pp.com
 
                 asset_info = asset_info.split('+')
                 //
                 let user_path = this.user_directory
                 let user_id = asset_info.pop()
+                let entry_type = asset_info.pop()
+                let file = asset_info.pop()
+                //
                 user_path += '/' + user_id
                 //
-                let entries_file = user_path + "/dashboard.json"
+                let entries_file = user_path + `/${file}.json`
                 let entries_record = await fsPromises.readFile(entries_file)
                 entries_record = JSON.parse(entries_record.toString())
                 let dashboard = entries_record
                 //
-                let entry_type = asset_info.pop()
                 user_path += '/' + entry_type
-                //
-                let file = asset_info.pop()
                 user_path += '/' + file + ".json"
                 //
                 u_obj.file_name = user_path
@@ -157,7 +158,7 @@ console.log(user_path)
                     let entry_list = entries_record.entries[entry_type]
                     for ( let i = 0; i < entry_list.length; i++ ) {
                         let entry = entry_list[i]
-                        if ( entry.id == u_obj.id ) {
+                        if ( entry._id == u_obj._id ) {
                             entry_list[i] = u_obj
                             break;
                         }
@@ -166,27 +167,28 @@ console.log(user_path)
                 //
                 entries_record = JSON.stringify(entries_record)
                 await fsPromises.writeFile(entries_file,entries_record)
-                this.app_publish('user-dashboard',dashboard)
+                let topic = 'user-' + file
+                this.app_publish(topic,dashboard)
                 break;
             }
-            case 'F' : {
+            case 'F' : {        // change one field
                 let key_field = u_obj.key_field ?  u_obj.key_field : u_obj._transition_path
-                let asset_info = u_obj[key_field]   // dashboard+striking@pp.com
+                let asset_info = u_obj[key_field]   // dashboard+striking@pp.com  profile+striking@pp.com
                 //
                 asset_info = asset_info.split('+')
                 //
                 let user_path = this.user_directory
                 let user_id = asset_info.pop()
+                let entry_type = asset_info.pop()
+                let file = asset_info.pop()
+                //
                 user_path += '/' + user_id
                 //
-                let entries_file = user_path + "/dashboard.json"
+                let entries_file = user_path + `/${file}.json`
                 let entries_record = await fsPromises.readFile(entries_file)
                 entries_record = JSON.parse(entries_record.toString())
                 //
-                let entry_type = asset_info.pop()
                 user_path += '/' + entry_type
-                //
-                let file = asset_info.pop()
                 user_path += '/' + file + ".json"
                 //
                 u_obj.file_name = user_path
@@ -194,7 +196,7 @@ console.log(user_path)
                     let entry_list = entries_record.entries[entry_type]
                     for ( let i = 0; i < entry_list.length; i++ ) {
                         let entry = entry_list[i]
-                        if ( entry.id == u_obj.id ) {
+                        if ( entry._id == u_obj._id ) {
                             entry[field] = value
                             break;
                         }
@@ -203,7 +205,8 @@ console.log(user_path)
                 //
                 entries_record = JSON.stringify(entries_record)
                 await fsPromises.writeFile(entries_file,entries_record)
-                this.app_publish('user-dashboard',dashboard)
+                let topic = 'user-' + file
+                this.app_publish(topic,dashboard)
                 break;
             }
             case 'D' : {
