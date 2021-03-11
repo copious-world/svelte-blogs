@@ -107,8 +107,10 @@ class QueryResult {
         let returned_data = this.stored_data.slice(offset,offset + box_count)
         let count = this.stored_data.length
 
-        returned_data = returned_data.map(item_holder => {
-            if ( (item_holder.item_ref._tracking === false) && (item_holder.item_ref._xxzz_removed = trues) ) {
+        let removals = []
+        returned_data = returned_data.map((item_holder,index) => {
+            if ( (item_holder.item_ref._tracking === false) && (item_holder.item_ref._xxzz_removed === true) ) {
+                removals.push((offset + index))
                 return null
             }
             let out = Object.assign({},item_holder.item_ref)
@@ -116,15 +118,53 @@ class QueryResult {
             return out
         })
 
-        returned_data = returned_data.filter(item => {
-            return (item !== null)
-        })
+        if ( removals.length ) {
+            returned_data = returned_data.filter(item => {
+                return (item !== null)
+            })
+            while ( removals.length > 0 ) {
+                let index = removals.pop()
+                if ( index < this.stored_data.length ) {
+                    this.stored_data.splice(index,1)
+                }
+            }
+        }
 
         return {
             "data" : returned_data,  // the current small bucket set of data to fit the user view
             "length" : returned_data.length,
             "offset" : offset,
             "count" : count         // number of possible results to view
+        }
+    }
+
+
+
+    inject(f_obj,ordering) {
+        //
+        let ref = {
+            "entry" : this.stored_data.length,
+            "item_ref" : f_obj
+        }
+        if ( ordering === 'score' ) {
+            let score = f_obj.score
+            let n = this.stored_data.length
+            let inserted = false
+            for ( let i = 0; i < n; i++ ) {
+                let oref = this.stored_data[i]
+                let test_obj = oref.item_ref
+                if ( test_obj.score < score ) {
+                    this.stored_data.splice(i,0,ref)
+                    inserted = true
+                    break;
+                }
+            }
+            if ( !(inserted) ) {
+                this.stored_data.push(ref)
+            }
+
+        } else {
+            this.stored_data.unshift(ref)
         }
     }
 
@@ -139,6 +179,7 @@ const SPECIAL_KEY_NAME = '_zz_srch_X_field:'
 const SPECIAL_FUNC_KEY_LENGTH = '_zz_srch_X_func..'.length
 const SPECIAL_FUNC_KEY_NAME = '_zz_srch_X_func..'
 
+const SPECIAL_ID_KEY_NAME = '_zz_srch_X_id'
 
 
 class Searching {
@@ -241,7 +282,20 @@ class Searching {
         return results
     }
 
-    
+    attempt_join_searches(f_obj) {
+        let searches = this.local_active_searches
+        for ( let query in searches ) {
+            let q = searches[query]
+            let [match_text,orderby] = q.query.split('|')
+            if ( match_text !== 'any' ) {
+                if ( this.good_match(f_obj,match_text) ) {
+                    q.inject(f_obj,orderby)
+                }
+            } else {
+                q.inject(f_obj,orderby)
+            }
+        }
+    }
 
     
     // ORDERING....
@@ -292,7 +346,7 @@ class Searching {
     }
     // END OF ORDERING....
 
-
+    
 
     // _run_query
     _run_query(match_text,orderby) {
@@ -303,7 +357,7 @@ class Searching {
             //
             results = this.from_all_files(orderby)
             //
-        } else if ( orderby === '_zz_srch_X_id' ) {
+        } else if ( orderby === SPECIAL_ID_KEY_NAME ) {
             //
             results = this.search_one_all_files("_id",match_text)
             //
@@ -319,16 +373,16 @@ class Searching {
                 results = this.search_by_function_all_files(funcdef)
             } catch (e) {}
         } else {
-
+            //
             try {
-
+                //
                 results = this.global_file_list.reduce((prev,current) => {
                     if ( this.good_match(current,match_text) ) {
                         prev.push(current)
                     }
                     return(prev)
                 },[])
-    
+                //
                 switch ( orderby ) {
                     case 'update_date' :  {
                         results = this.sort_by_updated(results)
@@ -348,9 +402,8 @@ class Searching {
                 console.log(e)
                 return([])  // something went wrong... so nothing
             }
-    
         }
-
+        //
         if ( results.length ) {
             // don't create copies... keep a index for the viewer.. but ref the object fix it on delivery
             results = results.map((item,index)=> {
@@ -463,13 +516,14 @@ class Searching {
                 "updated" : Date.now()
             }
         }
-        //
+        // 
         if ( is_new ) {
             this.global_file_list.unshift(f_obj)
             f_obj.entry = this.global_file_list.length
             f_obj.score = 1.0
             this.global_file_list_by["create_date"].unshift(f_obj)
             this.global_file_list_by["update_date"].unshift(f_obj)    
+            this.attempt_join_searches(f_obj)
         } else {
             if ( f_obj._tracking ) {
                 let found = false
@@ -486,6 +540,7 @@ class Searching {
                     this.global_file_list.push(f_obj)
                     f_obj.entry = this.global_file_list.length
                     f_obj.score = 1.0    
+                    this.attempt_join_searches(f_obj)
                 }
                 this.update_global_file_list_quotes_by()
             } else {
@@ -493,23 +548,59 @@ class Searching {
                 f_obj.entry = this.global_file_list.length
                 f_obj.score = 1.0
                 this.update_global_file_list_quotes_by()
+                this.attempt_join_searches(f_obj)
             }
         }
     }
 
 
-    remove_just_one(f_obj) {
-        if ( f_obj._tracking ) {
-            let found = false
-            let n = this.global_file_list.length
+    remove_just_one(tracking) {
+        //
+        let n = this.global_file_list.length
+        let remove_index = -1
+        //
+        let stored = false
+        for ( let i = 0; i < n; i++ ) {
+            if ( this.global_file_list[i]._tracking === tracking ) {
+                stored = this.global_file_list[i]
+                stored._tracking = false
+                stored._xxzz_removed = true
+                remove_index = i
+                break
+            }
+        }
+        //
+        if ( remove_index >= 0 ) {
+            this.global_file_list.splice(remove_index,1)
+        }
+        //
+        for ( let ky in this.global_file_list_by ) {
+            let list = this.global_file_list_by[ky]
             for ( let i = 0; i < n; i++ ) {
-                if ( this.global_file_list[i]._tracking === f_obj._tracking ) {
-                    let stored = this.global_file_list[i]
-                    stored._tracking = false
-                    stored._xxzz_removed = true
+                if ( list[i]._xxzz_removed ) {
+                    remove_index = i
+                    break
                 }
             }
-        }      
+            if ( remove_index >= 0 ) {
+                list.splice(remove_index,1)
+            }
+        }
+
+        if ( stored !== false ) {
+            let individual_search = `${tracking}|_zz_srch_X_field:_tracking`
+            let q = this.local_active_searches[individual_search]
+            if ( q !== undefined ) {
+                delete this.local_active_searches[individual_search]
+            }
+            if ( stored._id !== undefined ) {{
+                let id_search = `${stored._id}|${SPECIAL_ID_KEY_NAME}`
+                q = this.local_active_searches[id_search]
+                if ( q !== undefined ) {
+                    delete this.local_active_searches[id_search]
+                }
+            }}
+        }
     }
 }
 

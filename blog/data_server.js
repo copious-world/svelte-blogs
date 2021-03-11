@@ -236,9 +236,10 @@ async function paritcular_interface_info(item_key) {
 //
 // The persistence endpoint that relays files out to dashboard, profiles, and other user specific
 // transitional frontend services...
-let g_message_relayer = g_conf.persistence ? new MessageRelayer(g_conf.persistence) : false
+//let g_message_relayer = g_conf.persistence ? new MessageRelayer(g_conf.persistence) : false
 
 // SUBSCRIBE to the publication events destined for this service....
+/*
 if ( g_message_relayer && g_conf.subscribe ) {
     g_message_relayer.subscribe(g_conf.subscribe,{},(obj) => {
         // should be about a new blog entry....
@@ -251,7 +252,7 @@ if ( g_message_relayer && g_conf.subscribe ) {
             }
         }
     })
-}
+}*/
 
 
 // ---- ----  ---- ---- WATCH SUBDIRECTORY....
@@ -263,10 +264,15 @@ let g_watch_for_new_files = fs.watch(g_update_dir)  // watch for files in only o
 
 // FILE CHANGE LISTENER
 g_watch_for_new_files.on('change', (eventType, filename) => {
+    console.log(` eventType ....  ${eventType}` )
                                                                 if ( eventType === 'change' ) {
                                                                     let fname = filename.trim()
                                                                     if ( fname.substr(0,2) === '._' ) return
                                                                     asset_record_add_or_update(fname)
+                                                                } else if ( eventType === 'rename' ) {
+                                                                    let fname = filename.trim()
+                                                                    if ( fname.substr(0,2) === '._' ) return
+                                                                    asset_record_handle_remove(fname)
                                                                 }
                                                             });
 
@@ -284,6 +290,14 @@ function asset_record_add_or_update(filename) {
 }
 
 
+function asset_record_handle_remove(filename) {
+    if ( path.extname(filename) === '.json' ) {
+        let fpath = g_update_dir + '/' + filename
+        file_watch_handler(fpath,false,remove_just_one_asset,filename)
+    }
+}
+
+
 async function add_just_one_new_asset(fdata) {
     if ( fdata.length > 1 ) {
         try {
@@ -294,6 +308,17 @@ async function add_just_one_new_asset(fdata) {
         } catch (e) {
             console.log(e)
         }    
+    }
+}
+
+
+async function remove_just_one_asset(fname) {
+    if ( fname.indexOf('+') > 0 ) {
+        let asset_name = fname.replace('.json','')
+        if( asset_name != fname ) {
+            let [tracking,type,email] = fname.split('+')
+            g_search_interface.remove_just_one(tracking)
+        }
     }
 }
 
@@ -377,6 +402,19 @@ app.get('/:uid/:query/:bcount/:offset', async (req, res) => {
     res.send(data)
 })
 
+// { uid: '12345', query: 'any', bcount: '1', offset: '1' }
+//
+app.post('/:uid/:query/:bcount/:offset', async (req, res) => {
+    console.dir(req.params)
+    
+    let uid = req.params.uid;
+    if ( rate_limited(uid) ) {
+        return rate_limit_redirect(req,res)
+    }
+
+    let data = await process_search(req)
+    res.send(data)
+})
 
 
 app.get('/custom/:owner/:query/:bcount/:offset', async (req, res) => {
