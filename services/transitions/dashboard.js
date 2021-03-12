@@ -39,7 +39,7 @@ function occlude(password) {
 }
 */
 
-function storage_string_from_object(obj) {
+function storage_string_from_object(obj,path_key) {
     let date = (new Date()).toISOString()
     let dash_obj = {
         "user_name" : obj._email,
@@ -51,6 +51,7 @@ function storage_string_from_object(obj) {
         },
         "tag_line" : "<button id='dashboard-tagline-maker' onclick='make_dashoard_tagline(event)'>add tag line</button>",
         "panel_key" : occlude(obj.password),
+        "path_key" : path_key,  /// should be "dashboard"
         "dashboard_text" : "<button id='dashboard-text-maker' onclick='make_dashoard_text(event)'>add text</button>",
         "entries" : {}
     }

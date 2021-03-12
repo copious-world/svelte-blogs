@@ -85,7 +85,12 @@ console.log(user_path)
                 d_obj.owner = user_id
                 d_obj.email = user_id
                 d_obj.id = asset_info
-                d_obj.which_dashboard = faux_random_enough()
+                let path_key = d_obj.path_key
+                if ( path_key ) {
+                    d_obj[`which_${path_key}`] = faux_random_enough()  // a name for the application tab...
+                } else {
+                    d_obj.which_tab_name = faux_random_enough()
+                }
                 data = {
                     "mime_type" : "application/json",
                     "string" : JSON.stringify(d_obj)
@@ -110,16 +115,16 @@ console.log(user_path)
                 let user_path = this.user_directory
                 let user_id = asset_info.pop()
                 let entry_type = asset_info.pop()
-                let file = asset_info.pop()
+                let asset_file_base = asset_info.pop()
                 //
                 user_path += '/' + user_id
                 //
-                let entries_file = user_path + `/${file}.json`
+                let entries_file = user_path + `/${asset_file_base}.json`
                 let entries_record = await fsPromises.readFile(entries_file)
                 entries_record = JSON.parse(entries_record.toString())
                 //
                 user_path += '/' + entry_type
-                user_path += '/' + file + ".json"
+                user_path += '/' + asset_file_base + ".json"
                 //
                 u_obj.file_name = user_path
                 if ( entries_record.entries[entry_type] === undefined ) {
@@ -128,8 +133,8 @@ console.log(user_path)
                 entries_record.entries[entry_type].push(u_obj)
                 entries_record = JSON.stringify(entries_record)
                 await fsPromises.writeFile(entries_file,entries_record)
-                let topic = 'user-' + file
-                this.app_publish(topic,dashboard)
+                let topic = 'user-' + asset_file_base
+                this.app_publish(topic,entries_record)
                 break;
             }
             case 'U' : {
@@ -141,17 +146,16 @@ console.log(user_path)
                 let user_path = this.user_directory
                 let user_id = asset_info.pop()
                 let entry_type = asset_info.pop()
-                let file = asset_info.pop()
+                let asset_file_base = asset_info.pop()
                 //
                 user_path += '/' + user_id
                 //
-                let entries_file = user_path + `/${file}.json`
+                let entries_file = user_path + `/${asset_file_base}.json`
                 let entries_record = await fsPromises.readFile(entries_file)
                 entries_record = JSON.parse(entries_record.toString())
-                let dashboard = entries_record
                 //
                 user_path += '/' + entry_type
-                user_path += '/' + file + ".json"
+                user_path += '/' + asset_file_base + ".json"
                 //
                 u_obj.file_name = user_path
                 if ( entries_record.entries[entry_type] !== undefined ) {
@@ -167,8 +171,8 @@ console.log(user_path)
                 //
                 entries_record = JSON.stringify(entries_record)
                 await fsPromises.writeFile(entries_file,entries_record)
-                let topic = 'user-' + file
-                this.app_publish(topic,dashboard)
+                let topic = 'user-' + asset_file_base
+                this.app_publish(topic,entries_record)
                 break;
             }
             case 'F' : {        // change one field
@@ -180,16 +184,16 @@ console.log(user_path)
                 let user_path = this.user_directory
                 let user_id = asset_info.pop()
                 let entry_type = asset_info.pop()
-                let file = asset_info.pop()
+                let asset_file_base = asset_info.pop()
                 //
                 user_path += '/' + user_id
                 //
-                let entries_file = user_path + `/${file}.json`
+                let entries_file = user_path + `/${asset_file_base}.json`
                 let entries_record = await fsPromises.readFile(entries_file)
                 entries_record = JSON.parse(entries_record.toString())
                 //
                 user_path += '/' + entry_type
-                user_path += '/' + file + ".json"
+                user_path += '/' + asset_file_base + ".json"
                 //
                 u_obj.file_name = user_path
                 if ( entries_record.entries[entry_type] !== undefined ) {
@@ -205,8 +209,8 @@ console.log(user_path)
                 //
                 entries_record = JSON.stringify(entries_record)
                 await fsPromises.writeFile(entries_file,entries_record)
-                let topic = 'user-' + file
-                this.app_publish(topic,dashboard)
+                let topic = 'user-' + asset_file_base
+                this.app_publish(topic,entries_record)
                 break;
             }
             case 'D' : {

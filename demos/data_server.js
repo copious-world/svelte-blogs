@@ -85,6 +85,9 @@ class SearchesByUser {
 
 
 
+/// ------------------------------------  EXPRESS APP
+
+
 var bodyParser = require('body-parser');
 var cors = require('cors')
 
@@ -100,6 +103,10 @@ app.use(urlencodedParser)
 app.use(jsonParser)
 //app.use(cors)
 // ----
+
+
+/// ------------------------------------  EXPRESS APP
+
 
 //
 const PRUNE_MINUTES = 30

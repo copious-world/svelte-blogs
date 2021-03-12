@@ -5,6 +5,7 @@ const user_profile_generator = require("../transitions/profile").generator
 
 
 const fs = require('fs')
+const crypto = require('crypto')
 
 let conf_file = 'relay-service.conf'
 let conf_par = process.argv[2]
@@ -14,10 +15,35 @@ if ( conf_par !== undefined ) {
 
 let conf = JSON.parse(fs.readFileSync(conf_file).toString())
 
+// _gen_targets is used each time a new user is created...
 conf.user_endpoint._gen_targets = {
-    "profile" : user_profile_generator,
-    "dashboard" : user_dashboard_generator,
+    "profile" : user_profile_generator,         // generator function...
+    "dashboard" : user_dashboard_generator,     // generator function...
     "extension" : ".json"
 }
 
-new UserMessageEndpoint(conf.user_endpoint)
+
+//  app_generate_tracking(msg_obj)
+
+function do_hash (text) {
+    const hash = crypto.createHash('sha256');
+    hash.update(text);
+    let ehash = hash.digest('hex');
+    return(ehash)
+}
+
+
+
+class TransitionsUserEndpoint extends PersistenceMessageEndpoint {
+
+    constructor(conf) {
+        super(conf)
+    }
+
+    app_generate_tracking(u_obj) {
+        let uobj_str = JSON.stringify(u_obj)
+        return(do_hash(uobj_str))
+    }
+}
+
+new TransitionsUserEndpoint(conf.user_endpoint)

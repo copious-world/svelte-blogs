@@ -40,7 +40,7 @@ function occlude(password) {
 
 
 
-function storage_string_from_object(obj) {
+function storage_string_from_object(obj,path_key) {
     let date = (new Date()).toISOString()
     let prof_obj = {
         "user_name" : obj._email,
@@ -52,9 +52,10 @@ function storage_string_from_object(obj) {
         },
         "tag_line" : "<button id='profile-tagline-maker' onclick='make_dashoard_tagline(event)'>add tag line</button>",
         "panel_key" : occlude(obj.password),
+        "path_key" : path_key,
         "bio" : "<button id='profile-text-maker' onclick='make_profile_bio(event)'>add bio</button>",
         "image" : "<button id='profile-image-maker' onclick='make_profile_image(event)'>add image</button>",
-        "entries" : {}
+        "entries" : {}      // in the case of the profile, these will be settings... for the user account...
     }
     let str = JSON.stringify(prof_obj)
     return(str)

@@ -83,6 +83,9 @@ class SearchesByUser {
 
 
 
+/// ------------------------------------  EXPRESS APP
+
+
 var bodyParser = require('body-parser');
 var cors = require('cors')
 
@@ -98,6 +101,9 @@ app.use(urlencodedParser)
 app.use(jsonParser)
 app.use(cors)
 // ----
+
+/// ------------------------------------  EXPRESS APP
+
 
 //
 const PRUNE_MINUTES = 30
@@ -214,6 +220,19 @@ async function paritcular_interface_info(item_key) {
     return(result)
 }
 
+//
+function public_view_user(f_obj) {
+    let pub_view = {}
+    for ( let ky in f_obj ) {
+        if ( ky in g_public_viewable_user_fields ) {
+            pub_view[ky] = f_obj[ky]
+        }
+    }
+    return pub_view
+}
+
+
+
 
 // ---- ----  ---- ---- MESSAGE RELAY....(for publishing assets)
 // ---- ----  ---- ---- configure
@@ -260,6 +279,8 @@ console.dir(dash_obj)
    //
 }
 
+
+
 // ---- ----  ---- ---- WATCH SUBDIRECTORY....
 //
 console.log("watchging dir " + g_update_dir)
@@ -269,35 +290,67 @@ let g_watch_for_new_files = fs.watch(g_update_dir)  // watch for files in only o
 
 // FILE CHANGE LISTENER
 g_watch_for_new_files.on('change', (eventType, filename) => {
-                                                                user_record_add_or_update(filename)
+                                                                if ( eventType === 'change' ) {
+                                                                    let fname = filename.trim()
+                                                                    if ( fname.substr(0,2) === '._' ) return
+                                                                    user_record_add_or_update(fname)
+                                                                } else if ( eventType === 'rename' ) {
+                                                                    let fname = filename.trim()
+                                                                    if ( fname.substr(0,2) === '._' ) return
+                                                                    user_record_handle_remove(fname)
+                                                                }
                                                             });
 
-// ---- ---- ---- ---- ---- ---- ---- ---- ----
-// 
+                                              });
 
+// ---- ---- ---- ---- ---- ---- ---- ---- ----
+//
 
 
 //
 function user_record_add_or_update(filename) {
     // require this to be a json file
+    if ( filename.substr(0,2) === '._' ) return
     if ( path.extname(filename) === '.json' ) {
         let fpath = g_update_dir + '/' + filename
         file_watch_handler(fpath,add_just_one_new_user)
     }
 }
 
-//
-function public_view_user(f_obj) {
-    let pub_view = {}
-    for ( let ky in f_obj ) {
-        if ( ky in g_public_viewable_user_fields ) {
-            pub_view[ky] = f_obj[ky]
-        }
+
+
+function user_record_handle_remove(filename) {
+    if ( path.extname(filename) === '.json' ) {
+        let fpath = g_update_dir + '/' + filename
+        file_watch_handler(fpath,false,remove_just_one_user,filename)
     }
-    return pub_view
 }
 
 
+
+// ttt@b.com_d1833d2cc77287f622d748b8bf3e0c53c3272beb069ca907bcc632fe61855855
+//
+async function remove_just_one_user(fname) {
+    if ( fname.indexOf('@') > 0 ) {
+        let asset_name = fname.replace('.json','')
+        if( asset_name != fname ) {
+            let [email,tracking] = fname.split('_')
+            g_search_interface.remove_just_one(tracking)
+        }
+    }
+}
+
+
+
+
+
+
+
+
+
+
+// called in the 'file watch handler' in response to loading a file...
+// fdata comes fromthe file.
 async function add_just_one_new_user(fdata) {
     try {
         let f_obj = JSON.parse(fdata)
@@ -331,6 +384,9 @@ async function add_just_one_new_user(fdata) {
 }
 
 
+// -------- ------------ ---------- --------------
+
+
 async function user_get(uid) {
     //
     let user = g_currently_loaded_users[uid]
@@ -338,10 +394,13 @@ async function user_get(uid) {
         return public_view_user(user)
     }
     //
+    /*
     let user_record = await g_message_relayer_users.remote_fetch_message(uid)
     add_just_one_new_user(user_record)
     user = g_currently_loaded_users[uid]
     return public_view_user(f_obj)
+    */
+   return({})
 }
 
 
@@ -419,6 +478,17 @@ app.get('/:uid/:query/:bcount/:offset', async (req, res) => {
     res.send(data)
 })
 
+
+// { uid: '12345', query: 'any', bcount: '1', offset: '1' }
+//
+app.post('/:uid/:query/:bcount/:offset', async (req, res) => {
+    let uid = req.params.uid;
+    let data = await user_get(uid)
+    res.send(data)
+})
+
+
+
 app.get('/custom/:op/:owner/:uid/:query/:bcount/:offset', async (req, res) => {
     let uid = req.params.uid;
     let owner = req.params.owner;
@@ -435,14 +505,6 @@ app.get('/custom/:op/:owner/:uid/:query/:bcount/:offset', async (req, res) => {
     }
     //
     //
-    res.send(data)
-})
-
-// { uid: '12345', query: 'any', bcount: '1', offset: '1' }
-//
-app.post('/:uid/:query/:bcount/:offset', async (req, res) => {
-    let uid = req.params.uid;
-    let data = await user_get(uid)
     res.send(data)
 })
 
