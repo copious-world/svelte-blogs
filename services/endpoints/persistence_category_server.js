@@ -14,11 +14,25 @@ function faux_random_enough() {
 
 // -- -- -- --
 
+let g_type_to_producer = {}
+
+function map_entry_type_to_producer(entry_type) {
+    let producer_of_type = g_type_to_producer[entry_type]
+    if ( producer_of_type === undefined ) {
+        producer_of_type = "profile"
+    }
+    return producer_of_type
+}
+
+// -- -- -- --
+
 class TransitionsPersistenceEndpoint extends PersistenceMessageEndpoint {
 
     //
     constructor(conf) {
         super(conf)
+        //
+        g_type_to_producer = conf.entry_types_to_producers
         //
         this.app_subscriptions_ok = true
         // ---------------->>  topic, client_name, relayer  (when relayer is false, topics will not be written to self)
@@ -44,11 +58,11 @@ class TransitionsPersistenceEndpoint extends PersistenceMessageEndpoint {
         //
         this.app_message_handler(msg_obj)           // run the handler (often gotten to by relay to endpoint messaging ... this is pub/sub pathway)
         //
-        if ( ( topic === 'command-publish' ) || ( topic === 'command-publish' ) ) {
+        if ( ( topic === 'command-publish' ) || ( topic === 'command-recind' ) ) {
             let op = 'F' // change one field
             let field = 'published'
             let value = msg_obj.published
-            this.user_action_keyfile(op,u_obj,field,value)
+            this.user_action_keyfile(op,msg_obj,field,value)
         }
     }
 
@@ -127,7 +141,8 @@ console.log(user_path)
                 //
                 user_path += '/' + user_id
                 //
-                let entries_file = user_path + `/${asset_file_base}.json`
+                let producer_of_type = map_entry_type_to_producer(entry_type)
+                let entries_file = user_path + `/${producer_of_type}.json`
                 let entries_record = await fsPromises.readFile(entries_file)
                 entries_record = JSON.parse(entries_record.toString())
                 //
@@ -139,10 +154,15 @@ console.log(user_path)
                     entries_record.entries[entry_type] = []
                 }
                 entries_record.entries[entry_type].push(u_obj)
-                entries_record = JSON.stringify(entries_record)
-                await fsPromises.writeFile(entries_file,entries_record)
-                let topic = 'user-' + asset_file_base
-                this.app_publish(topic,entries_record)
+                let entries_record_str = JSON.stringify(entries_record)
+                await fsPromises.writeFile(entries_file,entries_record_str)
+                let topic = 'user-' + producer_of_type
+                //
+                let pub_obj = {
+                    "email" : user_id,
+                }
+                pub_obj[producer_of_type] = encodeURIComponent(entries_record_str)        
+                this.app_publish(topic,pub_obj)
                 break;
             }
             case 'U' : {    // update (read asset_file_base, change, write new)
@@ -158,7 +178,8 @@ console.log(user_path)
                 //
                 user_path += '/' + user_id
                 //
-                let entries_file = user_path + `/${asset_file_base}.json`
+                let producer_of_type = map_entry_type_to_producer(entry_type)
+                let entries_file = user_path + `/${producer_of_type}.json`
                 let entries_record = await fsPromises.readFile(entries_file)
                 entries_record = JSON.parse(entries_record.toString())
                 //
@@ -177,10 +198,14 @@ console.log(user_path)
                     }
                 }
                 //
-                entries_record = JSON.stringify(entries_record)
-                await fsPromises.writeFile(entries_file,entries_record)
-                let topic = 'user-' + asset_file_base
-                this.app_publish(topic,entries_record)               // send the dashboard or profile back to DB closers to the UI client
+                let entries_record_str = JSON.stringify(entries_record)
+                await fsPromises.writeFile(entries_file,entries_record_str)
+                let topic = 'user-' + producer_of_type
+                let pub_obj = {
+                    "email" : user_id,
+                }
+                pub_obj[producer_of_type] = encodeURIComponent(entries_record_str)        
+                this.app_publish(topic,pub_obj)               // send the dashboard or profile back to DB closers to the UI client
                 break;
             }
             case 'F' : {        // change one field
@@ -196,7 +221,8 @@ console.log(user_path)
                 //
                 user_path += '/' + user_id
                 //
-                let entries_file = user_path + `/${asset_file_base}.json`
+                let producer_of_type = map_entry_type_to_producer(entry_type)
+                let entries_file = user_path + `/${producer_of_type}.json`
                 let entries_record = await fsPromises.readFile(entries_file)
                 entries_record = JSON.parse(entries_record.toString())
                 //
@@ -215,10 +241,14 @@ console.log(user_path)
                     }
                 }
                 //
-                entries_record = JSON.stringify(entries_record)
-                await fsPromises.writeFile(entries_file,entries_record)
-                let topic = 'user-' + asset_file_base
-                this.app_publish(topic,entries_record)               // send the dashboard or profile back to DB closers to the UI client
+                let entries_record_str = JSON.stringify(entries_record)
+                await fsPromises.writeFile(entries_file,entries_record_str)
+                let topic = 'user-' + producer_of_type
+                let pub_obj = {
+                    "email" : user_id,
+                }
+                pub_obj[producer_of_type] = encodeURIComponent(entries_record_str)        
+                this.app_publish(topic,pub_obj)               // send the dashboard or profile back to DB closers to the UI client
                 break;
             }
             case 'D' : {
