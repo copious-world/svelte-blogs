@@ -10,36 +10,6 @@ function occlude(password) {
 }
 
 
-/*
-{
-    "user_name" : "",
-    "header_user_name" : "",
-    "date" : "",
-    "tag_line" : "",
-    "panel_key" : "",
-    "profile_text" : "",
-    "entries" : {}
-
-    let test = {
-    "name":"pixy girl",
-    "email":"wixy@pp.com",
-    "password":"4786e2683160cec065cf9702a92ab1d5889801954bbe0c5df44ba2ebf93da4c1",
-    "action":"register",
-    "form_key":"register",
-    "_id":"wixy@pp.com",
-    "user_op":"create",
-    "m_path":"user",
-    "_tstamp":1614505571642,
-    "m_type":"persistence",
-    "op":"S",
-    "_response_id":13,
-    "dir_paths":{"base":"/user-assets/wixy@pp.com","profile":"/wixy@pp.com/profile.html","profile":"/wixy@pp.com/profile.html"}}
-}
-*/
-
-
-
-
 function storage_string_from_object(obj,path_key) {
     let date = (new Date()).toISOString()
     let prof_obj = {

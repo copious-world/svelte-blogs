@@ -12,21 +12,28 @@ function faux_random_enough() {
     return "dashing" + rr
 }
 
+// -- -- -- --
+
 class TransitionsPersistenceEndpoint extends PersistenceMessageEndpoint {
 
     //
     constructor(conf) {
         super(conf)
+        //
         this.app_subscriptions_ok = true
-        this.add_to_topic("command-publish",'self',false)
+        // ---------------->>  topic, client_name, relayer  (when relayer is false, topics will not be written to self)
+        this.add_to_topic("command-publish",'self',false)           // allow the client (front end) to use the pub/sub pathway to send state changes
         this.add_to_topic("command-recind",'self',false)
         this.add_to_topic("command-delete",'self',false)
         this.add_to_topic("command-send",'self',false)
     }
     //
 
-
+    // app_subscription_handler
+    //  -- Handle state changes...
+    // this is the handler for the topics added directoy above in the constructor
     app_subscription_handler(topic,msg_obj) {
+        //
         if ( topic === 'command-publish' ) {
             msg_obj._tx_op = 'P'
         } else if ( topic === 'command-recind' ) {
@@ -35,7 +42,7 @@ class TransitionsPersistenceEndpoint extends PersistenceMessageEndpoint {
             msg_obj._tx_op = 'D'
         }
         //
-        this.app_message_handler(msg_obj)
+        this.app_message_handler(msg_obj)           // run the handler (often gotten to by relay to endpoint messaging ... this is pub/sub pathway)
         //
         if ( ( topic === 'command-publish' ) || ( topic === 'command-publish' ) ) {
             let op = 'F' // change one field
@@ -45,7 +52,7 @@ class TransitionsPersistenceEndpoint extends PersistenceMessageEndpoint {
         }
     }
 
-
+    // ----
     make_path(u_obj) {
         let key_field = u_obj.key_field ?  u_obj.key_field : u_obj._transition_path
         let asset_info = u_obj[key_field]   // dashboard+striking@pp.com  profile+striking@pp.com
@@ -73,6 +80,7 @@ console.log(user_path)
         return(user_path)
     }
 
+    // ----
     application_data_update(u_obj,data) {
         try {
             let d_obj = JSON.parse(data)
@@ -104,7 +112,7 @@ console.log(user_path)
     }
 
     // ----
-    async user_action_keyfile(op,u_obj,field,value) {
+    async user_action_keyfile(op,u_obj,field,value) {  // items coming from the editor  (change editor information and publish it back to consumers)
         switch ( op ) {
             case 'C' : {
                 let key_field = u_obj.key_field ? u_obj.key_field : u_obj._transition_path
@@ -137,7 +145,7 @@ console.log(user_path)
                 this.app_publish(topic,entries_record)
                 break;
             }
-            case 'U' : {
+            case 'U' : {    // update (read asset_file_base, change, write new)
                 let key_field = u_obj.key_field ?  u_obj.key_field : u_obj._transition_path
                 let asset_info = u_obj[key_field]   // dashboard+striking@pp.com  profile+striking@pp.com
 
@@ -163,7 +171,7 @@ console.log(user_path)
                     for ( let i = 0; i < entry_list.length; i++ ) {
                         let entry = entry_list[i]
                         if ( entry._id == u_obj._id ) {
-                            entry_list[i] = u_obj
+                            entry_list[i] = u_obj               // change the the right object == _id match
                             break;
                         }
                     }
@@ -172,7 +180,7 @@ console.log(user_path)
                 entries_record = JSON.stringify(entries_record)
                 await fsPromises.writeFile(entries_file,entries_record)
                 let topic = 'user-' + asset_file_base
-                this.app_publish(topic,entries_record)
+                this.app_publish(topic,entries_record)               // send the dashboard or profile back to DB closers to the UI client
                 break;
             }
             case 'F' : {        // change one field
@@ -210,7 +218,7 @@ console.log(user_path)
                 entries_record = JSON.stringify(entries_record)
                 await fsPromises.writeFile(entries_file,entries_record)
                 let topic = 'user-' + asset_file_base
-                this.app_publish(topic,entries_record)
+                this.app_publish(topic,entries_record)               // send the dashboard or profile back to DB closers to the UI client
                 break;
             }
             case 'D' : {
