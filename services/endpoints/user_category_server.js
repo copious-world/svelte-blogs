@@ -34,7 +34,7 @@ function do_hash (text) {
 
 
 
-class TransitionsUserEndpoint extends PersistenceMessageEndpoint {
+class TransitionsUserEndpoint extends UserMessageEndpoint {
 
     constructor(conf) {
         super(conf)

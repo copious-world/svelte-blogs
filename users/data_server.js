@@ -301,8 +301,7 @@ g_watch_for_new_files.on('change', (eventType, filename) => {
                                                                 }
                                                             });
 
-                                              });
-
+//
 // ---- ---- ---- ---- ---- ---- ---- ---- ----
 //
 
