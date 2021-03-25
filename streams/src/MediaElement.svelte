@@ -13,6 +13,7 @@ export let media_type;
 export let txt_full;
 export let media
 export let isplaying
+export let protocol;
 
 
 
@@ -43,6 +44,9 @@ $: short_title = title.substr(0,45)
 
 let descr_on = false;
 
+let is_ipfs
+$: is_ipfs = (protocol === 'ipfs')
+
 function play_media(ev) {
 	// turn on/off media player
 }
@@ -71,13 +75,25 @@ function rewind_media(ev) {
 </div>
 <div >
 {#if is_audio }
-	<div class="music_box" >
-		<AudioPlayer {...media} />
-	</div>
+	{#if is_ipfs }
+		<div class="music_box" >
+			<IPFS_AudioPlayer {...media} />
+		</div>
+	{:else}
+		<div class="music_box" >
+			<AudioPlayer {...media} />
+		</div>
+	{/if}
 {:else} 
-	<div class="video_box" >
-		<VideoPlayer {...media} {isplaying} />
-	</div>
+	{#if is_ipfs }
+		<div class="video_box" >
+			<IPFS_VideoPlayer {...media} {isplaying} />
+		</div>
+	{:else}
+		<div class="video_box" >
+			<VideoPlayer {...media} {isplaying} />
+		</div>
+	{/if}
 {/if}
 	<div class="description" >
 		{@html txt_full}
