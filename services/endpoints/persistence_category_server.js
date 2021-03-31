@@ -76,7 +76,10 @@ class TransitionsPersistenceEndpoint extends PersistenceMessageEndpoint {
             console.dir(u_obj)
             return(false)
         }
+console.log(key_field)
+console.log(asset_info)
         asset_info = asset_info.split('+')
+console.dir(asset_info)
         let user_path = this.user_directory
         let user_id = asset_info.pop()
         //
@@ -126,7 +129,7 @@ console.log(user_path)
     }
 
 
-    
+
     // ---- user_manage_date
     // ---- ---- ---- ----   always call this before writing the file... The parent class should be like this.
     user_manage_date(op,u_obj) {
@@ -185,7 +188,7 @@ console.log(user_path)
                     entries_record.entries[entry_type] = []
                 }
                 entries_record.entries[entry_type].push(u_obj)
-                let entries_record_str = JSON.stringify(entries_record)
+                let entries_record_str = JSON.stringify(entries_record)         // STORE AS STRING
                 await fsPromises.writeFile(entries_file,entries_record_str)
                 let topic = 'user-' + producer_of_type
                 //
@@ -223,13 +226,13 @@ console.log(user_path)
                     for ( let i = 0; i < entry_list.length; i++ ) {
                         let entry = entry_list[i]
                         if ( entry._id == u_obj._id ) {
-                            entry_list[i] = u_obj               // change the the right object == _id match
+                            entry_list[i] = u_obj               // EDITED change the right object == _id match (overwrite)
                             break;
                         }
                     }
                 }
                 //
-                let entries_record_str = JSON.stringify(entries_record)
+                let entries_record_str = JSON.stringify(entries_record)         // STORE AS STRING
                 await fsPromises.writeFile(entries_file,entries_record_str)
                 let topic = 'user-' + producer_of_type
                 let pub_obj = {
@@ -266,13 +269,13 @@ console.log(user_path)
                     for ( let i = 0; i < entry_list.length; i++ ) {
                         let entry = entry_list[i]
                         if ( entry._id == u_obj._id ) {
-                            entry[field] = value
+                            entry[field] = value     // entry has been edited EDITED change value
                             break;
                         }
                     }
                 }
                 //
-                let entries_record_str = JSON.stringify(entries_record)
+                let entries_record_str = JSON.stringify(entries_record)         // STORE AS STRING
                 await fsPromises.writeFile(entries_file,entries_record_str)
                 let topic = 'user-' + producer_of_type
                 let pub_obj = {
@@ -283,6 +286,47 @@ console.log(user_path)
                 break;
             }
             case 'D' : {
+                let key_field = u_obj.key_field ?  u_obj.key_field : u_obj._transition_path
+                let asset_info = u_obj[key_field]   // dashboard+striking@pp.com  profile+striking@pp.com
+
+                asset_info = asset_info.split('+')  // split the name of the dashboard file
+
+                let user_path = this.user_directory // configured user directory -- see persistenceMessageEndpoint
+                let user_id = asset_info.pop()      // from back e.g. striking@pp.com
+                let entry_type = asset_info.pop()   // what's left e.g. dashbarod
+                let asset_file_base = asset_info.pop()  // uuid of the asset.. or maybe ifps hash
+                //
+                user_path += '/' + user_id
+                //
+                let producer_of_type = map_entry_type_to_producer(entry_type)
+                let entries_file = user_path + `/${producer_of_type}.json`      // the dashboard and profile are kept at the root of the directory...
+                //  READ DASHBOARD OR PROFILE (or other)
+                let entries_record = await fsPromises.readFile(entries_file)
+                entries_record = JSON.parse(entries_record.toString())          // JSON object....
+                //
+                if ( entries_record.entries[entry_type] !== undefined ) {
+                    let entry_list = entries_record.entries[entry_type]
+                    let del_index = -1
+                    for ( let i = 0; i < entry_list.length; i++ ) {
+                        let entry = entry_list[i]
+                        if ( entry._id == u_obj._id ) {
+                            del_index = i
+                            break;
+                        }
+                    }
+                    if ( del_index >= 0 ) {
+                        entry_list.splice(del_index,1)      // entries have been edited EDITED delete
+                    }
+                }
+                //
+                let entries_record_str = JSON.stringify(entries_record)         // STORE AS STRING
+                await fsPromises.writeFile(entries_file,entries_record_str)     // WRITE FILE 
+                let topic = 'user-' + producer_of_type
+                let pub_obj = {
+                    "email" : user_id,
+                }
+                pub_obj[producer_of_type] = encodeURIComponent(entries_record_str)              // PUBLISH
+                this.app_publish(topic,pub_obj)               // send the dashboard or profile back to DB closers to the UI client
                 break;
             }
         }
