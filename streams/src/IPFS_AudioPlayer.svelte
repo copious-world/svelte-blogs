@@ -16,7 +16,7 @@
 	let a_cid
 	$: a_cid = ipfs
 
-
+	onMount(() => {
 		media_startup(audio,a_cid,source)
 	})
 
