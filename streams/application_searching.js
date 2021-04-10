@@ -1,8 +1,7 @@
 
 
 
-
-const {Searching} = require('./searching.js')
+const { Searching } = require('copious-little-searcher')
 
 const SCORE_THRESHOLD = 0.5
 
@@ -26,10 +25,13 @@ function count_occurances(check_txt,term) {
 
 
 class AppSearching extends Searching {
+
+    //
     constructor(conf) {
         super(conf)
     }
 
+    //
     score_match(check_txt,q_list,mult) {
         let score = 0
         let index_score = 0

@@ -13,47 +13,33 @@
 	<link rel='stylesheet' href='./global.css'>
 	<link rel='stylesheet' href='./build/bundle.css'>
 
-	<script src="https://unpkg.com/ipfs@0.41.0-rc.2/dist/index.min.js"></script>
-	<script src="https://unpkg.com/hlsjs-ipfs-loader@0.2.3/dist/index.min.js"></script>
-	<script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+
 <script>
 	// ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ----
-	// Setting HLS Config values
-	Hls.DefaultConfig.loader = HlsjsIpfsLoader
-	Hls.DefaultConfig.debug = false
-	
-	var g_ipfs_node = false
-	async function setup_ipfs_node() {
-		// Create an IPFS node inside your browser
-		let node = false;
-		// Init a new repo for this run
-		const repoPath = 'ipfs-' + Math.random()
-		try {
-			// Instatiate your IPFS node
-			node = await Ipfs.create({ repo: repoPath })
-		
-		} catch(err) {
-			displayError(err)
+
+	async function media_startup(player,codecs,protocol,cid,src) {
+		if ( protocol === 'ipfs' ) {
+			await ipfs_loader(player,codecs,cid)
 		}
-		g_ipfs_node = node
+	}
+
+	async function ipfs_loader(medial_el,codecs,hash_id) {
+		//
+		let endpoint = 'streamer/ipfs/'
+		//
+		if ( codecs.type == "audio" ) {
+			endpoint = 'streamer/ipfs/'
+		} else if ( codecs.type == "video" ) { 
+			endpoint = 'movies/ipfs/'
+		}
+		//
+		endpoint += hash_id
+		//
+		medial_el.src = `${location.protocol}//${g_siteURL}/${endpoint}`
+		//
 	}
 
 
-
-	async function media_startup(video,v_cid,src) {
-		if (!Hls.isSupported()) {
-			return displayError(new Error('Your Browser does not support the HTTP Live Streaming Protocol'))
-		}
-		const hls = new Hls()
-		hls.config.ipfs = g_ipfs_node
-		hls.config.ipfsHash = v_cid
-		hls.loadSource(src)  										//'master.m3u8'
-		hls.attachMedia(video)
-		hls.on(Hls.Events.MANIFEST_PARSED, () => video.play())
-	}
-
-
-	setup_ipfs_node()
 	// ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ----
 </script>
 

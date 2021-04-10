@@ -1,4 +1,4 @@
-const fs = require('fs')
+const fsPromises = require('fs/promises')
 
 
 class QueryResult {
@@ -463,26 +463,30 @@ class Searching {
 
     /// FILES
     // ----
-    backup_searches(do_halt) {
+    async backup_searches(do_halt) {
         console.log("backing up searches")
         let output = JSON.stringify(this.local_active_searches)
-        fs.writeFile(this.backup_file,output,'ascii',(err) => {
-            if ( err ) {
-                console.log(err)
-            }
-            console.log("done ... backing up searches" + do_halt)
-            if ( do_halt == true ) {
+        if ( output.length === 0 ) {
+            output = "{}"
+        }
+        try {
+            await fsPromises.writeFile(this.backup_file,output,'ascii')
+            console.log("exiting")
+            if ( do_halt === true ) {
                 console.log("halting ... backing up searches")
                 process.exit(0)
             }
-        })
+        } catch (e) {
+            console.error(e)
+        }
     }
 
 
-    restore_searches() {
+    async restore_searches() {
         console.log("restoring searches")
         try {
-            let searchbkp = fs.readFileSync(this.backup_file,'ascii').toString()
+            let searchbkp = await fsPromises.readFile(this.backup_file,'ascii')
+            searchbkp = searchbkp.toString()
 
             this.local_active_searches = {}
 
