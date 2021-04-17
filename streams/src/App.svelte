@@ -37,26 +37,24 @@
 
 	let current_roller_title = ""
 
+	let thing_template = {
+		"color": 'grey',
+		"title" : "no content",
+		"dates" : {
+			"created" : "never",
+			"updated" : "never"
+		},
+		"subject" : "",
+		"abstract" : "no content",
+		"keys" : [  ],
+		"t_type" : "",
+		"media" : {},
+		"score" : 1.0
+	}
 
-	let app_empty_object = { "id" : 1, "color": 'grey',
-			"entry" : -1,
-			"title" : "",
-			"dates" : {
-				"created" : "never",
-				"updated" : "never"
-			},
-			"keys" : [  ],
-			"txt_full" : "",
-			"score" : 1.0,
-			"media_type" : "audio",
-			"media" : {
-				"poster" : "",
-				"source" : ""
-			}
-		}
+	let current_thing = Object.assign({ "id" : 0, "entry" : 0 },thing_template)
+	let app_empty_object = Object.assign({ "id" : 1, "entry" : -1 },thing_template)
 
-
-	let current_thing = clonify(app_empty_object)
 	current_thing.id = 0
 	current_thing.entry = 0
 	// //
@@ -209,8 +207,6 @@
 	}
 
 
-	
-	
 	async function handleClick_add() {
 		let start = things.length
 		for ( let i = 0; i < box_delta; i++ ) {
@@ -321,7 +317,7 @@
 				if ( data ) {
 					data = data.map(datum => {
 						datum.title = decodeURIComponent(datum.title)
-						datum.txt_full = decodeURIComponent(datum.txt_full)
+						datum.abstract = decodeURIComponent(datum.abstract)
 						datum.keys = datum.keys.map(key => {
 							return(decodeURIComponent(key))
 						})
@@ -401,7 +397,6 @@
 					</option>
 				{/each}
 			</select>
-
 		</div>
 	</div>
 	<div style="border: solid 1px grey;padding: 4px;background-color:#F5F6EF;">

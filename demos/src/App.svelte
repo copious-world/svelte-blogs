@@ -3,7 +3,6 @@
 	export let name;
 
 	import ThingGrid from './ThingGrid.svelte';
-	//import FullThing from './ThingFull.svelte';
 	import FloatWindow from './FloatWindow.svelte';
 	import DemoGrid from './DemoGrid.svelte'
 

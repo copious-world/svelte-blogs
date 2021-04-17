@@ -16,6 +16,9 @@
 	let a_cid
 	$: a_cid = ipfs
 
+	let a_poster_cid
+	$: a_poster_cid = poster && poster.protocol ? poster.cid : false
+
 	onMount(() => {
 		media_startup(audio,a_cid,source)
 	})

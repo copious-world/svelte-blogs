@@ -2,6 +2,8 @@
 <script>
 import VideoPlayer from "./VideoPlayer.svelte";
 import AudioPlayer from "./AudioPlayer.svelte";
+import IPFS_VideoPlayer from "./IPFS_VideoPlayer.svelte"
+import IPFS_AudioPlayer from "./IPFS_AudioPlayer.svelte"
 
 //
 export let color;
@@ -10,7 +12,7 @@ export let title;
 export let dates;
 export let keys;
 export let media_type;
-export let txt_full;
+export let abstract;
 export let media
 export let isplaying
 export let protocol;
@@ -96,7 +98,7 @@ function rewind_media(ev) {
 	{/if}
 {/if}
 	<div class="description" >
-		{@html txt_full}
+		{@html abstract}
 	</div>
 </div>
 

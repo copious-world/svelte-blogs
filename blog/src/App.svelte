@@ -22,27 +22,27 @@
 
 	let g_max_title_chars = 20
 
-
 	let current_roller_title = ""
 	let current_roller_subject = ""
 
+	let thing_template = {
+		"color": 'grey',
+		"title" : "no content",
+		"dates" : {
+			"created" : "never",
+			"updated" : "never"
+		},
+		"subject" : "",
+		"abstract" : "no content",
+		"keys" : [  ],
+		"t_type" : "",
+		"txt_full" : "",
+		"score" : 1.0
+	}
 
-	let current_thing = { 
-			"id" : 0, "color": 'grey',
-			"entry" : 0,
-			"title" : "no content",
-			"dates" : {
-				"created" : "never",
-				"updated" : "never"
-			},
-			"subject" : "",
-			"keys" : [  ],
-			"t_type" : "",
-			"txt_full" : "",
-			"score" : 1.0
-		}
-
-
+	let current_thing = Object.assign({ "id" : 0, "entry" : 0 },thing_template)
+	let app_empty_object = Object.assign({ "id" : 1, "entry" : -1 },thing_template)
+	//
 	let window_scale = { "w" : 0.4, "h" : 0.6 }
 
 	function popup_size() {
@@ -120,20 +120,6 @@
 		}
 	}
 
-
-	let app_empty_object = { "id" : 1, "color": 'grey',
-			"entry" : -1,
-			"title" : "",
-			"dates" : {
-				"created" : "never",
-				"updated" : "never"
-			},
-			"subject" : "",
-			"keys" : [  ],
-			"t_type" : "",
-			"txt_full" : "",
-			"score" : 1.0
-		}
 
 	let things = [				// window
 		app_empty_object

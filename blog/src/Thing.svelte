@@ -5,6 +5,7 @@
 	export let title;
 	export let dates;
 	export let subject;
+	export let abstract;
 	export let keys;
 	export let t_type;
 	export let txt_full;

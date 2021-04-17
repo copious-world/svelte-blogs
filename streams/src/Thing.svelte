@@ -8,7 +8,7 @@
 	export let dates;
 	export let keys;
 	export let media_type;
-	export let txt_full;
+	export let abstract;
 	export let score;
 	export let media
 	export let id;
@@ -16,7 +16,7 @@
 	
 
 	let truncated
-	$: truncated = txt_full.substr(0,250) + "&#8230;"
+	$: truncated = abstract.substr(0,250) + "&#8230;"
 
 	$: key_str = keys.join(', ')
 
