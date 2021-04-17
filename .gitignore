@@ -3,3 +3,6 @@
 /services/user*/
 /public/build/
 .DS_Store
+._.DS_Store
+*/package-lock.json
+streams/._.DS_Store
