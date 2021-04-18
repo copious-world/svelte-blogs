@@ -47,7 +47,6 @@
 		"subject" : "",
 		"abstract" : "no content",
 		"keys" : [  ],
-		"t_type" : "",
 		"media" : {},
 		"score" : 1.0
 	}
@@ -114,6 +113,19 @@
 			//
 		})
 	})
+
+
+	function unload_data(data) { 		// retun the same object with all its fields only changing ones tranported encoded
+		let usable_data = data.map(datum => {
+						datum.title = decodeURIComponent(datum.title)
+						datum.abstract = decodeURIComponent(datum.abstract)
+						datum.keys = datum.keys.map(key => {
+							return(decodeURIComponent(key))
+						})
+						return datum
+					})
+		return usable_data
+	}
 
 	let isplaying = true
 	function handleMessage(event) {
@@ -206,14 +218,14 @@
 		}
 	}
 
-
+	//
 	async function handleClick_add() {
 		let start = things.length
 		for ( let i = 0; i < box_delta; i++ ) {
 			let thing_counter = things.length
 			thing_counter++
-			let emptyel = clickEmptyElement(thing_counter)
-			things = [...things, emptyel];
+			let additional = clickEmptyElement(thing_counter)
+			things = [...things, additional];
 		}
 		//
 		let end = things.length   /// start + box_delta
@@ -222,7 +234,6 @@
 		} else {
 			place_data()
 		}
-		//
 	}
 
 
@@ -315,14 +326,9 @@
 			if ( search_result ) {
 				let data = search_result.data;
 				if ( data ) {
-					data = data.map(datum => {
-						datum.title = decodeURIComponent(datum.title)
-						datum.abstract = decodeURIComponent(datum.abstract)
-						datum.keys = datum.keys.map(key => {
-							return(decodeURIComponent(key))
-						})
-						return datum
-					})
+					//
+					data = unload_data(data)
+					//
 					if ( qstart === undefined ) {	// used the search button
 						other_things = data;		// replace data
 						article_index = 1

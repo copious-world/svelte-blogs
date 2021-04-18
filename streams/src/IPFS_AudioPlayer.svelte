@@ -19,10 +19,12 @@
 	let a_poster_cid
 	$: a_poster_cid = poster && poster.protocol ? poster.cid : false
 
-	onMount(() => {
-		media_startup(audio,a_cid,source)
-	})
-
+	let source_link
+	$:  {
+		if ( audio !== null ) {
+			source_link = media_startup(audio,'audio','ipfs',a_cid,source)
+		}
+	}
 
 	function stopOthers() {
 		if (current && current !== audio) current.pause();
@@ -42,8 +44,8 @@
 	<audio bind:this={audio} controls controlsList="nodownload"  
 								on:play={stopOthers} 
 								bind:paused  >
-		<source src="{source}" type="audio/ogg">
-		<source src="{source}" type="audio/mpeg">
+		<source src="{source_link}" type="audio/ogg">
+		<source src="{source_link}" type="audio/mpeg">
 		Your browser does not support the audio element.
 	</audio>
 </div>

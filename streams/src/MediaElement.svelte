@@ -1,5 +1,7 @@
 
 <script>
+	// for the larger display ... occupies a slot in the Float Window...
+	// When an element is selected, one kind of media play gets picked depending on the element media type.
 import VideoPlayer from "./VideoPlayer.svelte";
 import AudioPlayer from "./AudioPlayer.svelte";
 import IPFS_VideoPlayer from "./IPFS_VideoPlayer.svelte"
@@ -15,7 +17,6 @@ export let media_type;
 export let abstract;
 export let media
 export let isplaying
-export let protocol;
 
 
 
@@ -47,7 +48,7 @@ $: short_title = title.substr(0,45)
 let descr_on = false;
 
 let is_ipfs
-$: is_ipfs = (protocol === 'ipfs')
+$: is_ipfs = (media.protocol === 'ipfs')
 
 function play_media(ev) {
 	// turn on/off media player

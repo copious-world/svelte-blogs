@@ -17,27 +17,37 @@
 <script>
 	// ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ----
 
-	async function media_startup(player,codecs,protocol,cid,src) {
+	function media_startup(player,media_type,protocol,cid,src) {
 		if ( protocol === 'ipfs' ) {
-			await ipfs_loader(player,codecs,cid)
+			return ipfs_loader(player,media_type,cid)
+		} else if ( protocol === 'local' ) {
+			protocol = "http:"		// get keys for server
+			let endpoint = 'images/view/'
+			endpoint += cid
+			let src_link = `${protocol}//${g_siteURL}/${endpoint}`
+			return src_link
 		}
 	}
 
-	async function ipfs_loader(medial_el,codecs,hash_id) {
+	function ipfs_loader(medial_el,media_type,hash_id) {
 		//
 		let endpoint = 'streamer/ipfs/'
 		//
-		if ( codecs.type == "audio" ) {
+		if ( media_type == "audio" ) {
 			endpoint = 'streamer/ipfs/'
-		} else if ( codecs.type == "images" ) {
-		} else if ( codecs.type == "video" ) { 
-			endpoint = 'movies/ipfs/'
+		} else if ( media_type == "images" ) {
+			endpoint = 'images/ipfs/'
+		} else if ( media_type == "video" ) { 
+			endpoint = 'video/ipfs/'
 		}
 		//
 		endpoint += hash_id
 		//
-		medial_el.src = `${location.protocol}//${g_siteURL}/${endpoint}`
-		//
+		let protocol = location.protocol
+		protocol = "http:"		// get keys for server
+		let src_link = `${protocol}//${g_siteURL}/${endpoint}`
+		//medial_el.src = src_link
+		return src_link
 	}
 
 

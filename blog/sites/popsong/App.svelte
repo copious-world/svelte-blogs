@@ -9,7 +9,7 @@
 
 	import {get_search} from "./search_box.js"
 
-	const appsearch = 'search'  // songsearch  search
+	const appsearch = 'search'  //   search later translated to songsearch (nginx conf by url)
 
 	let qlist_ordering = [
 		{ id: 1, text: `update_date` },
@@ -21,27 +21,30 @@
 	let search_topic = 'any'
 
 	let g_max_title_chars = 20
-
+	//
 
 	let current_roller_title = ""
 	let current_roller_subject = ""
 
+	let thing_template = {
+		"abstract" : "no content",
+		"color": 'grey',
+		"dates" : {
+			"created" : "never",
+			"updated" : "never"
+		},
+		"keys" : [  ],
+		"media" : {},
+		"score" : 1.0,
+		"subject" : "",
+		"title" : "no content",
+		"txt_full" : "no content",
+	}
 
-	let current_thing = { 
-			"id" : 0, "color": 'grey',
-			"entry" : 0,
-			"title" : "no content",
-			"dates" : {
-				"created" : "never",
-				"updated" : "never"
-			},
-			"subject" : "",
-			"keys" : [  ],
-			"t_type" : "",
-			"txt_full" : "",
-			"score" : 1.0
-		}
-
+	let current_thing = Object.assign({ "id" : 0, "entry" : 0 },thing_template)
+	let app_empty_object = Object.assign({ "id" : 1, "entry" : -1 },thing_template)
+	
+	console.log(current_thing)
 
 	let window_scale = { "w" : 0.4, "h" : 0.6 }
 
@@ -98,6 +101,22 @@
 		})
 	})
 
+
+	function unload_data(data) {		// retun the same object with all its fields only changing ones tranported encoded
+		let usable_data = data.map(datum => {
+						datum.subject = decodeURIComponent(datum.subject)
+						datum.title = decodeURIComponent(datum.title)
+						datum.txt_full = decodeURIComponent(datum.txt_full)
+						datum.abstract = decodeURIComponent(datum.abstract)
+						datum.keys = datum.keys.map(key => {
+							return(decodeURIComponent(key))
+						})
+						return datum
+					})
+		return usable_data
+	}
+
+
 	function handleMessage(event) {
 		let key = "xy_"
 		let txt = event.detail.text;
@@ -120,21 +139,13 @@
 		}
 	}
 
+	function clickEmptyElement(thing_counter) {
+		 let elem = clonify(app_empty_object)
+		 elem.id = thing_counter
+		 return elem
+	}
 
-	let app_empty_object = { "id" : 1, "color": 'grey',
-			"entry" : -1,
-			"title" : "",
-			"dates" : {
-				"created" : "never",
-				"updated" : "never"
-			},
-			"subject" : "",
-			"keys" : [  ],
-			"t_type" : "",
-			"txt_full" : "",
-			"score" : 1.0
-		}
-
+	
 	let things = [				// window
 		app_empty_object
 	];
@@ -185,28 +196,15 @@
 			things = [...p];
 		}
 	}
-
-
 	
+	//
 	async function handleClick_add() {
 		let start = things.length
 		for ( let i = 0; i < box_delta; i++ ) {
 			let thing_counter = things.length
 			thing_counter++
-			things = [...things, 
-			{
-				"id" : thing_counter, "color": "grey",
-				"title" : "",
-				"dates" : {
-					"created" : "never",
-					"updated" : "never"
-				},
-				"subject" : "",
-				"keys" : [  ],
-				"t_type" : "",
-				"txt_full" : "",
-				"score" : 1.0
-			}];
+			let additional = clickEmptyElement(thing_counter)
+			things = [...things, additional];
 		}
 		//
 		let end = things.length   /// start + box_delta
@@ -215,10 +213,10 @@
 		} else {
 			place_data()
 		}
-		//
 	}
 
 
+	//
 	function clonify(obj) {
 		let o = JSON.parse(JSON.stringify(obj))
 		return o
@@ -313,15 +311,7 @@
 			if ( search_result ) {
 				let data = search_result.data;
 				if ( data ) {
-					data = data.map(datum => {
-						datum.subject = decodeURIComponent(datum.subject)
-						datum.title = decodeURIComponent(datum.subject)
-						datum.txt_full = decodeURIComponent(datum.txt_full)
-						datum.keys = datum.keys.map(key => {
-							return(decodeURIComponent(key))
-						})
-						return datum
-					})
+					data = unload_data(data)
 					if ( qstart === undefined ) {	// used the search button
 						other_things = data;		// replace data
 						article_index = 1

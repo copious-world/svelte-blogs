@@ -10,26 +10,9 @@
 	export let subject;
 	export let abstract;
 	export let keys;
-	export let t_type;
 	export let txt_full;
 
-
 	$: key_str = keys.join(', ')
-
-	/*
-			"dates" : {
-				"created" : "never",
-				"updated" : "never"
-			},
-			"subject" : "",
-			"keys" : [  ],
-			"t_type" : "",
-			"txt_full" : ""
-	*/
-
-	if ( t_type !== 'markdown' ) {
-		txt_full = decodeURIComponent(txt_full)
-	}
 
 	function convert_date(secsdate) {
 		if ( secsdate === 'never' ) {

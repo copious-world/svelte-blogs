@@ -1,22 +1,16 @@
 <script>
 	// `current` is updated whenever the prop value changes...
-	export let color;
-	export let entry;
-	export let title;
-	export let dates;
-	export let subject;
 	export let abstract;
-	export let keys;
-	export let t_type;
-	export let txt_full;
-	export let score;
+	export let color;
+	export let dates;
+	export let entry;
 	export let id;
-
-
-	if ( t_type !== 'markdown' ) {
-		txt_full = decodeURIComponent(txt_full)
-	}
-
+	export let keys;
+	export let media;
+	export let score;
+	export let subject;
+	export let title;
+	export let txt_full;
 
 	let truncated
 	$: truncated = txt_full.substr(0,250) + "&#8230;"
@@ -49,17 +43,6 @@
 
 	let short_subject
 	$: short_subject = subject.substr(0,32) + '...'
-
-	/*
-			"dates" : {
-				"created" : "never",
-				"updated" : "never"
-			},
-			"subject" : "",
-			"keys" : [  ],
-			"t_type" : "",
-			"txt_full" : ""
-	*/
 
 </script>
 

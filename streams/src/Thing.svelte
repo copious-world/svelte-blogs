@@ -9,17 +9,11 @@
 	export let keys;
 	export let media_type;
 	export let abstract;
-	export let score;
 	export let media
+	export let score;
 	export let id;
 
 	
-
-	let truncated
-	$: truncated = abstract.substr(0,250) + "&#8230;"
-
-	$: key_str = keys.join(', ')
-
 	let score_rounded
 
 	$: score_rounded = score.toFixed(3);
@@ -28,6 +22,21 @@
 
 	$: is_audio = (media_type == 'audio')
 
+	let poster_link
+	$:  {
+			let poster = media ?  media.poster : false
+			if ( poster ) {
+				let name = poster.name
+				poster_link = media_startup(false,'images','local',name)
+			}
+			//
+			//let proto = media && media.poster ?  media.poster.protocol : false
+			//let a_poster_cid = proto ? media.poster[proto] : false
+			//poster_link = media_startup(false,'images','ipfs',a_poster_cid)
+	}
+
+
+	// //
 	function convert_date(secsdate) {
 		if ( secsdate === 'never' ) {
 			return 'never';
@@ -60,9 +69,9 @@
 	<span class="thng-score">{score_rounded}</span>
 	<div class="teaser">
 		{#if is_audio }
-		<AudioPlayer {...media} />
+		<AudioPlayer {media} />
 		{:else}
-		<img src="{media.poster}" height="120px" >
+		<img src="{poster_link}" height="120px" >
 		{/if}
 	</div>	
 </div>

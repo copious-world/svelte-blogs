@@ -14,6 +14,8 @@
 	let v_cid
 	$: v_cid = ipfs
 
+	let a_poster_cid
+	$: a_poster_cid = poster && poster.protocol ? poster.cid : false
 
 	$: {
 		if ( !isplaying && (vid_el !== null) ) {
@@ -21,12 +23,24 @@
 		}
 	}
 
+	let source_link
+	$:  {
+		if ( vid_el !== null ) {
+			source_link = media_startup(vid_el,'video','ipfs',v_cid,source)
+		}
+	}
+
+	let poster_link
+	$:  {
+		if ( vid_el !== null ) {
+			poster_link = media_startup(vid_el,'images','ipfs',a_poster_cid,source)
+		}
+	}
+
+
 	let showControls = true;
 	let showControlsTimeout;
 
-	onMount(() => {
-		media_startup(vid_el,v_cid,source)
-	})
 
 	function handleMousemove(e) {
 		// Make the controls visible, but fade out after
@@ -133,8 +147,8 @@
 <div>
 	<video 
 		bind:this={vid_el}
-		poster="{poster}"
-		src="{source}"
+		poster="{poster_link}"
+		src="{source_link}"
 		on:mousemove={handleMousemove}
 		on:mousedown={handleMousedown}
 		bind:currentTime={time}
