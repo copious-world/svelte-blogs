@@ -1,4 +1,3 @@
-
 <script>
 	// for the larger display ... occupies a slot in the Float Window...
 	// When an element is selected, one kind of media play gets picked depending on the element media type.
@@ -6,6 +5,7 @@ import VideoPlayer from "./VideoPlayer.svelte";
 import AudioPlayer from "./AudioPlayer.svelte";
 import IPFS_VideoPlayer from "./IPFS_VideoPlayer.svelte"
 import IPFS_AudioPlayer from "./IPFS_AudioPlayer.svelte"
+import {link_picker} from "./link-pick.js"
 
 //
 export let color;
@@ -18,8 +18,6 @@ export let abstract;
 export let media
 export let isplaying
 
-
-
 let fillFree = true;
 
 function convert_date(secsdate) {
@@ -31,6 +29,9 @@ function convert_date(secsdate) {
 		return (dformatted)
 	}
 }
+
+let picked_this = false
+$: picked_this = link_picker.is_picked(entry)
 
 let updated_when
 let created_when
@@ -49,6 +50,12 @@ let descr_on = false;
 
 let is_ipfs
 $: is_ipfs = (media.protocol === 'ipfs')
+
+
+function toggle_pick(ev) {
+	link_picker.toggle_pick(entry)
+}
+
 
 function play_media(ev) {
 	// turn on/off media player
@@ -70,7 +77,7 @@ function rewind_media(ev) {
 
 <div class="container-head">
    <div style="display:inline-block">
-    <span style="background-color: {color}">{entry}</span>
+    <span style="background-color: {color}">{entry}</span> <input type="checkbox" bind:checked={picked_this} on:click={toggle_pick} />
 		<span style="background-color: yellowgreen">{created_when}</span>
 		<span style="background-color: lightblue">{updated_when}</span>
 		<span class="blg-item-title" style="background-color: inherit;">{short_title}</span>

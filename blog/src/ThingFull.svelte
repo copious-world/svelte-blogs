@@ -1,5 +1,7 @@
 <script>
 
+	import {link_picker,picker} from "./link-pick.js"
+
 	// ref ... https://gist.github.com/akirattii/9165836
 
 	// `current` is updated whenever the prop value changes...
@@ -24,6 +26,10 @@
 		}
 	}
 
+
+	let picked_this = false
+	$: picked_this = link_picker.is_picked(entry)
+
 	let updated_when
 	let created_when
 
@@ -31,11 +37,26 @@
 	$: created_when = convert_date(dates.created)
 	
 
+	function toggle_pick(ev) {
+		link_picker.toggle_pick(entry)
+		if ( picked_this ) {
+			picker.increment()
+		} else {
+			picker.decrement()
+		}
+	}
+
+	let count_value;
+	const unsubscribe = picker.subscribe(value => {
+		count_value = value;
+		picked_this = link_picker.is_picked(entry)
+	});
+
 </script>
  
 <div class="blg-el-wrapper-full">
 	<div style="padding:6px;" >
-		<span style="background-color: {color}">{entry}</span>
+		<span style="background-color: {color}">{entry}</span> <input type="checkbox" bind:checked={picked_this} on:click={toggle_pick} />
 		<span style="background-color: yellowgreen">{created_when}</span>
 		<span style="background-color: lightblue">{updated_when}</span>
 		<h4 class="blg-item-title" style="background-color: inherit;">{title}</h4>

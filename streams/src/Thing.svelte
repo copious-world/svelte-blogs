@@ -1,6 +1,7 @@
 <script>
 	import AudioPlayer from "./AudioPlayer.svelte";
-
+	import {link_picker} from "./link-pick.js"
+	//
 	// `current` is updated whenever the prop value changes...
 	export let color;
 	export let entry;
@@ -12,8 +13,7 @@
 	export let media
 	export let score;
 	export let id;
-
-	
+	// // 
 	let score_rounded
 
 	$: score_rounded = score.toFixed(3);
@@ -24,7 +24,7 @@
 
 	let poster_link
 	$:  {
-			let poster = media ?  media.poster : false
+			let poster = media ? media.poster : false
 			if ( poster ) {
 				let name = poster.name
 				poster_link = media_startup(false,'images','local',name)
@@ -35,6 +35,12 @@
 			//poster_link = media_startup(false,'images','ipfs',a_poster_cid)
 	}
 
+	let picked_this = false
+	$: picked_this = link_picker.is_picked(entry)
+
+	function toggle_pick(ev) {
+		link_picker.toggle_pick(entry)
+	}
 
 	// //
 	function convert_date(secsdate) {
@@ -61,17 +67,16 @@
 
 {#if dates.created != 'never' }
 <div class="blg-el-wrapper" >
-	
-	<span style="background-color: {color}">{entry}</span>
+	<span style="background-color: {color}">{entry}</span> <input type="checkbox" bind:checked={picked_this} on:click={toggle_pick} />
 	<span style="background-color: yellowgreen">{created_when}</span>
 	<span style="background-color: lightblue">{updated_when}</span>
 	<h4 class="blg-item-title" style="background-color: inherit;">{short_title}</h4>
 	<span class="thng-score">{score_rounded}</span>
 	<div class="teaser">
 		{#if is_audio }
-		<AudioPlayer {media} />
+			<AudioPlayer {media} />
 		{:else}
-		<img src="{poster_link}" height="120px" >
+			<img src="{poster_link}" height="120px" >
 		{/if}
 	</div>	
 </div>

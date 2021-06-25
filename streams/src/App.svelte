@@ -17,7 +17,6 @@
 		return o
 	}
 
-
 	// TEST LAYOUT TEST TEST TEST
 	const id = () => "_" + Math.random().toString(36).substr(2, 9);
 
@@ -158,15 +157,12 @@
 		}
 	}
 
-
-
 	function clickEmptyElement(thing_counter) {
 		 let elem = clonify(app_empty_object)
 		 elem.id = thing_counter
 		 return elem
 	}
 
-	
 	let things = [				// window
 		app_empty_object
 	];
@@ -265,7 +261,6 @@
 
 	function handle_index_changed() {
 		do_data_placement()
-		
 	}
 
 	function handleClick_first() {

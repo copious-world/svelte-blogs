@@ -5,14 +5,10 @@
 	import Thing from './Thing.svelte';
 	import { createEventDispatcher } from 'svelte';
 
-
 	const dispatch = createEventDispatcher();
 
 	function do_display(event) {
 		let tid = event.currentTarget.id
-
-		//console.log(tid)
-
 		dispatch('message', {
 			type: 'click',
 			text: ('click ' + tid)
@@ -21,27 +17,20 @@
 
 	function show_titles(event) {
 		let tid = event.currentTarget.id
-
-		//console.log(tid)
-
 		dispatch('message', {
 			type: 'over',
 			text: ('over ' + tid)
 		});
 	}
 
-
 </script>
 
 <div class='grid-container' >
-
-
-		{#each things as thing (thing.id)}
-			<div id="xy_{thing.id}" class="element-poster" on:click={do_display} on:mouseover="{show_titles}">
-				<Thing {...thing}/>
-			</div>
-		{/each}
-
+	{#each things as thing (thing.id)}
+		<div id="xy_{thing.id}" class="element-poster" on:click={do_display} on:mouseover="{show_titles}">
+			<Thing {...thing}/>
+		</div>
+	{/each}
 </div>
 
 <style>

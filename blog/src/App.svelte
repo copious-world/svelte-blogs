@@ -4,10 +4,12 @@
 	import ThingGrid from './ThingGrid.svelte';
 	import FullThing from './ThingFull.svelte';
 	import FloatWindow from './FloatWindow.svelte';
+	import Selections from './Selections.svelte'
 
 	import { onMount } from 'svelte';
 
 	import {get_search} from "./search_box.js"
+	import {link_picker,picker} from "./link-pick.js"
 
 	const appsearch = 'search'  //   search later translated to songsearch (nginx conf by url)
 
@@ -16,6 +18,9 @@
 		{ id: 2, text: `score` },
 		{ id: 3, text: `create_date` }
 	];
+
+
+	let all_link_picks = []
 
 	let search_ordering = qlist_ordering[2];
 	let search_topic = 'any'
@@ -70,7 +75,7 @@
 		let h_p_min = 0.60
 		p_range = h_p_max - h_p_min
 		P = (biggest_h - h)/(biggest_h - smallest_h)
-		console.log("P h: " + P)
+		//console.log("P h: " + P)
 		let h_scale = P*(p_range) + h_p_min
 
 		//	percentage w range 
@@ -78,7 +83,7 @@
 		let w_p_min = 0.20
 		p_range = w_p_max - w_p_min
 		P = (biggest_w - w)/(biggest_w - smallest_w)
-		console.log("P w: " + P)
+		//console.log("P w: " + P)
 		let w_scale = P*(p_range) + w_p_min
 
 		// Setting the current height & width 
@@ -89,6 +94,9 @@
 
 	//
 	window_scale = popup_size()
+	let all_window_scales = []
+	all_window_scales.push(window_scale)
+	all_window_scales.push(window_scale)
 	//
 	onMount(() => {
 		window.addEventListener("resize", (e) => {
@@ -100,6 +108,41 @@
 			//
 		})
 	})
+
+
+	function test_unload_data(data) {		// retun the same object with all its fields only changing ones tranported encoded
+		let usable_data = [
+			{ "entry" : "" + Math.floor(Math.random()*1000), "subject" : "test 1", "title" : "test1 title", "score" : 2.3, "txt_full" : "something to talk about...", "abstract" : "absctraction", "keys" : ["t1", "t2"],
+						"dates" : {
+						"created" : Date.now(),
+						"updated" : Date.now(),
+					},
+				"color" : "darkbrown"
+			},
+			{ "entry" : "" + Math.floor(Math.random()*1000), "subject" : "test 2", "title" : "test2 title", "score" : 2.2, "txt_full" : "two something to talk about...", "abstract" : "too absctraction", "keys" : ["t1", "t2"],
+						"dates" : {
+						"created" : Date.now(),
+						"updated" : Date.now(),
+					},
+				"color" : "darkbrown"
+			},
+			{ "entry" : "" + Math.floor(Math.random()*1000), "subject" : "test 3", "title" : "test3 title", "score" : 2.1, "txt_full" : "three's something to talk about...", "abstract" : "triangle absctraction", "keys" : ["t1", "t2"],
+						"dates" : {
+						"created" : Date.now(),
+						"updated" : Date.now(),
+					},
+				"color" : "darkbrown"
+			},
+			{ "entry" : "" + Math.floor(Math.random()*1000), "subject" : "test 4", "title" : "test4 title", "score" : 2.0, "txt_full" : "fore's something to talk about...", "abstract" : "square absctraction", "keys" : ["t1", "t2"],
+						"dates" : {
+						"created" : Date.now(),
+						"updated" : Date.now(),
+					},
+				"color" : "darkbrown"
+			},
+		]
+		return usable_data
+	}
 
 
 	function unload_data(data) {		// retun the same object with all its fields only changing ones tranported encoded
@@ -130,7 +173,7 @@
 			if ( athing !== undefined ) {
 				if ( etype === 'click' ) {
 					current_thing = athing;
-					start_floating_window();
+					start_floating_window(0);
 				} else {
 					current_roller_title = athing.title
 					current_roller_subject = athing.subject
@@ -307,11 +350,14 @@
 			let srver = location.host
 			let prot = location.protocol
 			let sp = '//'
-			let search_result = await postData(`${prot}${sp}${srver}/${appsearch}/${rest}`, post_data)
+			//let search_result = await postData(`${prot}${sp}${srver}/${appsearch}/${rest}`, post_data)
+			let search_result = {
+				data : []
+			}
 			if ( search_result ) {
 				let data = search_result.data;
 				if ( data ) {
-					data = unload_data(data)
+					data = test_unload_data(data)
 					if ( qstart === undefined ) {	// used the search button
 						other_things = data;		// replace data
 						article_index = 1
@@ -341,6 +387,18 @@
 		}
 	}
 
+
+	let count_value;
+	const unsubscribe = picker.subscribe(value => {
+		count_value = value;
+		link_picker.map_picks(things)
+	});
+
+
+	function pop_up_selections(ev) {
+		all_link_picks = link_picker.get_pick_values()
+		start_floating_window(1);
+	}
 	
 </script>
 
@@ -390,6 +448,8 @@
 	</div>
 	<div style="border: solid 1px grey;padding: 4px;background-color:#F5F6EF;">
 		<div class="sel-titles" >Title: {current_roller_title}</div><div class="sel-titles">Subject: {current_roller_subject}</div>
+		<div class="sel-titles" style="width: 15%;"><button on:click={pop_up_selections}>show selections</button></div>
+
 	</div>
   
 	<div class="blg-grid-container">
@@ -400,8 +460,13 @@
 </div>
 
 
-<FloatWindow title={current_thing.title.substr(0,g_max_title_chars) + '...'} scale_size={window_scale} use_smoke={false}>
+<FloatWindow title={current_thing.title.substr(0,g_max_title_chars) + '...'}  index={0} scale_size_array={all_window_scales}  use_smoke={false}>
 	<FullThing {...current_thing} />
+</FloatWindow>
+
+
+<FloatWindow title="Selection List"  index={1} scale_size_array={all_window_scales}  use_smoke={false}>
+	<Selections link_picks={all_link_picks}  />
 </FloatWindow>
 
 
@@ -459,7 +524,7 @@
 
 	.sel-titles {
 		display:inline-block;
-		width:45%;
+		width:35%;
 		font-weight:bold;
 		color:black;
 		font-size:0.75em;
