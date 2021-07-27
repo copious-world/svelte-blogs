@@ -1,38 +1,42 @@
 
 
 <script>
-	// `current` is updated whenever the prop value changes...
+
+	import Resizer from './w_resize.svelte'
+	import { onMount } from 'svelte';
 
 	export let title;
 	export let scale_size_array;
-	export let use_smoke = true;
 	export let index = 0;
 
-	import { onMount } from 'svelte';
-
 	var SCROLL_WIDTH = 24;
-
+	var Z_BOTTOM = 500
 	// 
-
 	//-- let the popup make draggable & movable.
-	var offset = { x: 0, y: 0 };
+	let offset = { x: 0, y: 0 };
 
-	let scale_size_custom = scale_size_array
+	let scale_current_size = Object.assign({},scale_size_array)
 
 	onMount(() => {
+		let z_index_buffer = window._fws_z_order
+		if ( z_index_buffer === undefined ) {
+			window._fws_z_order = []
+			z_index_buffer = window._fws_z_order
+		}
+		z_index_buffer.push(index)
+
 		//
 		var popup = document.getElementById(`popup_${index}`);
 		if ( popup === undefined ) return
+		//
 		var popup_bar = document.getElementById(`popup_bar_${index}`);
-		var btn_close = document.getElementById(`btn_close_${index}`);
-		var smoke = document.getElementById(`smoke_${index}`);
 		//
 		popup_bar.addEventListener('mousedown', mouseDown, false);
 		window.addEventListener('mouseup', mouseUp, false);
 
 		window.onkeydown = (e) => {
-			if(e.keyCode == 27){ // if ESC key pressed
-				var btn_close = document.getElementById(`btn_close_${index}`);
+			if ( e.keyCode == 27 ) { // if ESC key pressed
+				//var btn_close = document.getElementById(`btn_close_${index}`);
 				//btn_close.click(e);
 
 				var popup = document.getElementById(`popup_${index}`);
@@ -43,23 +47,45 @@
 			}
 		}
 
-		btn_close.onclick = (e) => {
-			var popup = document.getElementById(`popup_${index}`);
-			if ( popup === undefined ) return
-			popup.style.display = "none";
-			if ( smoke ) smoke.style.display = "none";
-		}
-
 		window.addEventListener("resize",(e) => {
-			spreadSmoke(use_smoke);
+			do_resize()
 		})
-
 
 		window.start_floating_window = (index) => {
 			popup_starter(index)
 		}
 
 	})
+
+
+	function fix_z_order(idx) {
+		let z_index_buffer = window._fws_z_order
+		if ( z_index_buffer !== undefined ) {
+			let pos = z_index_buffer.indexOf(idx)
+			z_index_buffer.splice(pos,1)
+			z_index_buffer.push(idx)
+			let bottom_z = Z_BOTTOM
+			for ( let p_i of z_index_buffer ) {
+				let popupId = `popup_${p_i}`
+				let popup = document.getElementById(popupId);
+				if ( popup ) {
+					popup.style.zIndex = bottom_z++
+				}
+			}
+		}
+	}
+
+	function handle_close(e) {
+		let closer = e.target.id
+		if ( closer ) {
+			let idx = closer.replace('btn_close_','')
+			let popupId = `popup_${idx}`
+			var popup = document.getElementById(popupId);
+			if ( popup === undefined ) return
+			popup.style.display = "none";
+		}
+	}
+
 
 
 	function fix_height(ii,startup_delta) {
@@ -79,30 +105,51 @@
 		}
 	}
 
+	function handle_size(event) {
+		if ( event && event.detail ) {
+			let w_dlt = event.detail.w_delta
+			let h_dlt = event.detail.h_delta
+			//
+			scale_current_size.w += w_dlt
+			scale_current_size.h += h_dlt
+			do_resize()
+		}
+	}
+
+	function do_resize() {
+		popup.style.width = (window.innerWidth*scale_current_size.w) - SCROLL_WIDTH + "px";
+		popup.style.height = (window.innerHeight*scale_current_size.h) - SCROLL_WIDTH + "px";
+	}
+
 	function popup_starter(ii) {
-		spreadSmoke(use_smoke);
 		var popup = document.getElementById(`popup_${ii}`);
 		if ( popup && (popup.style.display !== 'block') ) {
 			popup.style.top = "4px";
 			popup.style.left = "4px";
-			popup.style.width = (window.innerWidth*scale_size_custom[ii].w) - SCROLL_WIDTH + "px";
-			popup.style.height = (window.innerHeight*scale_size_custom[ii].h) - SCROLL_WIDTH + "px";
+			popup.style.width = (window.innerWidth*scale_current_size.w) - SCROLL_WIDTH + "px";
+			popup.style.height = (window.innerHeight*scale_current_size.h) - SCROLL_WIDTH + "px";
 			popup.style.display = "block";
 			setTimeout(() => { fix_height(ii,4); },40)
 		}
 		setTimeout(() => { fix_height(ii,4); },20)
 	}
 
-	function mouseUp() {
+	function mouseUp(e) {  // popupMove is temporarily assiged to just one subwindow
 		window.removeEventListener('mousemove', popupMove, true);
 	}
 
 	function mouseDown(e) {
-		var popup = document.getElementById(`popup_${index}`);
-		if ( popup === undefined ) return
-		offset.x = e.clientX - popup.offsetLeft;
-		offset.y = e.clientY - popup.offsetTop;
-		window.addEventListener('mousemove', popupMove, true);
+		let mover = e.target.id
+		if ( mover ) {
+			let idx = closer.replace('popup_bar_','')
+			let popupId = `popup_${idx}`
+			var popup = document.getElementById(popupId);
+			if ( popup === undefined ) return
+			fix_z_order(idx)
+			offset.x = e.clientX - popup.offsetLeft;
+			offset.y = e.clientY - popup.offsetTop;
+			window.addEventListener('mousemove', popupMove, true);
+		}
 	}
 
 	function popupMove(e){
@@ -116,30 +163,16 @@
 	}
 	//-- / let the popup make draggable & movable.
 
-
-	function spreadSmoke(flg) {
-		if ( flg ) {
-			var smoke = document.getElementById(`smoke_${index}`);
-			if ( smoke ) {
-				if ( smoke ) smoke.style.width = window.outerWidth + 100 + "px";
-				if ( smoke ) smoke.style.height = window.outerHeight + 100 + "px";
-				if (smoke && (flg != undefined) && (flg == true)) smoke.style.display = "block";
-			}
-		}
-	}
-
 </script>
 
-{#if use_smoke }
-<div id="smoke_{index}" class="smoke">...</div>
-{/if}
 <div id="popup_{index}"  class="popup" >
-	<div id="popup_bar_{index}" class="popup_bar" >
+	<div id="popup_bar_{index}" class="popup_bar" on:mousedown={mouseDown} on:mouseup={mouseUp} >
 	  {title}
-	  <span id="btn_close_{index}" class="btn_close" >[X]</span>
+	  <span id="btn_close_{index}" class="btn_close" on:click={handle_close} >[X]</span>
 	</div>
   <p style="font-size:0.75em;font-weight:bold;color:darkgreen;padding-left:4px">Press ESC to close window.</p>
   <slot></slot>
+  <Resizer on:message={handle_size} >&#9449;</Resizer>
 </div>
 
 

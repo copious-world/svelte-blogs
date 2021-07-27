@@ -460,12 +460,12 @@
 </div>
 
 
-<FloatWindow title={current_thing.title.substr(0,g_max_title_chars) + '...'}  index={0} scale_size_array={all_window_scales}  use_smoke={false}>
+<FloatWindow title={current_thing.title.substr(0,g_max_title_chars) + '...'}  index={0} scale_size_array={all_window_scales[0]} >
 	<FullThing {...current_thing} />
 </FloatWindow>
 
 
-<FloatWindow title="Selection List"  index={1} scale_size_array={all_window_scales}  use_smoke={false}>
+<FloatWindow title="Selection List"  index={1} scale_size_array={all_window_scales[1]} >
 	<Selections link_picks={all_link_picks}  />
 </FloatWindow>
 
