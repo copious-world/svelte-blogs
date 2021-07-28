@@ -8,51 +8,56 @@ let offset = { x: 0, y: 0 };
 function start_drag(e) {
     let mover = e.target
     if ( mover ) {
-        offset.x = e.clientX - mover.offsetLeft;
-        offset.y = e.clientY - mover.offsetTop;
+        offset.x = e.pageX;;
+        offset.y = e.pageY;
         window.addEventListener('mousemove', dragging, true);
+        window.addEventListener('mouseup', stop_drag, true);
     }
 }
 
 function stop_drag(e) {
     window.removeEventListener('mousemove', dragging, true);
+    window.removeEventListener('mouseup', stop_drag, true);
 }
 
 
 function dragging(e) {
     let mover = e.target
     if ( mover === undefined ) return
-    mover.style.position = 'absolute';
-    var top = e.clientY - offset.y;
-    var left = e.clientX - offset.x;
-    mover.style.top = top + 'px';
-    mover.style.left = left + 'px';
 
-    let rect = mover.getBoundingClientRect();
-
-    // 
-    let p_delta_w  = (rect.right/window.innerWidth)
-    let p_delta_h  = (rect.bottom/window.innerHeight)
-
+    const width_delta = (e.pageX - offset.x);
+    const height_delta = (e.pageY - offset.y)
     dispatch('message', {
-        "w_delta": p_delta_w,
-        "h_delta": p_delta_h
+        "w_delta": width_delta,
+        "h_delta": height_delta
     });
 
 }
 
 
+
+// https://medium.com/the-z/making-a-resizable-div-in-js-is-not-easy-as-you-think-bda19a1bc53d
+
 </script>
-<div class="drag-container" on:mousedown={start_drag}  on:mouseup={stop_drag} >
-    <slot></slot>
-</div>
+    <div class="drag-container" on:mousedown={start_drag}  on:mouseup={stop_drag} >
+        <slot></slot>
+    </div>    
 
 <style>
 
     .drag-container {
+        width: 25px;
+        height: 25px;
+        text-align: center;
+        vertical-align: middle;
+        border-radius: 50%; /*magic to turn square into circle*/
+        background: white;
+        border: 3px solid #4286f4;
+        box-sizing: border-box;
         position:absolute;
-        left: 0px;
-        top:0px;
+        right: -5px;
+        bottom: -5px;
+        cursor: nwse-resize;
     }
 
 

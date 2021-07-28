@@ -11,9 +11,26 @@
 
 	var SCROLL_WIDTH = 24;
 	var Z_BOTTOM = 500
+	const minimum_size = 300;
 	// 
 	//-- let the popup make draggable & movable.
 	let offset = { x: 0, y: 0 };
+
+	let original_width = 0;
+	let original_height = 0;
+	let original_x = 0;
+	let original_y = 0;
+
+
+	function originals(popup) {
+		if ( popup ) {
+			original_width = parseFloat(getComputedStyle(popup, null).getPropertyValue('width').replace('px', ''));
+			original_height = parseFloat(getComputedStyle(popup, null).getPropertyValue('height').replace('px', ''));
+			original_x = popup.getBoundingClientRect().left;
+			original_y = popup.getBoundingClientRect().top;
+		}
+	}
+
 
 	let scale_current_size = Object.assign({},scale_size_array)
 
@@ -28,27 +45,22 @@
 		//
 		var popup = document.getElementById(`popup_${index}`);
 		if ( popup === undefined ) return
+		do_resize(index)
 		//
 		var popup_bar = document.getElementById(`popup_bar_${index}`);
 		//
 		popup_bar.addEventListener('mousedown', mouseDown, false);
 		window.addEventListener('mouseup', mouseUp, false);
-
-		window.onkeydown = (e) => {
+		window.addEventListener('keydown',(e) => {
 			if ( e.keyCode == 27 ) { // if ESC key pressed
-				//var btn_close = document.getElementById(`btn_close_${index}`);
-				//btn_close.click(e);
-
 				var popup = document.getElementById(`popup_${index}`);
 				if ( popup === undefined ) return
 				popup.style.display = "none";
-				if ( smoke ) smoke.style.display = "none";
-
 			}
-		}
+		})
 
 		window.addEventListener("resize",(e) => {
-			do_resize()
+			do_resize(index)
 		})
 
 		window.start_floating_window = (index) => {
@@ -61,16 +73,20 @@
 	function fix_z_order(idx) {
 		let z_index_buffer = window._fws_z_order
 		if ( z_index_buffer !== undefined ) {
+			if ( typeof idx === "string" ) idx = parseInt(idx)
 			let pos = z_index_buffer.indexOf(idx)
-			z_index_buffer.splice(pos,1)
-			z_index_buffer.push(idx)
-			let bottom_z = Z_BOTTOM
-			for ( let p_i of z_index_buffer ) {
-				let popupId = `popup_${p_i}`
-				let popup = document.getElementById(popupId);
-				if ( popup ) {
-					popup.style.zIndex = bottom_z++
+			if ( pos >=0 ) {
+				z_index_buffer.splice(pos,1)
+				z_index_buffer.push(idx)
+				let bottom_z = Z_BOTTOM
+				for ( let p_i of z_index_buffer ) {
+					let popupId = `popup_${p_i}`
+					let popup = document.getElementById(popupId);
+					if ( popup ) {
+						popup.style.zIndex = bottom_z++
+					}
 				}
+
 			}
 		}
 	}
@@ -105,20 +121,33 @@
 		}
 	}
 
+
 	function handle_size(event) {
 		if ( event && event.detail ) {
 			let w_dlt = event.detail.w_delta
 			let h_dlt = event.detail.h_delta
 			//
-			scale_current_size.w += w_dlt
-			scale_current_size.h += h_dlt
-			do_resize()
+			const width = original_width + w_dlt;
+			const height = original_height + h_dlt;
+			var popup = document.getElementById(`popup_${index}`);
+			if ( popup ) {
+				if (width > minimum_size) {
+					popup.style.width = width + 'px'
+				}
+				if (height > minimum_size) {
+					popup.style.height = height + 'px'
+				}
+			}
 		}
 	}
 
-	function do_resize() {
-		popup.style.width = (window.innerWidth*scale_current_size.w) - SCROLL_WIDTH + "px";
-		popup.style.height = (window.innerHeight*scale_current_size.h) - SCROLL_WIDTH + "px";
+	function do_resize(ii) {
+		var popup = document.getElementById(`popup_${ii}`);
+		if ( popup ) {
+			popup.style.width = (window.innerWidth*scale_current_size.w) - SCROLL_WIDTH + "px";
+			popup.style.height = (window.innerHeight*scale_current_size.h) - SCROLL_WIDTH + "px";
+			originals(popup)
+		}
 	}
 
 	function popup_starter(ii) {
@@ -141,10 +170,10 @@
 	function mouseDown(e) {
 		let mover = e.target.id
 		if ( mover ) {
-			let idx = closer.replace('popup_bar_','')
+			let idx = mover.replace('popup_bar_','')
 			let popupId = `popup_${idx}`
 			var popup = document.getElementById(popupId);
-			if ( popup === undefined ) return
+			if ( !(popup) ) return
 			fix_z_order(idx)
 			offset.x = e.clientX - popup.offsetLeft;
 			offset.y = e.clientY - popup.offsetTop;
@@ -156,8 +185,8 @@
 		var popup = document.getElementById(`popup_${index}`);
 		if ( popup === undefined ) return
 		popup.style.position = 'absolute';
-		var top = e.clientY - offset.y;
-		var left = e.clientX - offset.x;
+		var top = Math.max((e.clientY - offset.y),0);
+		var left = Math.max((e.clientX - offset.x),0);
 		popup.style.top = top + 'px';
 		popup.style.left = left + 'px';
 	}
@@ -170,23 +199,12 @@
 	  {title}
 	  <span id="btn_close_{index}" class="btn_close" on:click={handle_close} >[X]</span>
 	</div>
-  <p style="font-size:0.75em;font-weight:bold;color:darkgreen;padding-left:4px">Press ESC to close window.</p>
-  <slot></slot>
-  <Resizer on:message={handle_size} >&#9449;</Resizer>
+	<p style="font-size:0.75em;font-weight:bold;color:darkgreen;padding-left:4px">Press ESC to close window.</p>
+		<slot></slot>
+	<Resizer on:message={handle_size} >&#9449;</Resizer>
 </div>
 
-
 <style>
-	
-	.smoke {
-		display:none;
-		position:absolute;
-		top:-30px;
-		left:-30px;
-		opacity:0.3;
-		background-color:black;
-		z-index:9998
-	}
 
 	.popup {
 		display:none;
