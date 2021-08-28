@@ -3,7 +3,7 @@
 
 	import ThingGrid from './ThingGrid.svelte';
 	import FullThing from './ThingFull.svelte';
-	import FloatWindow from './FloatWindow.svelte';
+	import FloatWindow from 'svelte-float-window';
 	import Selections from './Selections.svelte'
 
 	import { onMount } from 'svelte';

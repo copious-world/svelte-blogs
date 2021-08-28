@@ -3,7 +3,7 @@
 	export let name;
 
 	import ThingGrid from './ThingGrid.svelte';
-	import FloatWindow from './FloatWindow.svelte';
+	import FloatWindow from 'svelte-float-window';
 	import DemoGrid from './DemoGrid.svelte'
 
 	import gridHelp from "svelte-grid/build/helper/index.mjs";
@@ -207,7 +207,7 @@
 					// change the grid for the app
 					handle_item_change(athing)
 					current_thing = athing;
-					start_floating_window();
+					start_floating_window(0);
 				} else {
 					current_roller_title = athing.title
 					current_roller_subject = athing.subject
@@ -514,7 +514,7 @@
 </div>
 
 
-<FloatWindow title={current_thing.title.substr(0,g_max_title_chars) + '...'} scale_size={window_scale} use_smoke={false}>
+<FloatWindow title={current_thing.title.substr(0,g_max_title_chars) + '...'}  index={0}  scale_size={window_scale} >
 	<!-- <FullThing {...current_thing} /> -->
 	<DemoGrid {...current_thing}  items={items} graphs={component_graphs} cols={cols} rowHeight={50} />
 </FloatWindow>

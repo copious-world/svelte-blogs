@@ -5,7 +5,7 @@
 	// subject has been removed for this type of media... see blog (includes subject)
 
 	import ThingGrid from './ThingGrid.svelte';
-	import FloatWindow from './FloatWindow.svelte';
+	import FloatWindow from 'svelte-float-window';
 	import MediaElement from './MediaElement.svelte'
 
 	import { onMount } from 'svelte';
@@ -142,7 +142,7 @@
 					// change the grid for the app
 					current_thing = athing;
 					isplaying = true
-					start_floating_window();  // the is a window wide method created by the popup module. (looking for a cleaner way)
+					start_floating_window(0);  // the is a window wide method created by the popup module. (looking for a cleaner way)
 				} else {
 					current_roller_title = athing.title
 				}
@@ -412,10 +412,8 @@
 </div>
 
 
-<FloatWindow title={current_thing.title.substr(0,g_max_title_chars) + '...'} 
-			scale_size={window_scale} use_smoke={false}
-			on:message={propagateWindowEvent}  >
-	<!-- <FullThing {...current_thing} /> -->
+<FloatWindow title={current_thing.title.substr(0,g_max_title_chars) + '...'}  index={0}
+			 scale_size={window_scale} on:message={propagateWindowEvent}  >
 	<MediaElement {...current_thing} {isplaying}/>
 </FloatWindow>
 
