@@ -13,6 +13,81 @@
 	<link rel='stylesheet' href='./global.css'>
 	<link rel='stylesheet' href='./build/bundle.css'>
 
+
+
+	<script>
+		//
+		// ---- ---- ---- ---- ---- ---- ---- ---- ---- ----
+	
+		async function media_startup_test(player,media_type,protocol,cid,src) {
+			if ( protocol === 'ipfs' ) {
+				if ( src._is_encrypted ) {
+					let cwid = await crypto_ready_ipfs_cid(src)
+					return ipfs_loader(player,media_type,cwid)
+				} else {
+					return ipfs_loader(player,media_type,cid)
+				}
+			} else if ( protocol === 'local' ) {
+				protocol = "http:"		// get keys for server
+				let endpoint = 'images/view/'
+				endpoint += cid
+				let src_link = `${protocol}//${g_siteURL}/${endpoint}`
+				return src_link
+			}
+		}
+	
+		// ---- ---- ---- ---- ---- ---- ---- ---- ---- ----
+	
+		async function crypto_ready_ipfs_cid(cid,src) {
+			let data = {
+				"cid" : cid,
+				"ucwid" : src.ucwid_info
+			}
+			let url = 'streamer/key-media/' 
+			let srver = location.host
+			let prot = location.protocol
+			let sp = '//'
+			//
+			try {
+				let result = await  await postData(`${prot}${sp}${srver}/key-media`, data)
+				if ( result.status === "OK" ) {
+					let clear_cwid = result.api_key
+					if ( clear_cwid === src.ucwid_info.ucwid_packet.clear_cwid ) {
+						return clear_cwid
+					}
+				}
+			} catch(e) {
+			}
+			return false
+		}
+	
+		// ---- ---- ---- ---- ---- ---- ---- ---- ---- ----
+		// ---- ---- ---- ---- ---- ---- ---- ---- ---- ----
+	
+		function ipfs_loader(media_el,media_type,hash_id) {
+			//
+			let endpoint = 'streamer/ipfs/'
+			//
+			if ( media_type == "audio" ) {
+				endpoint = 'streamer/ipfs/'
+			} else if ( media_type == "images" ) {
+				endpoint = 'images/ipfs/'
+			} else if ( media_type == "video" ) { 
+				endpoint = 'video/ipfs/'
+			}
+			//
+			endpoint += hash_id
+			//
+			let protocol = location.protocol
+			protocol = "http:"		// get keys for server
+			let src_link = `${protocol}//${g_siteURL}/${endpoint}`
+			//media_el.src = src_link
+			return src_link
+		}
+	
+		// ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ----
+	</script>
+	
 	<script defer src='./build/bundle.js'></script>	
 
 

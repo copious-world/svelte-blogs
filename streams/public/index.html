@@ -16,9 +16,9 @@
 
 <script>
 	//
-	// ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ----
+	// ---- ---- ---- ---- ---- ---- ---- ---- ---- ----
 
-	async function media_startup(player,media_type,protocol,cid,src) {
+	async function media_startup_test(player,media_type,protocol,cid,src) {
 		if ( protocol === 'ipfs' ) {
 			if ( src._is_encrypted ) {
 				let cwid = await crypto_ready_ipfs_cid(src)
@@ -37,17 +37,21 @@
 
 	// ---- ---- ---- ---- ---- ---- ---- ---- ---- ----
 
-	async function crypto_ready_cid(cid,src) {
+	async function crypto_ready_ipfs_cid(cid,src) {
 		let data = {
 			"cid" : cid,
 			"ucwid" : src.ucwid_info
 		}
 		let url = 'streamer/key-media/' 
+		let srver = location.host
+		let prot = location.protocol
+		let sp = '//'
+		//
 		try {
-			let result = await postData(url,data)
+			let result = await  await postData(`${prot}${sp}${srver}/key-media`, data)
 			if ( result.status === "OK" ) {
 				let clear_cwid = result.api_key
-				if ( clear_cwid === src.ucwid_info.clear_cwid ) {
+				if ( clear_cwid === src.ucwid_info.ucwid_packet.clear_cwid ) {
 					return clear_cwid
 				}
 			}
