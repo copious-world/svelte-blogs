@@ -23,19 +23,30 @@
 		}
 	}
 
-	let source_link
+	let source_link = ""
 	$:  {
 		if ( vid_el !== null ) {
-			source_link = media_startup(vid_el,'video','ipfs',v_cid,source)
+			figure_source_link()
 		}
 	}
 
-	let poster_link
+	let poster_link = ""
 	$:  {
 		if ( vid_el !== null ) {
-			poster_link = media_startup(vid_el,'images','ipfs',a_poster_cid,source)
+			figure_poster_link() 
 		}
 	}
+
+
+	async function figure_source_link() {
+		source_link = media_startup(vid_el,'video','ipfs',v_cid,source)
+	}
+
+
+	async function figure_poster_link() {
+		poster_link = media_startup(vid_el,'images','ipfs',a_poster_cid,poster)
+	}
+
 
 
 	let showControls = true;

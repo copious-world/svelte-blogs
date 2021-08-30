@@ -15,11 +15,17 @@
 
 
 <script>
+	//
 	// ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ----
 
-	function media_startup(player,media_type,protocol,cid,src) {
+	async function media_startup(player,media_type,protocol,cid,src) {
 		if ( protocol === 'ipfs' ) {
-			return ipfs_loader(player,media_type,cid)
+			if ( src._is_encrypted ) {
+				let cwid = await crypto_ready_ipfs_cid(src)
+				return ipfs_loader(player,media_type,cwid)
+			} else {
+				return ipfs_loader(player,media_type,cid)
+			}
 		} else if ( protocol === 'local' ) {
 			protocol = "http:"		// get keys for server
 			let endpoint = 'images/view/'
@@ -28,6 +34,30 @@
 			return src_link
 		}
 	}
+
+	// ---- ---- ---- ---- ---- ---- ---- ---- ---- ----
+
+	async function crypto_ready_cid(cid,src) {
+		let data = {
+			"cid" : cid,
+			"ucwid" : src.ucwid_info
+		}
+		let url = 'streamer/key-media/' 
+		try {
+			let result = await postData(url,data)
+			if ( result.status === "OK" ) {
+				let clear_cwid = result.api_key
+				if ( clear_cwid === src.ucwid_info.clear_cwid ) {
+					return clear_cwid
+				}
+			}
+		} catch(e) {
+		}
+		return false
+	}
+
+	// ---- ---- ---- ---- ---- ---- ---- ---- ---- ----
+	// ---- ---- ---- ---- ---- ---- ---- ---- ---- ----
 
 	function ipfs_loader(media_el,media_type,hash_id) {
 		//
@@ -49,18 +79,6 @@
 		//media_el.src = src_link
 		return src_link
 	}
-
-
-	/*
-		let ucwid_info = source.ucwid_info
-		
-		have in info the wrapped key, cwids, nonce...
-		send it to the endpoint
-		//
-		let response = await post() // ... returns a URL
-		let src_link = response.url // ...
-	*/
-
 
 	// ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ----
 </script>

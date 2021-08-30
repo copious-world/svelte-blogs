@@ -19,11 +19,15 @@
 	let a_poster_cid
 	$: a_poster_cid = poster && poster.protocol ? poster.cid : false
 
-	let source_link
+	let source_link = ""
 	$:  {
 		if ( audio !== null ) {
-			source_link = media_startup(audio,'audio','ipfs',a_cid,source)
+			figure_source_link()
 		}
+	}
+
+	async function figure_source_link() {
+		source_link = await media_startup(audio,'audio','ipfs',a_cid,source)
 	}
 
 	function stopOthers() {
