@@ -4,13 +4,17 @@
 
 	// subject has been removed for this type of media... see blog (includes subject)
 
-	import ThingGrid from './ThingGrid.svelte';
+	import ThingGrid from 'grid-of-things';
 	import FloatWindow from 'svelte-float-window';
 	import MediaElement from './MediaElement.svelte'
+	import Thing from './Thing.svelte'
 
 	import { onMount } from 'svelte';
 
-	import {get_search} from "./search_box.js"
+	import Selections from '../../common/Selections.svelte'
+	import {link_picker,picker} from "../../common/link-pick.js"
+	import {get_search} from "../../common/search_box.js"
+
 
 	function clonify(obj) {
 		let o = JSON.parse(JSON.stringify(obj))
@@ -58,7 +62,8 @@
 	// //
 
 
-	let window_scale = { "w" : 0.4, "h" : 0.8 }
+
+	let window_scale = { "w" : 0.4, "h" : 0.6 }
 
 	function popup_size() {
 		let smallest_w = 200   // smallest and bigget willing to accomodate
@@ -78,11 +83,11 @@
 		let p_range
 		let P
 		//	percentage h range 
-		let h_p_max = 0.96
-		let h_p_min = 0.75
+		let h_p_max = 0.80
+		let h_p_min = 0.60
 		p_range = h_p_max - h_p_min
 		P = (biggest_h - h)/(biggest_h - smallest_h)
-		console.log("P h: " + P)
+		//console.log("P h: " + P)
 		let h_scale = P*(p_range) + h_p_min
 
 		//	percentage w range 
@@ -90,7 +95,7 @@
 		let w_p_min = 0.20
 		p_range = w_p_max - w_p_min
 		P = (biggest_w - w)/(biggest_w - smallest_w)
-		console.log("P w: " + P)
+		//console.log("P w: " + P)
 		let w_scale = P*(p_range) + w_p_min
 
 		// Setting the current height & width 
@@ -101,6 +106,9 @@
 
 	//
 	window_scale = popup_size()
+	let all_window_scales = []
+	all_window_scales.push(window_scale)
+	all_window_scales.push(window_scale)
 	//
 	onMount(() => {
 		window.addEventListener("resize", (e) => {
@@ -114,6 +122,8 @@
 	})
 
 
+
+
 	function unload_data(data) { 		// retun the same object with all its fields only changing ones tranported encoded
 		let usable_data = data.map(datum => {
 						datum.title = decodeURIComponent(datum.title)
@@ -125,6 +135,7 @@
 					})
 		return usable_data
 	}
+
 
 	let isplaying = true
 	function handleMessage(event) {
@@ -355,6 +366,20 @@
 
 
 	
+	
+	let count_value;
+	const unsubscribe = picker.subscribe(value => {
+		count_value = value;
+		link_picker.map_picks(things)
+	});
+
+
+	function pop_up_selections(ev) {
+		all_link_picks = link_picker.get_pick_values()
+		start_floating_window(1);
+	}
+
+
 </script>
 
 
@@ -402,20 +427,26 @@
 	</div>
 	<div style="border: solid 1px grey;padding: 4px;background-color:#F5F6EF;">
 		<div class="sel-titles" >Title: {current_roller_title}</div>
+		<div class="sel-titles" style="width: 15%;"><button on:click={pop_up_selections}>show selections</button></div>
 	</div>
   
 	<div class="blg-grid-container">
-		<ThingGrid things={things} on:message={handleMessage} />
+		<ThingGrid things={things} thing_component={Thing} on:message={handleMessage} />
 	</div>
 
-	
 </div>
 
 
-<FloatWindow title={current_thing.title.substr(0,g_max_title_chars) + '...'}  index={0}
-			 scale_size={window_scale} on:message={propagateWindowEvent}  >
+<FloatWindow title={current_thing.title.substr(0,g_max_title_chars) + '...'}  index={0} 
+			scale_size_array={all_window_scales[0]}  on:message={propagateWindowEvent} >
 	<MediaElement {...current_thing} {isplaying}/>
 </FloatWindow>
+
+
+<FloatWindow title="Selection List"  index={1} scale_size_array={all_window_scales[1]} >
+	<Selections link_picks={all_link_picks}  />
+</FloatWindow>
+
 
 
 <style>

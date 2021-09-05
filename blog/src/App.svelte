@@ -1,15 +1,17 @@
 <script>
 	export let name;
 
-	import ThingGrid from './ThingGrid.svelte';
 	import FullThing from './ThingFull.svelte';
+	import Thing from './Thing.svelte'
+	import ThingGrid from 'grid-of-things';
 	import FloatWindow from 'svelte-float-window';
-	import Selections from './Selections.svelte'
+
+	import Selections from '../../common/Selections.svelte'
+	import {link_picker,picker} from "../../common/link-pick.js"
+	import {get_search} from "../../common/search_box.js"
 
 	import { onMount } from 'svelte';
 
-	import {get_search} from "./search_box.js"
-	import {link_picker,picker} from "./link-pick.js"
 
 	const appsearch = 'search'  //   search later translated to songsearch (nginx conf by url)
 
@@ -51,6 +53,7 @@
 	
 	console.log(current_thing)
 
+	
 	let window_scale = { "w" : 0.4, "h" : 0.6 }
 
 	function popup_size() {
@@ -449,11 +452,10 @@
 	<div style="border: solid 1px grey;padding: 4px;background-color:#F5F6EF;">
 		<div class="sel-titles" >Title: {current_roller_title}</div><div class="sel-titles">Subject: {current_roller_subject}</div>
 		<div class="sel-titles" style="width: 15%;"><button on:click={pop_up_selections}>show selections</button></div>
-
 	</div>
   
 	<div class="blg-grid-container">
-		<ThingGrid things={things} on:message={handleMessage} />
+		<ThingGrid things={things} thing_component={Thing} on:message={handleMessage} />
 	</div>
 
 	

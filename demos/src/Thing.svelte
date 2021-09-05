@@ -1,4 +1,7 @@
 <script>
+
+	import {link_picker,picker} from "../../common/link-pick.js"
+
 	// `current` is updated whenever the prop value changes...
 	export let color;
 	export let entry;
@@ -16,6 +19,9 @@
 	if ( t_type !== 'markdown' ) {
 		txt_full = decodeURIComponent(txt_full)
 	}
+
+	let picked_this = false
+	$: picked_this = link_picker.is_picked(entry)
 
 
 	let truncated
@@ -64,11 +70,31 @@
 			"txt_full" : ""
 	*/
 
+
+	function toggle_pick(ev) {
+		ev.stopPropagation ()
+		link_picker.toggle_pick(entry)
+		if ( picked_this ) {
+			picker.increment()
+		} else {
+			picker.decrement()
+		}
+	}
+
+	let count_value;
+	const unsubscribe = picker.subscribe(value => {
+		count_value = value;
+		picked_this = link_picker.is_picked(entry)
+	});
+
+
 </script>
 
 {#if dates.created != 'never' }
 <div class="blg-el-wrapper" >
-	
+		
+	<input type="checkbox" bind:checked={picked_this} on:click={toggle_pick} />
+
 	<span style="background-color: {color}">{entry}</span>
 	<span style="background-color: yellowgreen">{created_when}</span>
 	<span style="background-color: lightblue">{updated_when}</span>

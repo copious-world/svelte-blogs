@@ -23,6 +23,7 @@
 		}
 	}
 
+	let source_counter = false
 	let source_link = ""
 	$:  {
 		if ( vid_el !== null ) {
@@ -30,6 +31,7 @@
 		}
 	}
 
+	let poster_counter = false
 	let poster_link = ""
 	$:  {
 		if ( vid_el !== null ) {
@@ -38,13 +40,21 @@
 	}
 
 
+	
+
 	async function figure_source_link() {
-		source_link = media_startup(vid_el,'video','ipfs',v_cid,source)
+		if ( source && (typeof source !== "string") && source._x_link_counter ) {
+				source_counter = source._x_link_counter
+		}
+		source_link = media_startup(vid_el,'video','ipfs',v_cid,source,source_counter)
 	}
 
 
 	async function figure_poster_link() {
-		poster_link = media_startup(vid_el,'images','ipfs',a_poster_cid,poster)
+		if ( poster && (typeof poster !== "string") && poster._x_link_counter ) {
+			poster_counter = poster._x_link_counter
+		}
+		poster_link = media_startup(vid_el,'images','ipfs',a_poster_cid,poster,poster_counter)
 	}
 
 

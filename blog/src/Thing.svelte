@@ -1,6 +1,6 @@
 <script>
 
-	import {link_picker,picker} from "./link-pick.js"
+	import {link_picker,picker} from "../../common/link-pick.js"
 
 	// `current` is updated whenever the prop value changes...
 	export let abstract;
@@ -16,13 +16,13 @@
 	export let txt_full;
 
 	let truncated
-	$: truncated = txt_full.substr(0,250) + "&#8230;"
+	$: truncated = (txt_full !== undefined) ? txt_full.substr(0,250) + "&#8230;" : "search"
 
-	$: key_str = keys.join(', ')
+	$: key_str = keys ? keys.join(', ') : ""
 
 	let score_rounded
 
-	$: score_rounded = score.toFixed(3);
+	$: score_rounded = score ? score.toFixed(3) : 0;
 
 	let picked_this = false
 	$: picked_this = link_picker.is_picked(entry)
@@ -41,14 +41,14 @@
 	let updated_when
 	let created_when
 
-	$: updated_when = convert_date(dates.updated)
-	$: created_when = convert_date(dates.created)
+	$: updated_when = dates ? convert_date(dates.updated) : ""
+	$: created_when = dates ? convert_date(dates.created) : ""
 
 	let short_title
-	$: short_title = title.substr(0,16) + '...'
+	$: short_title = title ? title.substr(0,16) + '...'  : "..."
 
 	let short_subject
-	$: short_subject = subject.substr(0,32) + '...'
+	$: short_subject = subject ? subject.substr(0,32) + '...' : "..."
 
 	function toggle_pick(ev) {
 		ev.stopPropagation ()
@@ -68,10 +68,11 @@
 
 </script>
 
-{#if dates.created != 'never' }
+{#if dates && (dates.created != 'never') }
 <div class="blg-el-wrapper" >
 	
 	<input type="checkbox" bind:checked={picked_this} on:click={toggle_pick} />
+	
 	<span style="color: darkbrown">{entry}</span>
 	<span style="background-color: yellowgreen">{created_when}</span>
 	<span style="background-color: lightblue">{updated_when}</span>

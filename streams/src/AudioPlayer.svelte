@@ -17,15 +17,30 @@
 	let paused = true;
 	let audio;
 
+	let poster_link
+	let poster_counter = false
+	$: {
+		if ( poster && poster._x_link_counter ) {
+			poster_counter = poster._x_link_counter
+		}
+		let name = poster.name
+		poster_link = media_startup(false,'images','local',name,poster_counter)
+	}
+
+
 	let source_link
+	let source_counter = false
 	$:  {
 		if ( audio !== null ) {
+			if ( source && (typeof source !== "string") && source._x_link_counter ) {
+				source_counter = source._x_link_counter
+			}
 			if ( typeof source === "string" ) {
 				source_link = source
 			} else {
 				if ( media.protocol === "ipfs" ) {
 					let a_cid = media.ipfs
-					source_link = media_startup(audio,'audio','ipfs',a_cid,source)
+					source_link = media_startup(audio,'audio','ipfs',a_cid,source,source_counter)
 				}
 			}
 		}

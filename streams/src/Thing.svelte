@@ -1,6 +1,6 @@
 <script>
 	import AudioPlayer from "./AudioPlayer.svelte";
-	import {link_picker} from "./link-pick.js"
+	import {link_picker,picker} from "../../common/link-pick.js"
 	//
 	// `current` is updated whenever the prop value changes...
 	export let color;
@@ -22,25 +22,20 @@
 
 	$: is_audio = (media_type == 'audio')
 
+
 	let poster_link
-	$:  {
-			let poster = media ? media.poster : false
-			if ( poster ) {
-				let name = poster.name
-				poster_link = media_startup(false,'images','local',name)
-			}
-			//
-			//let proto = media && media.poster ?  media.poster.protocol : false
-			//let a_poster_cid = proto ? media.poster[proto] : false
-			//poster_link = media_startup(false,'images','ipfs',a_poster_cid)
+	let poster_counter = false
+	$: {
+		let poster = media ? media.poster : false
+		if ( poster && poster._x_link_counter ) {
+			poster_counter = poster._x_link_counter
+		}
+		let name = poster.name
+		poster_link = media_startup(false,'images','local',name,poster_counter)
 	}
 
 	let picked_this = false
 	$: picked_this = link_picker.is_picked(entry)
-
-	function toggle_pick(ev) {
-		link_picker.toggle_pick(entry)
-	}
 
 	// //
 	function convert_date(secsdate) {
@@ -62,11 +57,31 @@
 	let short_title
 	$: short_title = title.substr(0,16) + '...'
 
-	
+
+	function toggle_pick(ev) {
+		ev.stopPropagation ()
+		link_picker.toggle_pick(entry)
+		if ( picked_this ) {
+			picker.increment()
+		} else {
+			picker.decrement()
+		}
+	}
+
+	let count_value;
+	const unsubscribe = picker.subscribe(value => {
+		count_value = value;
+		picked_this = link_picker.is_picked(entry)
+	});
+
+
 </script>
 
 {#if dates.created != 'never' }
 <div class="blg-el-wrapper" >
+			
+	<input type="checkbox" bind:checked={picked_this} on:click={toggle_pick} />
+
 	<span style="background-color: {color}">{entry}</span> <input type="checkbox" bind:checked={picked_this} on:click={toggle_pick} />
 	<span style="background-color: yellowgreen">{created_when}</span>
 	<span style="background-color: lightblue">{updated_when}</span>

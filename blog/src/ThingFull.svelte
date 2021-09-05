@@ -1,6 +1,6 @@
 <script>
 
-	import {link_picker,picker} from "./link-pick.js"
+	import {link_picker,picker} from "../../common/link-pick.js"
 
 	// ref ... https://gist.github.com/akirattii/9165836
 

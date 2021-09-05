@@ -17,17 +17,21 @@
 	$: a_cid = ipfs
 
 	let a_poster_cid
+	let source_counter = false
 	$: a_poster_cid = poster && poster.protocol ? poster.cid : false
 
 	let source_link = ""
 	$:  {
 		if ( audio !== null ) {
-			figure_source_link()
+			if ( source && (typeof source !== "string") && source._x_link_counter ) {
+				source_counter = source._x_link_counter
+			}
+			figure_source_link(source_counter)
 		}
 	}
 
-	async function figure_source_link() {
-		source_link = await media_startup(audio,'audio','ipfs',a_cid,source)
+	async function figure_source_link(scounter) {
+		source_link = await media_startup(audio,'audio','ipfs',a_cid,source,scounter)
 	}
 
 	function stopOthers() {
