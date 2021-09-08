@@ -8,8 +8,11 @@
 	let poster
 	let source
 
+	let session = ""		// get this from local storage (cookie)
+
 	$: poster = media.poster
 	$: source = media.source
+	$: tracking = media._tracking
 
 	// These values are bound to properties of the video
 	//let time = 0;
@@ -17,39 +20,34 @@
 	let paused = true;
 	let audio;
 
+	let links = {
+		"source" : "",
+		"poster" : ""
+	}
+
 	let poster_link
-	let poster_counter = false
-	$: {
-		if ( poster && poster._x_link_counter ) {
-			poster_counter = poster._x_link_counter
-		}
-		let name = poster.name
-		poster_link = media_startup(false,'images','local',name,poster_counter)
-	}
-
-
 	let source_link
-	let source_counter = false
-	$:  {
-		if ( audio !== null ) {
-			if ( source && (typeof source !== "string") && source._x_link_counter ) {
-				source_counter = source._x_link_counter
-			}
-			if ( typeof source === "string" ) {
-				source_link = source
-			} else {
-				if ( media.protocol === "ipfs" ) {
-					let a_cid = media.ipfs
-					source_link = media_startup(audio,'audio','ipfs',a_cid,source,source_counter)
-				}
-			}
+	$: {
+		set_links(tracking)
+	}
+ 
+	async function set_links(tracking) {
+		let counter_service = media._x_link_counter
+		links = await media_startup(tracking,'ipfs',media,counter_service,session)
+		if ( media_links.poster ) {
+			poster_link = media_links.poster
+		}
+		if ( media_links.source ) {
+			source_link = media_links.source_link
 		}
 	}
+
 
 	function stopOthers() {
 		if (current && current !== audio) current.pause();
 		current = audio;
 	}
+
 
 </script>
 
@@ -64,7 +62,7 @@
 	<audio controls controlsList="nodownload"  on:play={stopOthers} 
 							bind:this={audio}
 							bind:paused  >
-		<source   src="{source_link}" type="audio/ogg">
+		<source src="{source_link}" type="audio/ogg">
 		<source src="{source_link}" type="audio/mpeg">
 		Your browser does not support the audio element.
 	</audio>
