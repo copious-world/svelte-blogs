@@ -1,8 +1,6 @@
 <script>
-	export let poster
-	export let source
-	export let isplaying
-	export let ipfs
+
+	export let media
 
 	// These values are bound to properties of the video
 	let time = 0;
@@ -11,52 +9,29 @@
 
 	let vid_el = null
 
-	let v_cid
-	$: v_cid = ipfs
+	let links = {
+		"source" : "",
+		"poster" : ""
+	}
 
-	let a_poster_cid
-	$: a_poster_cid = poster && poster.protocol ? poster.cid : false
-
+	let poster_link
+	let source_link
 	$: {
-		if ( !isplaying && (vid_el !== null) ) {
-			vid_el.pause();
+		set_links(tracking)
+	}
+ 
+	async function set_links(tracking) {
+		let counter_service = media._x_link_counter
+		links = await media_startup(tracking,'ipfs',media,counter_service,session)
+		if ( media_links.poster ) {
+			poster_link = media_links.poster
+		}
+		if ( media_links.source ) {
+			source_link = media_links.source_link
 		}
 	}
-
-	let source_counter = false
-	let source_link = ""
-	$:  {
-		if ( vid_el !== null ) {
-			figure_source_link()
-		}
-	}
-
-	let poster_counter = false
-	let poster_link = ""
-	$:  {
-		if ( vid_el !== null ) {
-			figure_poster_link() 
-		}
-	}
-
 
 	
-
-	async function figure_source_link() {
-		if ( source && (typeof source !== "string") && source._x_link_counter ) {
-				source_counter = source._x_link_counter
-		}
-		source_link = media_startup(vid_el,'video','ipfs',v_cid,source,source_counter)
-	}
-
-
-	async function figure_poster_link() {
-		if ( poster && (typeof poster !== "string") && poster._x_link_counter ) {
-			poster_counter = poster._x_link_counter
-		}
-		poster_link = media_startup(vid_el,'images','ipfs',a_poster_cid,poster,poster_counter)
-	}
-
 
 
 	let showControls = true;

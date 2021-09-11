@@ -1,7 +1,22 @@
 <script>
-	export let poster
-	export let source
-	export let isplaying
+
+	export let media
+
+
+	let poster
+	let source
+
+	export let isplaying = false
+
+	$: poster = media.poster
+	$: source = media.link
+
+
+	let poster_link = ""
+	let source_link = ""
+	
+	$: poster_link = media_startup(false,"local",poster)
+	$: source_link = media_startup(false,"local",source)
 
 	// These values are bound to properties of the video
 	let time = 0;
@@ -121,8 +136,8 @@
 
 <div>
 	<video
-		poster="{poster}"
-		src="{source}"
+		poster="{poster_link}"
+		src="{source_link}"
 		on:mousemove={handleMousemove}
 		on:mousedown={handleMousedown}
 		bind:currentTime={time}
