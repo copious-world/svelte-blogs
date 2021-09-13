@@ -13,6 +13,8 @@
 	export let media
 	export let score;
 	export let id;
+	export let session;
+	export let _tracking
 	// // 
 	let score_rounded
 
@@ -22,16 +24,27 @@
 
 	$: is_audio = (media_type == 'audio')
 
+	// ---- ---- ---- ---- ---- ---- ---- ----
+	$: tracking = _tracking
 
-	let poster_link
-	let poster_counter = false
+	let poster_link = ""
+	let source_link = ""
+
 	$: {
-		let poster = media ? media.poster : false
-		if ( poster && poster._x_link_counter ) {
-			poster_counter = poster._x_link_counter
+		set_links(tracking)
+	}
+
+	async function set_links(tracking) {
+		let counter_service = media._x_link_counter
+		let media_links = await media_startup(tracking,media.protocol,media,counter_service,session)
+		if ( media_links ) {
+			if ( media_links.poster ) {
+				poster_link = media_links.poster
+			}
+			if ( media_links.source ) {
+				source_link = media_links.source
+			}
 		}
-		let name = poster.name
-		poster_link = media_startup(false,'images','local',name,poster_counter)
 	}
 
 	let picked_this = false
@@ -79,10 +92,8 @@
 
 {#if dates.created != 'never' }
 <div class="blg-el-wrapper" >
-			
 	<input type="checkbox" bind:checked={picked_this} on:click={toggle_pick} />
-
-	<span style="background-color: {color}">{entry}</span> <input type="checkbox" bind:checked={picked_this} on:click={toggle_pick} />
+	<span style="background-color: {color}">{entry}</span>
 	<span style="background-color: yellowgreen">{created_when}</span>
 	<span style="background-color: lightblue">{updated_when}</span>
 	<h4 class="blg-item-title" style="background-color: inherit;">{short_title}</h4>
@@ -91,7 +102,7 @@
 		{#if is_audio }
 			<AudioPlayer {media} />
 		{:else}
-			<img src="{poster_link}" height="120px" >
+			<img src="{poster_link}" height="120px" alt="{title}" >
 		{/if}
 	</div>	
 </div>

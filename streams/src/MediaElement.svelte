@@ -1,11 +1,10 @@
 <script>
 	// for the larger display ... occupies a slot in the Float Window...
 	// When an element is selected, one kind of media play gets picked depending on the element media type.
-import VideoPlayer from "./VideoPlayer.svelte";
+import ExtendedVideoPlayer from "./ExtendedVideoPlayer.svelte";
 import AudioPlayer from "./AudioPlayer.svelte";
-import IPFS_VideoPlayer from "./IPFS_VideoPlayer.svelte"
 import IPFS_AudioPlayer from "./IPFS_AudioPlayer.svelte"
-import {link_picker} from "./link-pick.js"
+import {link_picker} from "../../common/link-pick.js"
 
 //
 export let color;
@@ -17,8 +16,14 @@ export let media_type;
 export let abstract;
 export let media
 export let isplaying
+export let _tracking
+export let session
+
 
 let fillFree = true;
+
+let tracking = ""
+$: tracking = _tracking
 
 function convert_date(secsdate) {
 	if ( secsdate === 'never' ) {
@@ -46,8 +51,6 @@ $: is_audio = (media_type == 'audio')
 let short_title
 $: short_title = title.substr(0,45)
 
-let descr_on = false;
-
 let is_ipfs
 $: is_ipfs = (media.protocol === 'ipfs')
 
@@ -55,7 +58,6 @@ $: is_ipfs = (media.protocol === 'ipfs')
 function toggle_pick(ev) {
 	link_picker.toggle_pick(entry)
 }
-
 
 function play_media(ev) {
 	// turn on/off media player
@@ -95,15 +97,9 @@ function rewind_media(ev) {
 		</div>
 	{/if}
 {:else} 
-	{#if is_ipfs }
-		<div class="video_box" >
-			<IPFS_VideoPlayer {media} {isplaying} />
-		</div>
-	{:else}
-		<div class="video_box" >
-			<VideoPlayer {media} {isplaying} />
-		</div>
-	{/if}
+	<div class="video_box" >
+		<ExtendedVideoPlayer {media} {tracking} {isplaying} {session} />
+	</div>
 {/if}
 	<div class="description" >
 		{@html abstract}
@@ -121,16 +117,6 @@ function rewind_media(ev) {
 		text-align: center;
 		border-radius: 0.2em;
 		color: white;
-	}
-
-	.view-ctrl {
-		font-size: 0.80em;
-	}
-
-	.view-ctrl button {
-		max-height: 25px;
-		height: fit-content;
-		border-radius: 25px;
 	}
 
 	.blg-item-title {

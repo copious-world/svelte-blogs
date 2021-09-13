@@ -9,6 +9,9 @@
 
 	let vid_el = null
 
+	$: tracking = media._tracking
+
+
 	let links = {
 		"source" : "",
 		"poster" : ""
@@ -19,10 +22,10 @@
 	$: {
 		set_links(tracking)
 	}
- 
+
 	async function set_links(tracking) {
 		let counter_service = media._x_link_counter
-		links = await media_startup(tracking,'ipfs',media,counter_service,session)
+		links = await media_startup(tracking,media.protocol,media,counter_service,session)
 		if ( media_links.poster ) {
 			poster_link = media_links.poster
 		}
