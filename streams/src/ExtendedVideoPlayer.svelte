@@ -24,7 +24,6 @@
 				source = source_link
 				poster = poster_link
 				show_video = !((source === undefined) || (source.length === 0))
-				console.log("THIS IS A TEST: " + source)
 		})()
 	}
 
@@ -51,6 +50,6 @@
 	{#if !(show_video) }
 		<span>no video</span>
 	{:else}
-		<VideoPlayer {source} {poster} calc_source={false} />
+		<VideoPlayer {source} {poster} calc_source={false} paused={!(isplaying)} />
 	{/if}
 </div>

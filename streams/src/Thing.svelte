@@ -30,7 +30,7 @@
 	let poster_link = ""
 	let source_link = ""
 
-	$: {
+	$: if ( tracking !== false ) {
 		set_links(tracking)
 	}
 

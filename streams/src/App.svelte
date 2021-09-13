@@ -139,8 +139,11 @@
 
 	function propagateWindowEvent(event) {
 		let etype = event.detail.type
-		if ( etype === "closed" ) {
-			isplaying = false
+		let el_name = event.detail.element
+		if ( etype === "click" ) {
+			if ( el_name.indexOf('btn_close_') === 0 ) {
+				isplaying = false
+			}
 		}
 	}
 
