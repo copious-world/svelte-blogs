@@ -11,6 +11,7 @@
 
 	import { onMount } from 'svelte';
 
+	import { process_search_results, place_data, clonify, make_empty_thing, link_server_fetch } from '../../common/data-utils.js'
 	import Selections from '../../common/Selections.svelte'
 	import {link_picker,picker} from "../../common/link-pick.js"
 	import {get_search} from "../../common/search_box.js"
@@ -36,39 +37,6 @@
 	}
 
 	//
-	const COLS = 16;
-
-	let itemsA = [
-		{
-			[COLS]: gridHelp.item({
-			x: 0,
-			y: 0,
-			w: 2,
-			h: 2,
-			}),
-			id: id(),
-		},
-		{
-			[COLS]: gridHelp.item({
-			x: 2,
-			y: 0,
-			w: 2,
-			h: 2,
-			}),
-			id: id(),
-		},
-		{
-			[COLS]: gridHelp.item({
-			x: 4,
-			y: 0,
-			w: 5,
-			h: 2,
-			fixed: true,
-			}),
-			id: id(),
-		},
-	];
-
 	let cols
 	let cols1 = [[1287, 16]];
 	let cols2 = [[1100, 16]];
@@ -118,25 +86,10 @@
 	let current_roller_title = ""
 	let current_roller_subject = ""
 
+	let thing_template = make_empty_thing()
 
-	let current_thing = { 
-			"id" : 0, "color": 'grey',
-			"entry" : 0,
-			"title" : "no content",
-			"dates" : {
-				"created" : "never",
-				"updated" : "never"
-			},
-			"subject" : "",
-			"keys" : [  ],
-			"t_type" : "",
-			"txt_full" : "",
-			"score" : 1.0,
-			"components" : {
-				"graphic" : [],
-				"boxes" : []
-			}
-		}
+	let current_thing = Object.assign({ "id" : 0, "entry" : 0 },thing_template)
+	let app_empty_object = Object.assign({ "id" : 1, "entry" : -1 },thing_template)
 
 
 	let window_scale = { "w" : 0.4, "h" : 0.6 }
@@ -225,23 +178,12 @@
 	}
 
 
-	let app_empty_object = { "id" : 1, "color": 'grey',
-			"entry" : -1,
-			"title" : "",
-			"dates" : {
-				"created" : "never",
-				"updated" : "never"
-			},
-			"subject" : "",
-			"keys" : [  ],
-			"t_type" : "",
-			"txt_full" : "",
-			"score" : 1.0,
-			"components" : {
-				"graphic" : [],
-				"boxes" : []
-			}
-		}
+	function clickEmptyElement(thing_counter) {
+		 let elem = clonify(app_empty_object)
+		 elem.id = thing_counter
+		 return elem
+	}
+
 
 	let things = [				// window
 		app_empty_object
@@ -279,9 +221,9 @@
 		let end = (article_index + things.length)
 		let start = article_index - 1
 		if ( needs_data(start,end) ) {
-			load_and_place_data(start,things.length)
+			data_fetcher(start,things.length)
 		} else {
-			place_data()
+			place_data(things,other_things,article_index)
 		}
 	}
 
@@ -294,74 +236,25 @@
 		}
 	}
 
-
-	
+	// ---- ---- ---- ---- ---- ---- ----
 	async function handleClick_add() {
 		let start = things.length
 		for ( let i = 0; i < box_delta; i++ ) {
 			let thing_counter = things.length
 			thing_counter++
-			things = [...things, 
-			{
-				"id" : thing_counter, "color": "grey",
-				"title" : "",
-				"dates" : {
-					"created" : "never",
-					"updated" : "never"
-				},
-				"subject" : "",
-				"keys" : [  ],
-				"t_type" : "",
-				"txt_full" : "",
-				"score" : 1.0,
-				"components" : {
-					"graphic" : [],
-					"boxes" : []
-				}
-			}];
+			let additional = clickEmptyElement(thing_counter)
+			things = [...things, additional];
 		}
 		//
 		let end = things.length   /// start + box_delta
 		if ( needs_data(start,end) ) {
-			load_and_place_data(start,things.length)
+			data_fetcher(start,things.length)
 		} else {
-			place_data()
-		}
-		//
-	}
-
-
-	function clonify(obj) {
-		let o = JSON.parse(JSON.stringify(obj))
-		return o
-	}
-
-	function place_data(dstart) {
-		let l = things.length;
-		let lo = other_things.length;
-		//
-		let strt = (( dstart === undefined ) ? (article_index-1) : (dstart-1));
-		//
-		console.log(`place_data: ${strt}  ${lo}`)
-		for ( let i = 0; i < l; i++ ) {
-			if ( (strt + i) < lo ) {
-				let oto = other_things[strt + i];
-				if ( oto !== false ) {
-					oto.id = i+1;
-					things[i] = oto;
-				} else {
-					let ceo = clonify(app_empty_object);
-					ceo.id = i+1;
-					things[i] = ceo;
-				}
-			} else {
-				let ceo = clonify(app_empty_object);
-				ceo.id = i+1;
-				things[i] = ceo;
-			}
+			things = place_data(things,other_things,article_index)
 		}
 	}
 
+	// ---- ---- ---- ---- ---- ---- ----
 	function handle_index_changed() {
 		do_data_placement()
 		
@@ -379,26 +272,21 @@
 	function handle_keyDown(ev) {
 		if(ev.charCode == 13){
 			article_index = 1
-			data_fetcher(ev)
+			data_fetcher()
 		}
 	}
 
 	function handle_order_change(ev) {
 		article_index = 1
-		data_fetcher(ev)
-	}
-
-
-	function load_and_place_data(start,how_many) {
-		data_fetcher(null,start,how_many)
+		data_fetcher()
 	}
 
 	function handleClick_fetch(ev) {
 		article_index = 1
-		data_fetcher(ev)
+		data_fetcher()
 	}
 
-	async function data_fetcher(ev,qstart,alt_length) {
+	async function data_fetcher(qstart,alt_length) {
 		let l = (alt_length === undefined) ? things.length : alt_length
 		let stindex = (qstart === undefined) ? (article_index - 1): qstart
 		let qry = encodeURIComponent(search_topic)
@@ -410,55 +298,28 @@
 		let uid = get_search(qry,true)
 		//
 		stindex = Math.max(0,stindex)
-		let post_data = {
+		let post_params = {
 			"uid" : uid,
 			"query" : qry,
 			"box_count" : l,
 			"offset" : stindex
 		};
 		try {
-			let rest = `${post_data.uid}/${post_data.query}/${post_data.box_count}/${post_data.offset}`
+			let rest = `${post_params.uid}/${post_params.query}/${post_params.box_count}/${post_params.offset}`
 			let srver = location.host
 			let prot = location.protocol
 			let sp = '//'
-			let search_result = await postData(`${prot}${sp}${srver}/${data_stem}/${rest}`, post_data)
-			if ( search_result ) {
-				let data = search_result.data;
-				if ( data ) {
-					//
-					data = data.map(datum => {
-						datum.subject = decodeURIComponent(datum.subject)
-						datum.title = decodeURIComponent(datum.subject)
-						datum.txt_full = decodeURIComponent(datum.txt_full)
-						datum.keys = datum.keys.map(key => {
-							return(decodeURIComponent(key))
-						})
-						return datum
-					})
-					if ( qstart === undefined ) {	// used the search button
-						other_things = data;		// replace data
-						article_index = 1
-						let lo = search_result.count;
-						article_count = lo;
-						if ( lo > other_things.length ) {
-							padd_other_things(lo)
-						}
-					} else {
-						let lo = search_result.count;
-						article_count = lo;
-						if ( lo > other_things.length ) {
-							padd_other_things(lo)
-						}
+			let search_result = await link_server_fetch(`${prot}${sp}${srver}/${data_stem}/${rest}`,post_params, postData)
 
-						let n = data.length
-						for ( let i = 0; i < n; i++ ) {
-							other_things[i + stindex] = data.shift()
-						}
-						// // 
-					}
-					place_data()
-				}
+			let [a_i,lo,ot] = process_search_results(stindex,qstart,search_result,other_things)
+			article_index = a_i
+			article_count = lo
+			other_things = ot
+
+			if ( other_things !== false ) {
+				things = place_data(things,other_things,article_index)
 			}
+
 		} catch (e) {
 			alert(e.message)
 		}
@@ -476,6 +337,16 @@
 	function pop_up_selections(ev) {
 		all_link_picks = link_picker.get_pick_values()
 		start_floating_window(1);
+	}
+
+	function propagateWindowEvent(event) {
+		let etype = event.detail.type
+		let el_name = event.detail.element
+		if ( etype === "click" ) {
+			if ( el_name.indexOf('btn_close_') === 0 ) {
+				isplaying = false
+			}
+		}
 	}
 
 
@@ -538,7 +409,8 @@
 
 
 
-<FloatWindow title={current_thing.title.substr(0,g_max_title_chars) + '...'}  index={0} scale_size_array={all_window_scales[0]} >
+<FloatWindow title={current_thing.title.substr(0,g_max_title_chars) + '...'} index={0} 
+			 scale_size_array={all_window_scales[0]}  on:message={propagateWindowEvent}>
 	<DemoGrid {...current_thing}  items={items} graphs={component_graphs} cols={cols} rowHeight={50} />
 </FloatWindow>
 

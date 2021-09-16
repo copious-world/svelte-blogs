@@ -109,10 +109,7 @@
 		})
 	})
 
-
-
-
-
+	// ---- ---- ---- ---- ---- ---- ---- ----
 	let isplaying = true
 	function handleMessage(event) {
 		let key = "xy_"
@@ -185,6 +182,7 @@
 			place_data(things,other_things,article_index)
 		}
 	}
+
 
 	function handleClick_remove() {
 		for ( let i = 0; i < box_delta; i++ ) {

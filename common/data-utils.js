@@ -25,8 +25,13 @@ let thing_template = {
         "poster" : "test",
         "source" : "test"
     },
+    "components" : {
+        "graphic" : [],
+        "boxes" : []
+    },
     "score" : 1.0
 }
+
 
 export function make_empty_thing() {
     return clonify(thing_template)
