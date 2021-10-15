@@ -87,15 +87,9 @@ function rewind_media(ev) {
 </div>
 <div >
 {#if is_audio }
-	{#if is_ipfs }
-		<div class="music_box" >
-			<IPFS_AudioPlayer {media} />
-		</div>
-	{:else}
-		<div class="music_box" >
-			<AudioPlayer {media} />
-		</div>
-	{/if}
+	<div class="music_box" >
+		<AudioPlayer {media} />
+	</div>
 {:else} 
 	<div class="video_box" >
 		<ExtendedVideoPlayer {media} {tracking} {isplaying} {session} />

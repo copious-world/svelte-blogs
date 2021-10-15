@@ -13,10 +13,13 @@
 	export let media
 	export let score;
 	export let id;
-	export let session;
 	export let _tracking
 	// // 
 	let score_rounded
+
+	let session;
+
+	$: session = window.retrieve_session()
 
 	$: score_rounded = score.toFixed(3);
 

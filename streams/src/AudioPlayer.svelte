@@ -8,7 +8,9 @@
 	let poster
 	let source
 
-	let session = ""		// get this from local storage (cookie)
+	let session
+
+	$: session = window.retrieve_session()		// get this from local storage (cookie)
 
 	$: poster = media.poster
 	$: source = media.source
@@ -20,7 +22,7 @@
 	let paused = true;
 	let audio;
 
-	let links = {
+	let media_links = {
 		"source" : "",
 		"poster" : ""
 	}
@@ -33,12 +35,14 @@
  
 	async function set_links(tracking) {
 		let counter_service = media._x_link_counter
-		links = await media_startup(tracking,'ipfs',media,counter_service,session)
-		if ( media_links.poster ) {
-			poster_link = media_links.poster
-		}
-		if ( media_links.source ) {
-			source_link = media_links.source_link
+		media_links = await media_startup(tracking,'ipfs',media,counter_service,session)
+		if ( media_links ) {
+			if ( media_links.poster ) {
+				poster_link = media_links.poster
+			}
+			if ( media_links.source ) {
+				source_link = media_links.source_link
+			}
 		}
 	}
 

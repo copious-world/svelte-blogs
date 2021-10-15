@@ -1,5 +1,5 @@
 
-const TESTING = true
+const TESTING = false
 
 
 export function clonify(obj) {

@@ -18,6 +18,7 @@
 	// ---- ---- ---- ---- ---- ---- ---- ---- ---- ----
 
 	async function media_startup(tracking,protocol,media,counter_link,session) { // _x_link_counter > counter_link
+		if ( tracking === undefined ) return false
 		if ( protocol === 'ipfs' ) {
 			let links = await crypto_ready_counted(counter_link,tracking,session,media)  // src is for checking...
 			return links
@@ -37,7 +38,7 @@
 
 	async function crypto_ready_counted(counter_link,tracking,session,src) {
 		//
-		let prot = "https:"
+		let prot = "http:"  // https
 		let sp = "//"
 		let url = `${prot}${sp}${counter_link}/key-media/${tracking}`
 		if ( (typeof session === 'string') && (session.length > 0) ) {
@@ -76,7 +77,7 @@
 
 	// ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ----
 	function retrieve_session() {			// should be stored in some kind of local storage....
-		return ""
+		return "a0d9uqkrjsifh"     // test value
 	}
 
 	// ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ----
