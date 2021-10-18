@@ -43,10 +43,13 @@
 		if ( media_links ) {
 			if ( media_links.poster ) {
 				poster_link = media_links.poster
+				media._impl_poster_link = poster_link
 			}
 			if ( media_links.source ) {
 				source_link = media_links.source
+				media._impl_source_link = source_link
 			}
+
 		}
 	}
 
@@ -103,7 +106,7 @@
 	<span class="thng-score">{score_rounded}</span>
 	<div class="teaser">
 		{#if is_audio }
-			<AudioPlayer {media} />
+			<AudioPlayer {media} {tracking} {source_link} />
 		{:else}
 			<img src="{poster_link}" height="120px" alt="{title}" >
 		{/if}

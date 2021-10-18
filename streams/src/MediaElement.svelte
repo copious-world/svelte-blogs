@@ -46,6 +46,8 @@ $: created_when = convert_date(dates.created)
 
 let is_audio
 
+let source_link = ""
+
 $: is_audio = (media_type == 'audio')
 
 let short_title
@@ -88,7 +90,7 @@ function rewind_media(ev) {
 <div >
 {#if is_audio }
 	<div class="music_box" >
-		<AudioPlayer {media} />
+		<AudioPlayer {media} {tracking} {source_link} />
 	</div>
 {:else} 
 	<div class="video_box" >

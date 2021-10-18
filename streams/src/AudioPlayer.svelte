@@ -4,33 +4,50 @@
 
 <script>
 	export let media
+	export let tracking
+	export let source_link
 
 	let poster
 	let source
 
 	let session
+	let poster_link
 
 	$: session = window.retrieve_session()		// get this from local storage (cookie)
 
 	$: poster = media.poster
 	$: source = media.source
-	$: tracking = media._tracking
+	$: _tracking = (tracking == undefined) ? media._tracking : tracking
 
-	// These values are bound to properties of the video
+	let source_link_update = ""
+		// These values are bound to properties of the video
 	//let time = 0;
 	//let duration;
 	let paused = true;
 	let audio;
+
+	$: if ( source_link === undefined || source_link.length === 0 ) {
+		source_link = media._impl_source_link
+		poster_link = media._impl_poster_link
+	}
+
+	$: {
+		source_link_update = source_link
+		if ( audio ) {
+			audio.src = source_link_update
+			//audio.load()
+		}
+	}
+
 
 	let media_links = {
 		"source" : "",
 		"poster" : ""
 	}
 
-	let poster_link
-	let source_link
-	$: {
-		set_links(tracking)
+
+	$: if ( (_tracking !== undefined) && (tracking == undefined) ) {
+		set_links(_tracking)
 	}
  
 	async function set_links(tracking) {
@@ -66,8 +83,8 @@
 	<audio controls controlsList="nodownload"  on:play={stopOthers} 
 							bind:this={audio}
 							bind:paused  >
-		<source src="{source_link}" type="audio/ogg">
-		<source src="{source_link}" type="audio/mpeg">
+		<source src="{source_link_update}" type="audio/ogg">
+		<source src="{source_link_update}" type="audio/mpeg">
 		Your browser does not support the audio element.
 	</audio>
 </div>
