@@ -7,7 +7,7 @@
 	import FloatWindow from 'svelte-float-window';
 
 	import { process_search_results, place_data, clonify, make_empty_thing, link_server_fetch } from '../../common/data-utils.js'
-	import { popup_size } from '../../common/diplay-utils.js'
+	import { popup_size } from '../../common/display-utils.js'
 	import Selections from '../../common/Selections.svelte'
 	import {link_picker,picker} from "../../common/link-pick.js"
 	import {get_search} from "../../common/search_box.js"
