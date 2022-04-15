@@ -1,6 +1,7 @@
 <script>
 
 	import {link_picker,picker} from "../../common/link-pick.js"
+	import Comment from './Comment.svelte';
 
 	// ref ... https://gist.github.com/akirattii/9165836
 
@@ -10,9 +11,9 @@
 	export let title;
 	export let dates;
 	export let subject;
-	export let abstract;
 	export let keys;
 	export let txt_full;
+	export let comments;
 
 	$: key_str = keys.join(', ')
 
@@ -26,6 +27,8 @@
 		}
 	}
 
+	let have_comments = false
+
 
 	let picked_this = false
 	$: picked_this = link_picker.is_picked(entry)
@@ -35,7 +38,24 @@
 
 	$: updated_when = convert_date(dates.updated)
 	$: created_when = convert_date(dates.created)
+
+	let going_session = false
+
+	$: if ( comments !== undefined ) {
+		if ( typeof window.retrieve_session === "function" ) {
+			going_session = window.retrieve_session()
+			if ( going_session ) {
+				have_comments = Array.isArray(comments) && (comments.length !== 0)
+			}
+		}
+	}
 	
+
+	function present_comment_editing() {
+		if ( going_session && (typeof window.launch_comment_editor === "function") ) {
+			window.launch_comment_editor(going_session,entry)
+		}
+	}
 
 	function toggle_pick(ev) {
 		link_picker.toggle_pick(entry)
@@ -59,6 +79,9 @@
 		<span style="background-color: {color}">{entry}</span> <input type="checkbox" bind:checked={picked_this} on:click={toggle_pick} />
 		<span style="background-color: yellowgreen">{created_when}</span>
 		<span style="background-color: lightblue">{updated_when}</span>
+		{#if going_session } 
+		<button on:click={present_comment_editing}>add comment</button>
+		{/if}
 		<h4 class="blg-item-title" style="background-color: inherit;">{title}</h4>
 		<h6>{key_str}</h6>
 		<div>
@@ -67,6 +90,17 @@
 	</div>
 	<div id="blg-window-full-text"  class="full-display" >
 		{@html txt_full}
+	</div>
+	<div class="comment-list-block" >
+		{#if have_comments }
+			{#each comments as comment }
+				<ul class="comment-list">
+					<li class="comment-list-entry">
+						<Comment {...comment}  />
+					</li>
+				</ul>
+			{/each}
+		{/if}
 	</div>
 </div>
 

@@ -15,8 +15,6 @@
 	import { onMount } from 'svelte';
 
 	let session = ""
-	$: session = window.retrieve_session()
-
 
 	const appsearch = 'search'  //   search later translated to songsearch (nginx conf by url)
 
@@ -51,6 +49,7 @@
 	all_window_scales.push(window_scale)
 	//
 	onMount(() => {
+		session = window.retrieve_session()
 		window.addEventListener("resize", (e) => {
 			//
 			let scale = popup_size()
@@ -60,6 +59,13 @@
 			//
 		})
 	})
+
+
+	function present_assest_editing() {
+		if ( going_session && (typeof window.launch_comment_editor === "function") ) {
+			window.launch_asset_editor(going_session)
+		}
+	}
 
 
 	function handleMessage(event) {
@@ -280,10 +286,12 @@
 					</option>
 				{/each}
 			</select>
-
 		</div>
 	</div>
 	<div style="border: solid 1px grey;padding: 4px;background-color:#F5F6EF;">
+		{#if going_session }
+		<div class="sel-titles" class="blg-ctl-button" ><button on:click={present_assest_editing}>add entry</button></div>
+		{/if}
 		<div class="sel-titles" >Title: {current_roller_title}</div><div class="sel-titles">Subject: {current_roller_subject}</div>
 		<div class="sel-titles" style="width: 15%;"><button on:click={pop_up_selections}>show selections</button></div>
 	</div>

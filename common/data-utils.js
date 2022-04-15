@@ -29,6 +29,7 @@ let thing_template = {
         "graphic" : [],
         "boxes" : []
     },
+    "comments" : [],
     "score" : 1.0
 }
 
@@ -183,6 +184,9 @@ export async function link_server_fetch(url, post_params, postData) {
     if ( TESTING ) {
         return faux_data()
     } else {
+        if ( typeof window.personalization === 'function' )
+            window.personalization(post_params)
+    }
         return await postData(url, post_params)
     }
 }
