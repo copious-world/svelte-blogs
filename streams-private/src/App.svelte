@@ -1,10 +1,15 @@
 <script>
+	//  DEMOS ...   
 	export let name;
 
-	import FullThing from './ThingFull.svelte';
-	import Thing from './Thing.svelte'
+	// subject has been removed for this type of media... see blog (includes subject)
+
 	import ThingGrid from 'grid-of-things';
 	import FloatWindow from 'svelte-float-window';
+	import MediaElement from './MediaElement.svelte'
+	import Thing from './Thing.svelte'
+
+	import { onMount } from 'svelte';
 
 	import { process_search_results, place_data, clonify, make_empty_thing, link_server_fetch } from '../../common/data-utils.js'
 	import { popup_size } from '../../common/display-utils.js'
@@ -12,14 +17,13 @@
 	import {link_picker,picker} from "../../common/link-pick.js"
 	import {get_search} from "../../common/search_box.js"
 
-	import { onMount } from 'svelte';
-
 	let session = ""
-	let going_session = ""
 
-	let ucwid = ""
+	$: session = window.retrieve_session()
 
-	const appsearch = 'search'  //   search later translated to songsearch (nginx conf by url)
+
+	// TEST LAYOUT TEST TEST TEST
+	const id = () => "_" + Math.random().toString(36).substr(2, 9);
 
 	let qlist_ordering = [
 		{ id: 1, text: `update_date` },
@@ -27,22 +31,26 @@
 		{ id: 3, text: `create_date` }
 	];
 
-
 	let all_link_picks = []
 
 	let search_ordering = qlist_ordering[2];
 	let search_topic = 'any'
 
 	let g_max_title_chars = 20
-	//
+
+	const data_stem = "songsearch"
+
+
 	let current_roller_title = ""
-	let current_roller_subject = ""
 
 	let thing_template = make_empty_thing()
 
 	let current_thing = Object.assign({ "id" : 0, "entry" : 0 },thing_template)
-	let app_empty_object = Object.assign({ "id" : 1, "entry" : -1 },thing_template)
-	//
+	const app_empty_object = Object.assign({ "id" : 1, "entry" : -1 },thing_template)
+
+	current_thing.id = 0
+	current_thing.entry = 0
+	// //
 	
 	let window_scale = { "w" : 0.4, "h" : 0.6 }
 	//
@@ -51,9 +59,7 @@
 	all_window_scales.push(window_scale)
 	all_window_scales.push(window_scale)
 	//
-	onMount(async () => {
-		window.app_page_gets_ccwid = (ccwid) => { ucwid = ccwid}
-		session = await window.retrieve_session()
+	onMount(() => {
 		window.addEventListener("resize", (e) => {
 			//
 			let scale = popup_size()
@@ -64,14 +70,8 @@
 		})
 	})
 
-
-	function present_assest_editing() {
-		if ( going_session && (typeof window.launch_comment_editor === "function") ) {
-			window.launch_asset_editor(going_session)
-		}
-	}
-
-
+	// ---- ---- ---- ---- ---- ---- ---- ----
+	let isplaying = true
 	function handleMessage(event) {
 		let key = "xy_"
 		let txt = event.detail.text;
@@ -84,12 +84,23 @@
 			let athing = things[idx];
 			if ( athing !== undefined ) {
 				if ( etype === 'click' ) {
+					// change the grid for the app
 					current_thing = athing;
-					start_floating_window(0);
+					isplaying = true
+					start_floating_window(0);  // the is a window wide method created by the popup module. (looking for a cleaner way)
 				} else {
 					current_roller_title = athing.title
-					current_roller_subject = athing.subject
 				}
+			}
+		}
+	}
+
+	function propagateWindowEvent(event) {
+		let etype = event.detail.type
+		let el_name = event.detail.element
+		if ( etype === "click" ) {
+			if ( el_name.indexOf('btn_close_') === 0 ) {
+				isplaying = false
 			}
 		}
 	}
@@ -99,9 +110,7 @@
 		 elem.id = thing_counter
 		 return elem
 	}
-	
 
-	
 	let things = [				// window
 		app_empty_object
 	];
@@ -110,6 +119,7 @@
 
 	let article_count = 1
 	let article_index = 1
+
 
 	let box_delta = 1;		// how boxes to add when increasing the window
 
@@ -142,8 +152,8 @@
 			things = [...p];
 		}
 	}
-	
-	// ---- ---- ---- ---- ---- ---- ----
+
+	//
 	async function handleClick_add() {
 		let start = things.length
 		for ( let i = 0; i < box_delta; i++ ) {
@@ -162,11 +172,10 @@
 	}
 
 
-	//
 	function handle_index_changed() {
 		do_data_placement()
-		
 	}
+
 	function handleClick_first() {
 		article_index = 1
 		do_data_placement()
@@ -188,7 +197,6 @@
 		article_index = 1
 		data_fetcher()
 	}
-
 
 	function handleClick_fetch(ev) {
 		article_index = 1
@@ -235,6 +243,8 @@
 	}
 
 
+	
+	
 	let count_value;
 	const unsubscribe = picker.subscribe(value => {
 		count_value = value;
@@ -246,7 +256,8 @@
 		all_link_picks = link_picker.get_pick_values()
 		start_floating_window(1);
 	}
-	
+
+
 </script>
 
 
@@ -293,29 +304,27 @@
 		</div>
 	</div>
 	<div style="border: solid 1px grey;padding: 4px;background-color:#F5F6EF;">
-		{#if going_session }
-		<div class="sel-titles blg-ctl-button" ><button on:click={present_assest_editing}>add entry</button></div>
-		{/if}
-		<div class="sel-titles" >Title: {current_roller_title}</div><div class="sel-titles">Subject: {current_roller_subject}</div>
+		<div class="sel-titles" >Title: {current_roller_title}</div>
 		<div class="sel-titles" style="width: 15%;"><button on:click={pop_up_selections}>show selections</button></div>
 	</div>
   
 	<div class="blg-grid-container">
-		<ThingGrid things={things} thing_component={Thing} on:message={handleMessage} />
+		<ThingGrid things={things} thing_component={Thing} on:message={handleMessage} {session} />
 	</div>
 
-	
 </div>
 
 
-<FloatWindow title={current_thing.title.substr(0,g_max_title_chars) + '...'}  index={0} scale_size_array={all_window_scales[0]} >
-	<FullThing {...current_thing} />
+<FloatWindow title={current_thing.title.substr(0,g_max_title_chars) + '...'}  index={0} 
+			scale_size_array={all_window_scales[0]}  on:message={propagateWindowEvent} >
+	<MediaElement {...current_thing} {isplaying} {session} />
 </FloatWindow>
 
 
 <FloatWindow title="Selection List"  index={1} scale_size_array={all_window_scales[1]} >
 	<Selections link_picks={all_link_picks}  />
 </FloatWindow>
+
 
 
 <style>
@@ -372,7 +381,7 @@
 
 	.sel-titles {
 		display:inline-block;
-		width:35%;
+		width:45%;
 		font-weight:bold;
 		color:black;
 		font-size:0.75em;

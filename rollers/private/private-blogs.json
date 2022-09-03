@@ -1,0 +1,56 @@
+{
+    "business_url" : "copious.world",
+    "pre_template" : "[alpha-copious]/pre-template/galactic-blog.html",
+    "out_dir" : "./templates",
+    "key_values" : {
+        "$$AUTHOR" : "Richard Leddy",
+        "INSERT" : ""
+    },
+    "path_abreviations" : {
+        "[alpha-copious]" : "[github]/alphas/alpha-copious",
+        "[github]" : "~/Documents/GitHub",
+        "[app-local]" : "[github]/svelte-blogs/templates/$$target"
+    },
+    "ext_default_dir" : {
+        ".html" : "[alpha-copious]/html",
+        ".js" : "[alpha-copious]/client",
+        ".svg" : "[alpha-copious]/icons"
+    },
+    "top_dir_location" : {
+        "script" : "[alpha-copious]/script",
+        "for-humans" : "[alpha-copious]/for-humans",
+        "html" : "[alpha-copious]/html",
+        "app-dir" : "[app-local]/scripts"
+    },
+    "files" : {
+        "index-private.html" : {
+            "intergalactic-explain.html" : "1",
+            "script" : {
+                "crypto-global.js" : 1,
+                "script/flexy_items_A-top.js" : 1,
+                "pc_location.js" : 1,
+                "common.js" :  {
+                    "version" : 1,
+                    "include" : ["ext_of_file", "clonify"],
+                    "exclude" : false
+                },
+                "base64.js" : {
+                    "version" : 1,
+                    "transforms" : "windowize"
+                },
+                "https_checks.js" : 4,
+                "post_fetch.js" : {
+                    "version" : 1,
+                    "include" : ["postData"],
+                    "exclude" : false
+                },
+                "uploader_class.js" : 6,
+                "for-humans/shared_constants.js" : 1,
+                "for-humans/human_frame_client.js" : 1,
+                "for-humans/frame_page_opener.js" : 1,
+                "for-humans/hosted_page_tab_com.js" : 1,
+                "for-humans/hosted_app.js" : 13
+            }
+        }
+    }
+}

@@ -1,0 +1,34 @@
+{
+  "name": "svelte-app",
+  "version": "1.0.0",
+  "scripts": {
+    "build": "rollup -c",
+    "dev": "rollup -c -w",
+    "start": "sirv public --port=5010"
+  },
+  "devDependencies": {
+    "@polka/send-type": "^0.5.2",
+    "@rollup/plugin-commonjs": "^16.0.0",
+    "@rollup/plugin-node-resolve": "^10.0.0",
+    "cors": "^2.8.5",
+    "polka": "^0.5.2",
+    "rollup": "^2.3.4",
+    "rollup-plugin-css-only": "^3.1.0",
+    "rollup-plugin-livereload": "^2.0.0",
+    "rollup-plugin-svelte": "^7.0.0",
+    "rollup-plugin-terser": "^7.0.0",
+    "svelte": "^3.0.0",
+    "svelte-grid": "^3.6.0"
+  },
+  "dependencies": {
+    "copious-little-searcher": "https://github.com/copious-world/copious-little-searcher.git",
+    "fastify": "^3.14.2",
+    "fastify-cors": "^5.1.0",
+    "forever-monitor": "^3.0.3",
+    "grid-of-things": "^1.0.2",
+    "middie": "^5.2.0",
+    "sirv-cli": "^1.0.0",
+    "svelte-float-window": "^1.0.0",
+    "svelte-video-player": "^1.2.5"
+  }
+}

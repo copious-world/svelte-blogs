@@ -17,10 +17,7 @@
 	let session = ""
 	let going_session = ""
 
-	let ucwid = ""
-
-	const appsearch = 'search'  //   search later translated to songsearch (nginx conf by url)
-
+	
 	let qlist_ordering = [
 		{ id: 1, text: `update_date` },
 		{ id: 2, text: `score` },
@@ -51,9 +48,8 @@
 	all_window_scales.push(window_scale)
 	all_window_scales.push(window_scale)
 	//
-	onMount(async () => {
-		window.app_page_gets_ccwid = (ccwid) => { ucwid = ccwid}
-		session = await window.retrieve_session()
+	onMount(() => {
+		session = window.retrieve_session()
 		window.addEventListener("resize", (e) => {
 			//
 			let scale = popup_size()

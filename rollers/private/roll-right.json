@@ -1,0 +1,15 @@
+{
+    "alpha" :  "private-blogs.json",
+    "beta" :  "private-blogs-display.json",
+    "gather" : {
+        "pnpm" : {
+            "out_dir" : "./templates/$$target/scripts",
+            "file" : "package.json",
+            "dependencies" : []
+        },
+        "github" : {
+        },
+        "local" : {
+        }
+    }
+}

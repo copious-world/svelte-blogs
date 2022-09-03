@@ -188,7 +188,6 @@ export async function link_server_fetch(url, post_params, postData) {
             window.personalization(post_params)
     }
         return await postData(url, post_params)
-    }
 }
 
 

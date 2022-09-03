@@ -1,25 +1,76 @@
 <script>
+	//  DEMOS ...   
 	export let name;
 
-	import FullThing from './ThingFull.svelte';
-	import Thing from './Thing.svelte'
-	import ThingGrid from 'grid-of-things';
 	import FloatWindow from 'svelte-float-window';
+	import ThingGrid from 'grid-of-things';
+	import Thing from './Thing.svelte'
+
+	import DemoGrid from './DemoGrid.svelte'
+	import gridHelp from "svelte-grid/build/helper/index.mjs";
+
+	import { onMount } from 'svelte';
 
 	import { process_search_results, place_data, clonify, make_empty_thing, link_server_fetch } from '../../common/data-utils.js'
-	import { popup_size } from '../../common/display-utils.js'
+	import { popup_size } from '../../common/diplay-utils.js'
 	import Selections from '../../common/Selections.svelte'
 	import {link_picker,picker} from "../../common/link-pick.js"
 	import {get_search} from "../../common/search_box.js"
 
-	import { onMount } from 'svelte';
-
 	let session = ""
-	let going_session = ""
+	$: session = window.retrieve_session()
 
-	let ucwid = ""
+	// TEST LAYOUT TEST TEST TEST
+	const id = () => "_" + Math.random().toString(36).substr(2, 9);
 
-	const appsearch = 'search'  //   search later translated to songsearch (nginx conf by url)
+	const randomHexColorCode = () => {
+		let n = (Math.random() * 0xfffff * 1000000).toString(16);
+		return "#" + n.slice(0, 6);
+	};
+
+	function generateLayout(col,howmany) {
+		return new Array(howmany).fill(null).map( (item, i) => {
+			const y = Math.ceil(Math.random() * 4) + 1;
+			return {
+			16: gridHelp.item({ x: (i * 2) % col, y: Math.floor(i / 6) * y, w: 2, h: y }),
+			id: id(),
+			data: randomHexColorCode(),
+			};
+		});
+	}
+
+	//
+	let cols
+	let cols1 = [[1287, 16]];
+	let cols2 = [[1100, 16]];
+
+	let items = []
+
+	let items1 = gridHelp.adjust(generateLayout(16,20), 16);
+	let items2 = gridHelp.adjust(generateLayout(4,5), 16);
+
+	items = items1;
+	cols = cols1;
+
+	//
+	let one_not_two = true 
+
+	// END TEST LAYOUT TEST TEST TEST
+
+	let component_graphs = []
+
+	function handle_item_change(athing) {
+		console.log(athing)
+		items = athing.components.boxes //  one_not_two ? items1 : itemsA;
+		cols = one_not_two ? cols1 : cols2;
+		one_not_two = !one_not_two
+		component_graphs = athing.components.graphic
+		component_graphs = component_graphs.map(graphic => {
+			return decodeURIComponent(graphic)
+		})
+	}
+
+
 
 	let qlist_ordering = [
 		{ id: 1, text: `update_date` },
@@ -27,14 +78,14 @@
 		{ id: 3, text: `create_date` }
 	];
 
-
-	let all_link_picks = []
-
 	let search_ordering = qlist_ordering[2];
 	let search_topic = 'any'
 
 	let g_max_title_chars = 20
-	//
+
+	const data_stem = "load_demos"
+
+
 	let current_roller_title = ""
 	let current_roller_subject = ""
 
@@ -42,8 +93,8 @@
 
 	let current_thing = Object.assign({ "id" : 0, "entry" : 0 },thing_template)
 	let app_empty_object = Object.assign({ "id" : 1, "entry" : -1 },thing_template)
-	//
-	
+
+
 	let window_scale = { "w" : 0.4, "h" : 0.6 }
 	//
 	window_scale = popup_size()
@@ -51,9 +102,7 @@
 	all_window_scales.push(window_scale)
 	all_window_scales.push(window_scale)
 	//
-	onMount(async () => {
-		window.app_page_gets_ccwid = (ccwid) => { ucwid = ccwid}
-		session = await window.retrieve_session()
+	onMount(() => {
 		window.addEventListener("resize", (e) => {
 			//
 			let scale = popup_size()
@@ -65,12 +114,7 @@
 	})
 
 
-	function present_assest_editing() {
-		if ( going_session && (typeof window.launch_comment_editor === "function") ) {
-			window.launch_asset_editor(going_session)
-		}
-	}
-
+	// ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ----
 
 	function handleMessage(event) {
 		let key = "xy_"
@@ -84,6 +128,8 @@
 			let athing = things[idx];
 			if ( athing !== undefined ) {
 				if ( etype === 'click' ) {
+					// change the grid for the app
+					handle_item_change(athing)
 					current_thing = athing;
 					start_floating_window(0);
 				} else {
@@ -94,14 +140,14 @@
 		}
 	}
 
+
 	function clickEmptyElement(thing_counter) {
 		 let elem = clonify(app_empty_object)
 		 elem.id = thing_counter
 		 return elem
 	}
-	
 
-	
+
 	let things = [				// window
 		app_empty_object
 	];
@@ -111,7 +157,17 @@
 	let article_count = 1
 	let article_index = 1
 
+
 	let box_delta = 1;		// how boxes to add when increasing the window
+
+
+	function padd_other_things(count) {
+		let n = count - other_things.length
+		while ( n > 0 ) {
+			other_things.push(false)
+			n--
+		}
+	}
 
 	function needs_data(start,end) {
 		if ( other_things.length > 0 ) {
@@ -142,7 +198,7 @@
 			things = [...p];
 		}
 	}
-	
+
 	// ---- ---- ---- ---- ---- ---- ----
 	async function handleClick_add() {
 		let start = things.length
@@ -161,8 +217,7 @@
 		}
 	}
 
-
-	//
+	// ---- ---- ---- ---- ---- ---- ----
 	function handle_index_changed() {
 		do_data_placement()
 		
@@ -188,7 +243,6 @@
 		article_index = 1
 		data_fetcher()
 	}
-
 
 	function handleClick_fetch(ev) {
 		article_index = 1
@@ -235,6 +289,7 @@
 	}
 
 
+	
 	let count_value;
 	const unsubscribe = picker.subscribe(value => {
 		count_value = value;
@@ -246,7 +301,18 @@
 		all_link_picks = link_picker.get_pick_values()
 		start_floating_window(1);
 	}
-	
+
+	function propagateWindowEvent(event) {
+		let etype = event.detail.type
+		let el_name = event.detail.element
+		if ( etype === "click" ) {
+			if ( el_name.indexOf('btn_close_') === 0 ) {
+				isplaying = false
+			}
+		}
+	}
+
+
 </script>
 
 
@@ -293,9 +359,6 @@
 		</div>
 	</div>
 	<div style="border: solid 1px grey;padding: 4px;background-color:#F5F6EF;">
-		{#if going_session }
-		<div class="sel-titles blg-ctl-button" ><button on:click={present_assest_editing}>add entry</button></div>
-		{/if}
 		<div class="sel-titles" >Title: {current_roller_title}</div><div class="sel-titles">Subject: {current_roller_subject}</div>
 		<div class="sel-titles" style="width: 15%;"><button on:click={pop_up_selections}>show selections</button></div>
 	</div>
@@ -308,8 +371,10 @@
 </div>
 
 
-<FloatWindow title={current_thing.title.substr(0,g_max_title_chars) + '...'}  index={0} scale_size_array={all_window_scales[0]} >
-	<FullThing {...current_thing} />
+
+<FloatWindow title={current_thing.title.substr(0,g_max_title_chars) + '...'} index={0} 
+			 scale_size_array={all_window_scales[0]}  on:message={propagateWindowEvent}>
+	<DemoGrid {...current_thing}  items={items} graphs={component_graphs} cols={cols} rowHeight={50} />
 </FloatWindow>
 
 
@@ -372,7 +437,7 @@
 
 	.sel-titles {
 		display:inline-block;
-		width:35%;
+		width:45%;
 		font-weight:bold;
 		color:black;
 		font-size:0.75em;
