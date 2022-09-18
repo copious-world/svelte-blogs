@@ -7,58 +7,51 @@
 	<meta name="viewport" content="width=device-width, minimum-scale=1.0, initial-scale=1.0, user-scalable=yes">
 	<meta id="theme-color" name="theme-color" content="#452770">
 
-	<title>Copious Admin Contacts</title>
+	<link rel="canonical" href="http://www.popsongnow.com">
+
+	<title>Pop Song Blog</title>
+	<meta name="description" content="An entry point into the our world of AI, IoT, and Communities built around songs, etc.">
 
 	<link rel='icon' type='image/png' href='./favicon.png'>
 	<link rel='stylesheet' href='./global.css'>
 	<link rel='stylesheet' href='./build/bundle.css'>
-	
+
 	<script defer src='./build/bundle.js'></script>	
-
-	<link rel="canonical" href="http://www.copious.world">
-
-	<meta name="description" content="Copious World Admin Pages.">
-
-<script>
-
-	function retrieve_session() {
-		return ""
-	}
-
-</script>
-
+	
+	
 	<style>
 		/*csslint important:false*/
 
-		/* ==========================================================================
-		Pure Base Extras
-		========================================================================== */
+/* ==========================================================================
+   Pure Base Extras
+   ========================================================================== */
 
-		/**
-		* Extra rules that Pure adds on top of Normalize.css
+/**
+ * Extra rules that Pure adds on top of Normalize.css
 
-		html {
-		}
-		*/
+html {
 
-		/**
-		* Always hide an element when it has the `hidden` HTML attribute.
-		*/
+}
+*/
 
-		.hidden,
-		[hidden] {
-			display: none !important;
-		}
+/**
+ * Always hide an element when it has the `hidden` HTML attribute.
+ */
 
-		/**
-		* Add this class to an image to make it fit within it's fluid parent wrapper while maintaining
-		* aspect ratio.
-		*/
-		.pure-img {
-			max-width: 100%;
-			height: auto;
-			display: block;
-		}
+.hidden,
+[hidden] {
+    display: none !important;
+}
+
+/**
+ * Add this class to an image to make it fit within it's fluid parent wrapper while maintaining
+ * aspect ratio.
+ */
+.pure-img {
+    max-width: 100%;
+    height: auto;
+    display: block;
+}
 
 		.items {
 			display: flex;
@@ -676,7 +669,7 @@
 					</a>
 				</td>
 				<td>
-                    Contact List and Manager
+					<h1>Pop Song Blog</h1>
 				</td>
 				<td>
 					&nbsp;
@@ -688,13 +681,13 @@
 	
 	</main>
 
-	<footer>
-		<ul class="footer-list">
-			<li>
-				<a href="http://www.copious.world">copyright &copy; 2022 copious.world</a>
-			</li>
-		</ul>
-	</footer>
+<footer>
+	<ul class="footer-list">
+		<li>
+			<a href="http://www.copious.world">copyright &copy; 2021 copious.world</a>
+		</li>
+	</ul>
+</footer>
 
 
 </body>
@@ -769,30 +762,6 @@
 				show_box('error-box')
 			}
 		}
-	}
-
-
-	let admin_ucwid = "this-is-a-test"
-
-	async function remove_contact(contact) {
-		let contact_handler_url = `${location.protocol}//${location.host}/captcha/transition/contact`
-		let body = {
-			"admin" : admin_ucwid,
-			"ucwid" : contact.ucwid,
-			"_tracking" : contact._tracking,
-			"remove" : true
-		}
-		try {
-			let resp = await postData(contact_handler_url, data,'include')
-			if ( resp.OK === "true" ) {
-				// reset the search results
-			} else {
-				// failed transmitio
-			}
-		} catch (e) {
-			// failed handling
-		}
-
 	}
 
 </script>

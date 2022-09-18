@@ -1,21 +1,16 @@
 <script>
 
 	import {link_picker,picker} from "../../common/link-pick.js"
-	import Comment from './Comment.svelte';
 
 	// ref ... https://gist.github.com/akirattii/9165836
 
 	// `current` is updated whenever the prop value changes...
-	export let color;
+	export let dates;
 	export let entry;
 	export let title;
-	export let dates;
-	export let subject;
-	export let keys;
-	export let txt_full;
-	export let comments;
-
-	$: key_str = keys.join(', ')
+	export let ucwid;
+	export let when;
+	export let comment;
 
 	function convert_date(secsdate) {
 		if ( secsdate === 'never' ) {
@@ -28,7 +23,7 @@
 	}
 
 	let have_comments = false
-
+	let comments = []
 
 	let picked_this = false
 	$: picked_this = link_picker.is_picked(entry)
@@ -37,7 +32,7 @@
 	let created_when
 
 	$: updated_when = convert_date(dates.updated)
-	$: created_when = convert_date(dates.created)
+	$: created_when = convert_date(when)
 
 	let going_session = false
 
@@ -66,41 +61,20 @@
 		}
 	}
 
-	let count_value;
-	const unsubscribe = picker.subscribe(value => {
-		count_value = value;
-		picked_this = link_picker.is_picked(entry)
-	});
-
 </script>
  
 <div class="blg-el-wrapper-full">
 	<div style="padding:6px;" >
-		<span style="background-color: {color}">{entry}</span> <input type="checkbox" bind:checked={picked_this} on:click={toggle_pick} />
 		<span style="background-color: yellowgreen">{created_when}</span>
-		<span style="background-color: lightblue">{updated_when}</span>
+		<input type="checkbox" bind:checked={picked_this} on:click={toggle_pick} />
 		{#if going_session } 
 		<button on:click={present_comment_editing}>add comment</button>
 		{/if}
 		<h4 class="blg-item-title" style="background-color: inherit;">{title}</h4>
-		<h6>{key_str}</h6>
-		<div>
-			<span style="background-color:navy">subject</span>&nbsp;&nbsp;<h5 class="blg-item-subject" >{subject}</h5>
-		</div>
+		<h6>{ucwid}</h6>
 	</div>
 	<div id="blg-window-full-text"  class="full-display" >
-		{@html txt_full}
-	</div>
-	<div class="comment-list-block" >
-		{#if have_comments }
-			{#each comments as comment }
-				<ul class="comment-list">
-					<li class="comment-list-entry">
-						<Comment {...comment}  />
-					</li>
-				</ul>
-			{/each}
-		{/if}
+		{@html comment}
 	</div>
 </div>
 

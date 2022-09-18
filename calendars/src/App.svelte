@@ -1,8 +1,9 @@
 <script>
 	export let name;
 
-	import FullThing from './ThingFull.svelte';
+	import FullMonth from './MonthFull.svelte';
 	import Thing from './Thing.svelte'
+	import DayEvents from './DayEvents.svelte'
 	import ThingGrid from 'grid-of-things';
 	import FloatWindow from 'svelte-float-window';
 
@@ -17,6 +18,17 @@
 	let session = ""
 	let going_session = ""
 
+
+	let current_date = new Date()
+
+	let day_data = {
+		"day" : current_date.getDate(),
+		"month" : current_date.getMonth(),
+		"ev_list" : {}
+	}
+
+	let current_day_data = day_data
+	$: current_day_data = day_data
 
 	let data_stem = "contactsearch"
 
@@ -38,7 +50,15 @@
 	let current_roller_title = ""
 	let current_roller_subject = ""
 
+	let title_months = [
+		"January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December" 
+	]
+	
 	let thing_template = make_empty_thing()
+	let cur_date = new Date()
+	thing_template.year = cur_date.getFullYear()
+	thing_template.month = title_months[cur_date.getMonth()]
+	
 
 	let current_thing = Object.assign({ "id" : 0, "entry" : 0 },thing_template)
 	let app_empty_object = Object.assign({ "id" : 1, "entry" : -1 },thing_template)
@@ -93,6 +113,13 @@
 				}
 			}
 		}
+	}
+
+
+	function handleEventPlanningMessage(event) {
+		let data = event.detail
+		day_data = data.day_info
+		start_floating_window(1);
 	}
 
 	function clickEmptyElement(thing_counter) {
@@ -330,16 +357,14 @@
 
 
 <FloatWindow title={current_thing.title + '...'}  index={0} scale_size_array={all_window_scales[0]} >
-	<FullThing {...current_thing} />
+	<FullMonth {...current_thing}  on:message={handleEventPlanningMessage} />
 </FloatWindow>
 
 
-<FloatWindow title="Selection List"  index={1} scale_size_array={all_window_scales[1]} >
-	<div>
-		<button on:click={link_pick_remover}>Delete Selected</button>
-	</div>
-	<Selections link_picks={all_link_picks}  />
+<FloatWindow title="Day Planner" index={1} scale_size_array={all_window_scales[1]} >
+	<DayEvents {...current_day_data} />
 </FloatWindow>
+
 
 
 <style>

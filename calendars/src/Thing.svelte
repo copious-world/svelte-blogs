@@ -1,6 +1,7 @@
 <script>
 
 	import {link_picker,picker} from "../../common/link-pick.js"
+	import { onMount } from 'svelte';
 
 	// `current` is updated whenever the prop value changes...
 	export let dates;
@@ -10,7 +11,23 @@
 	export let when;
 	export let comment;
 
-	let truncated
+
+	let today = new Date()
+	let date_string = today.toUTCString()
+
+	$: date_string = today.toUTCString()
+
+	onMount(() => {
+		const interval = setInterval(() => {
+			today = new Date()
+		}, 1000);
+
+		return () => {
+			clearInterval(interval);
+		};
+	});
+
+	let truncated 
 	$: truncated = (comment !== undefined) ? comment.substr(0,250) + "&#8230;" : "search"
 
 	let score_rounded
@@ -69,7 +86,8 @@
 
 {:else}
 <div class="blg-el-wrapper">
-	<h4 class="blg-item-title" style="background-color: lightgrey;color:darkgrey">End of Content</h4>
+	<h4 class="blg-item-title" style="background-color: lightgrey;color:darkgrey">Today Is</h4>
+	<span style="color:navy;font-weight:bolder">{date_string}</span>
 </div>
 {/if}
 <style>

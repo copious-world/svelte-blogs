@@ -7,13 +7,13 @@
 	<meta name="viewport" content="width=device-width, minimum-scale=1.0, initial-scale=1.0, user-scalable=yes">
 	<meta id="theme-color" name="theme-color" content="#452770">
 
-	<title>Copious Admin Contacts</title>
+	<title>Copious Training Calendars</title>
 
 	<link rel='icon' type='image/png' href='./favicon.png'>
 	<link rel='stylesheet' href='./global.css'>
 	<link rel='stylesheet' href='./build/bundle.css'>
 	
-	<script defer src='./build/bundle.js'></script>	
+	<script defer src='./build/bundle.js'></script>
 
 	<link rel="canonical" href="http://www.copious.world">
 
@@ -775,7 +775,7 @@
 	let admin_ucwid = "this-is-a-test"
 
 	async function remove_contact(contact) {
-		let contact_handler_url = `${location.protocol}//${location.host}/captcha/transition/contact`
+		let contact_handler_url = `${location.protocol}//${location.host}/calendar/transition/contact`
 		let body = {
 			"admin" : admin_ucwid,
 			"ucwid" : contact.ucwid,

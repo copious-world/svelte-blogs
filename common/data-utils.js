@@ -162,11 +162,13 @@ if ( TESTING ) {
 
 
         let exportable_data = usable_data.map(datum => {
-            datum.title = encodeURIComponent(datum.title)
-            datum.abstract = encodeURIComponent(datum.abstract)
-            datum.keys = datum.keys.map(key => {
-                return(encodeURIComponent(key))
-            })
+            datum.title = datum.title ? decodeURIComponent(datum.title) : "no title"
+            datum.abstract = datum.abstract ? decodeURIComponent(datum.abstract) : "no abstract"
+            if (  datum.keys && Array.isArray(datum.keys) ) {
+                datum.keys = datum.keys.map(key => {
+                    return(decodeURIComponent(key))
+                })                
+            }
             return datum
         })
         return { 
@@ -194,18 +196,20 @@ export async function link_server_fetch(url, post_params, postData) {
 //
 export function unload_data(data) {
     let usable_data = data.map(datum => {
-        datum.title = decodeURIComponent(datum.title)
-        datum.abstract = decodeURIComponent(datum.abstract)
-        datum.keys = datum.keys.map(key => {
-            return(decodeURIComponent(key))
-        })
+        datum.title = datum.title ? decodeURIComponent(datum.title) : "no title"
+        datum.abstract = datum.abstract ? decodeURIComponent(datum.abstract) : "no abstract"
+        if (  datum.keys && Array.isArray(datum.keys) ) {
+            datum.keys = datum.keys.map(key => {
+                return(decodeURIComponent(key))
+            })                
+        }
         return datum
     })
     return usable_data
 }
 
 //
-export function process_search_results(stindex,qstart,search_result,other_things) {
+export function process_search_results(stindex,qstart,search_result,other_things,data_unloader) {
     //
     let article_index = 1
     //
@@ -213,7 +217,11 @@ export function process_search_results(stindex,qstart,search_result,other_things
         let data = search_result.data;
         if ( data ) {
             //
-            data = unload_data(data)
+            if ( data_unloader !== undefined ) {
+                data = data_unloader(data)
+            } else {
+                data = unload_data(data)
+            }
             //
             let lo = search_result.count;
             if ( qstart === undefined ) {	// used the search button
