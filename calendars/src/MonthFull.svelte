@@ -1,5 +1,6 @@
 <script>
 	import { createEventDispatcher } from 'svelte';
+	import {EventDays} from 'event-days'
 
 	const dispatch = createEventDispatcher();
 
@@ -16,6 +17,8 @@
 	export let year;
 	export let cal			// the calendar object 
 
+	let MonthFull = EventDays.MonthFull
+
 	function convert_date(secsdate) {
 		if ( secsdate === 'never' ) {
 			return 'never';
@@ -29,41 +32,42 @@
 	let today = new Date()
 	let test_current_mo = today.getMonth()
 	let current_day = today.getDate()
+	let current_year = today.getFullYear()
 
 	let current_month = 0
 	$: current_month = test_current_mo
 
 	let test_cal = []
 	test_cal.push([{ "month" : 7, "day" : 29},
-		{ "month" : 7, "day" : 30},
-		{ "month" : 7, "day" : 31},
-		{ "month" : 8, "day" : 1},
-		{"month" : 8, "day" : 2},
-		{"month" : 8, "day" : 3},
-		{"month" : 8, "day" : 4}])
+		{ "month" : 7, "day" : 30, "year" : year},
+		{ "month" : 7, "day" : 31, "year" : year},
+		{ "month" : 8, "day" : 1, "year" : year},
+		{"month" : 8, "day" : 2, "year" : year},
+		{"month" : 8, "day" : 3, "year" : year},
+		{"month" : 8, "day" : 4, "year" : year}])
 	let nw = []
 	for ( let d = 5; d < 12; d++ ) {
-		nw.push({"month" : 8, "day" : d })
+		nw.push({"month" : 8, "day" : d, "year" : year })
 	}
 	test_cal.push(nw)
 	nw = []
 	for ( let d = 12; d < 19; d++ ) {
-		nw.push({"month" : 8, "day" : d })
+		nw.push({"month" : 8, "day" : d, "year" : year })
 	}
 	test_cal.push(nw)
 	nw = []
 	for ( let d = 19; d < 26; d++ ) {
-		nw.push({"month" : 8, "day" : d })
+		nw.push({"month" : 8, "day" : d, "year" : year })
 	}
 	test_cal.push(nw)
 	test_cal.push([
-		{"month" : 8, "day" : 26, "has_events" : true },
-		{"month" : 8, "day" : 27},
-		{"month" : 8, "day" : 28},
-		{"month" : 8, "day" : 29},
-		{"month" : 8, "day" : 30},
-		{ "month" : 9, "day" : 1},
-		{ "month" : 9, "day" : 2}
+		{"month" : 8, "day" : 26, "has_events" : true, "year" : year },
+		{"month" : 8, "day" : 27, "year" : year},
+		{"month" : 8, "day" : 28, "year" : year},
+		{"month" : 8, "day" : 29, "year" : year},
+		{"month" : 8, "day" : 30, "year" : year},
+		{ "month" : 9, "day" : 1, "year" : year},
+		{ "month" : 9, "day" : 2, "year" : year}
 	])
 
 
@@ -85,6 +89,7 @@
 			"day_info" : {
 				"day" : tid,
 				"month" : current_month,
+				"year" : current_year,
 				"ev_list" : {
 					"10:00" : "nothing",
 					"12:00" : "lunch",

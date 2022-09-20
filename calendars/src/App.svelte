@@ -9,7 +9,6 @@
 
 	import { process_search_results, place_data, clonify, make_empty_thing, link_server_fetch } from '../../common/data-utils.js'
 	import { popup_size } from '../../common/display-utils.js'
-	import Selections from '../../common/Selections.svelte'
 	import {link_picker,picker} from "../../common/link-pick.js"
 	import {get_search} from "../../common/search_box.js"
 
@@ -24,6 +23,7 @@
 	let day_data = {
 		"day" : current_date.getDate(),
 		"month" : current_date.getMonth(),
+		"year" : 2022,
 		"ev_list" : {}
 	}
 
@@ -66,10 +66,9 @@
 	
 	let window_scale = { "w" : 0.4, "h" : 0.6 }
 	//
-	window_scale = popup_size()
 	let all_window_scales = []
-	all_window_scales.push(window_scale)
-	all_window_scales.push(window_scale)
+	all_window_scales = popup_size()
+
 	//
 	onMount(() => {
 		session = window.retrieve_session()
@@ -119,7 +118,8 @@
 	function handleEventPlanningMessage(event) {
 		let data = event.detail
 		day_data = data.day_info
-		start_floating_window(1);
+		start_floating_window(1,1.0,0.5);
+		fix_z_topper(1);
 	}
 
 	function clickEmptyElement(thing_counter) {
@@ -356,12 +356,12 @@
 </div>
 
 
-<FloatWindow title={current_thing.title + '...'}  index={0} scale_size_array={all_window_scales[0]} >
+<FloatWindow title={current_thing.title + '...'}  index={0} scale_size_array={all_window_scales} >
 	<FullMonth {...current_thing}  on:message={handleEventPlanningMessage} />
 </FloatWindow>
 
 
-<FloatWindow title="Day Planner" index={1} scale_size_array={all_window_scales[1]} >
+<FloatWindow title="Day Planner" index={1} scale_size_array={all_window_scales} >
 	<DayEvents {...current_day_data} />
 </FloatWindow>
 
