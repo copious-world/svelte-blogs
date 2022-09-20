@@ -32,6 +32,9 @@ let maybe_event_ub = 30
 let maybe_event_step = 15
 
 let show_editor = false
+let editor_for_new = false
+let editor_for_update = false
+let editor_for_cancel = false
 
 let ev_list_keys = []
 $: ev_list_keys = Object.keys(ev_list)
@@ -53,13 +56,15 @@ $: {
             "use" : blocked,
             "on_hour" : USE_AS_OPEN,
             "on_half_hour" : (minutes !== 0),
-            "changed" : false
+            "changed" : false,
+            "how_long" : 15
         }
         let time = d_date.getTime()
         time += ONE_HALF_HOUR
         d_date = new Date(time)
     }
 }
+
 
 let changed_event = false
 $: if ( changed_event ) {
@@ -97,13 +102,33 @@ function hide_editor() {
 }
 
 function handle_change_request(hour_data) {
+
+
+    let real_start = hour_data
+    let ri = hour_data.index
+    while ( ri > 0 ) {
+        ri--
+        let maybe_real = all_day[ri]
+        if ( maybe_real.use === real_start.use ) {
+            real_start = maybe_real
+        } else break
+    }
+
     //
-    maybe_event_index = hour_data.index
-    maybe_event_time = hour_data.time
-    maybe_event_half_hour = hour_data.on_half_hour
+    if ( real_start.use === USE_AS_OPEN ) {
+        editor_for_new = true
+    } else if ( (real_start.use !== USE_AS_BLOCK) && (real_start.changed) ) {
+        editor_for_update = true
+    } else if ( (real_start.use !== USE_AS_BLOCK) && !(real_start.changed) ) {
+        editor_for_cancel = true
+    }
+    //
+    maybe_event_how_long = real_start.how_long
+    maybe_event_index = real_start.index
+    maybe_event_time = real_start.time
+    maybe_event_half_hour = real_start.on_half_hour
     show_editor = true
     //
-
     let current_ub = 0
     let i = maybe_event_index
     while ( ++i < 48 ) {
@@ -119,8 +144,53 @@ function handle_change_request(hour_data) {
 function publish_event_request(ev) {
     let ev_data = all_day[maybe_event_index]
     ev_data.use = USE_AS_MEET
+    ev_data.how_long = 
     hide_editor()
     changed_event = true
+    //
+    editor_for_new = false
+    editor_for_update = false
+    editor_for_cancel = false
+}
+
+
+function publish_event_update(ev) {
+    let model_ev = all_day[maybe_event_index]
+    model_ev.use = USE_AS_MEET
+    hide_editor()
+
+    model_ev.changed = false
+    let total_time = model_ev.how_long
+    let ch_i = maybe_event_index
+    while ( total_time > 0 ) {
+        total_time -= 30
+        ch_i++
+        if ( total_time > 0 ) {
+            let ntxt_slot = all_day[ch_i]
+            ntxt_slot.changed = false
+            ntxt_slot.use = USE_AS_OPEN
+        }
+    }
+
+    model_ev.changed = true
+    changed_event = true
+
+    editor_for_new = false
+    editor_for_update = false
+    editor_for_cancel = false
+
+}
+
+
+function publish_event_cancel(ev) {
+    //
+    hide_editor()
+    //
+    changed_event = true
+    editor_for_new = false
+    editor_for_update = false
+    editor_for_cancel = false
+
 }
 
 
@@ -131,7 +201,17 @@ function publish_event_request(ev) {
 <div>
     {#if show_editor }
     <div class="scheduler-box">
-        <span class="scheduler-hn">Shedule an event at: </span><span class="scheduler-label">{maybe_event_time}</span><br>
+        {#if editor_for_new }
+        <span class="scheduler-hn">Shedule an event at: </span>
+        {/if}
+        {#if editor_for_update }
+        <span class="scheduler-hn">Change an event at: </span>
+        {/if}
+        {#if editor_for_cancel }
+        <span class="scheduler-hn">Cancel an event at: </span>
+        {/if}
+        <span class="scheduler-label">{maybe_event_time}</span><br>
+        <!--   value fields -->
         <span class="scheduler-label">Enter a topic:</span><input type="text" bind:value={maybe_event_topic}><br>
         <span class="scheduler-label">Enter your id:</span><input type="text"  bind:value={maybe_event_id}><br>
         <span class="scheduler-label">Enter your email:</span><input type="text"  bind:value={maybe_event_email}><br>
@@ -139,8 +219,19 @@ function publish_event_request(ev) {
         <span class="scheduler-label">by zoom: </span><input type="checkbox" bind:checked={maybe_event_zoom}>
         <span class="scheduler-label">in person: </span><input type="checkbox" bind:checked={maybe_event_in_person}><br>
         <span class="scheduler-label">for {maybe_event_how_long} minutes</span><input type="range" bind:value={maybe_event_how_long} min={maybe_event_lb} max={maybe_event_ub} step={maybe_event_step}><br>
+
+        {#if editor_for_new }
         <button on:click={publish_event_request}>request</button>
-        <button on:click={hide_editor}>close</button>
+        {/if}
+        {#if editor_for_update }
+        <button on:click={publish_event_update}>update</button>
+        {/if}
+        {#if editor_for_cancel }
+        <button on:click={publish_event_cancel}>drop</button>
+        {/if}
+
+        <button on:click={publish_event_cancel}>cancel</button>
+
     </div>
     {/if}
     <h3> events </h3>
