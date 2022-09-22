@@ -34,11 +34,15 @@ let thing_template = {
 }
 
 
-export function make_empty_thing() {
-    return clonify(thing_template)
+export function make_empty_thing(model_template) {
+    if ( model_template !== undefined ) {
+        thing_template = model_template
+        app_empty_object = Object.assign({ "id" : 1, "entry" : -1 },thing_template)
+    }
+    return clonify(model_template)
 }
 
-const app_empty_object = Object.assign({ "id" : 1, "entry" : -1 },thing_template)
+let app_empty_object = Object.assign({ "id" : 1, "entry" : -1 },thing_template)
 
 
 
@@ -77,6 +81,34 @@ export function place_data(things,other_things,article_index,dstart) {
     }
     return things
 }
+
+
+export function merge_data(merger,things,other_things,article_index,dstart) {
+    let l = things.length;
+    let lo = other_things.length;
+    //
+    let strt = (( dstart === undefined ) ? (article_index-1) : (dstart-1));
+    //
+    for ( let i = 0; i < l; i++ ) {
+        if ( (strt + i) < lo ) {
+            let oto = other_things[strt + i];
+            if ( oto !== false ) {
+                oto.id = i+1;
+                things[i] = merger(things[i],oto);
+            } else {
+                let ceo = clonify(app_empty_object);
+                ceo.id = i+1;
+                things[i] = merger(things[i],ceo);
+            }
+        } else {
+            let ceo = clonify(app_empty_object);
+            ceo.id = i+1;
+            things[i] = merger(things[i],ceo);
+        }
+    }
+    return things
+}
+
 
 let faux_data = () => { return []}
 if ( TESTING ) {

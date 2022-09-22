@@ -4,31 +4,83 @@
 	import FullMonth from './MonthFull.svelte';
 	import Thing from './Thing.svelte'
 	import DayEvents from './DayEvents.svelte'
+	//
 	import ThingGrid from 'grid-of-things';
 	import FloatWindow from 'svelte-float-window';
 
-	import { process_search_results, place_data, clonify, make_empty_thing, link_server_fetch } from '../../common/data-utils.js'
+	import { process_search_results, place_data, merge_data, clonify, make_empty_thing, link_server_fetch } from '../../common/data-utils.js'
 	import { popup_size } from '../../common/display-utils.js'
-	import {link_picker,picker} from "../../common/link-pick.js"
 	import {get_search} from "../../common/search_box.js"
 
+	import {EventDays} from 'event-days'
 	import { onMount } from 'svelte';
 
 	let session = ""
 	let going_session = ""
 
+	let day_event_count = 0
 
+	const MonthContainer = EventDays.MonthContainer
+	const Slot = EventDays.Slot
+	//
+	const ONE_HOUR = (3600*1000)
+	const ONE_HALF_HOUR = (3600*500)
+	const ONE_QUARTER_HOUR = (3600*250)
+	const ONE_QUARTER_HOUR_MINUTES = (15)
+	const ONE_HALF_HOUR_MINUTES  = (30)
+	//
+	const USE_AS_BLOCK = "block"
+	const USE_AS_MEET = "meeting"
+	const USE_AS_ACTIVITY = "activity"
+	const USE_AS_OPEN = "open"
+	//
+
+
+	class ReqSlot extends Slot {
+		constructor(label,begin_at,end_at,info,d_date) {
+			super(label,begin_at,end_at)
+			this.index = info.index
+			this.label = ""
+			this.person_id =  ""
+			this.email =  ""
+			this.contact_phone = ""
+			this.on_zoom = false
+			this.in_person = false
+			this.time = d_date.toLocaleTimeString()
+			this.use = info.blocked
+			this.on_hour = USE_AS_OPEN
+			this.on_half_hour = info.on_half_hour
+			this.changed =  false
+			this.how_long =  15
+		}
+	}
+
+	//
 	let current_date = new Date()
+	let g_mo_gen = new MonthContainer(current_date.getTime())
+
 
 	let day_data = {
 		"day" : current_date.getDate(),
 		"month" : current_date.getMonth(),
 		"year" : 2022,
-		"ev_list" : {}
+		"all_day" : []
 	}
 
 	let current_day_data = day_data
 	$: current_day_data = day_data
+
+	let prev_day_event_count = day_event_count
+	$: if ( prev_day_event_count != day_event_count ) {
+		prev_day_event_count = day_event_count
+		current_day_data.event_count = day_event_count
+		current_day_data.has_events = (current_day_data.event_count > 0)
+		current_thing.total_events = current_thing.total_events + 1
+		let agenda = current_thing.cal.map[current_day_data.key]
+		agenda.has_events = current_day_data.has_events
+		agenda.event_count = current_day_data.event_count
+	}
+
 
 	let data_stem = "contactsearch"
 
@@ -40,28 +92,107 @@
 	];
 
 
-	let all_link_picks = []
-
 	let search_ordering = qlist_ordering[2];
 	let search_topic = 'any'
 
-	let g_max_title_chars = 20
 	//
 	let current_roller_title = ""
-	let current_roller_subject = ""
 
 	let title_months = [
 		"January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December" 
 	]
 	
-	let thing_template = make_empty_thing()
-	let cur_date = new Date()
-	thing_template.year = cur_date.getFullYear()
-	thing_template.month = title_months[cur_date.getMonth()]
+	let model_month_entry = {
+		"_tracking" : false,
+		"color": 'grey',
+		"title" : "no content",
+		"month" : g_mo_gen.month,
+		"year" : g_mo_gen.year,
+		"start_time" : g_mo_gen.start_time,
+		"end_time" : g_mo_gen.end_time,
+		"cal"  : g_mo_gen.cal,
+		"month_str" : title_months[g_mo_gen.month],
+		"dates" : {
+			"created" : "never",
+			"updated" : "never"
+		},
+		"subject" : "",
+		"abstract" : "no content",
+		"keys" : [  ],
+		"comments" : [],
+		"score" : 1.0,
+		"total_events" : 0
+	}
+
+	let thing_template = make_empty_thing(model_month_entry)
+
+	function fill_cal(mentry) {
+		//
+		let cmap = mentry.cal.map
+		for ( let ky in cmap ) {
+			//
+			let agenda = cmap[ky]
+			//
+			let d_date = new Date(mentry.year,mentry.month,agenda.day);  // these have been passed
+			let all_day_kys = Object.keys(agenda.all_day)
+			let all_day_list = all_day_kys.map((ky) => { return agenda.all_day[ky] })
+			//
+			//
+			for ( let i = 0; i < 48; i++ ) {
+				//
+				let hour = d_date.getHours()
+				let minutes = d_date.getMinutes()
+				let blocked = (hour < 10) || (hour >= 19) ? USE_AS_BLOCK : USE_AS_OPEN
+				//
+				let time = d_date.getTime()
+				all_day_list[i] = 	new ReqSlot("",time,0,{
+														"index" : i,
+														"blocked" : blocked,
+														"on_half_hour" : (minutes !== 0)
+													},d_date)
+				time += ONE_HALF_HOUR
+				d_date = new Date(time)
+			}
+			//
+			agenda.all_day_list = all_day_list
+			agenda.event_count = 0
+			agenda.has_events = false
+			agenda.key = ky
+		}
+	}
+
+
+	function merge_calendars(c_dst,c_src) {
+		//
+		if ( !c_dst ) return c_src
+		if ( !c_src ) return c_dst
+		//
+		if ( (c_src.year === c_dst.year) && (c_src.month === c_dst.month) ) {
+			//
+			for ( let ky in c_dst.cal.map ) {
+				let agenda_dst = c_dst.cal.map[ky]
+				let agenda_src = c_dst.cal.map[ky]
+
+				if ( agenda_src && agenda_dst ) {
+					let n = agenda_src.all_day_list.length
+					for ( let i = 0; i < n; i++ ) {
+						agenda_dst.all_day_list[i] = agenda_src.all_day_list[i]
+					}
+				}
+			}
+			//
+		}
+		//
+		return c_dst
+	}
 	
 
 	let current_thing = Object.assign({ "id" : 0, "entry" : 0 },thing_template)
 	let app_empty_object = Object.assign({ "id" : 1, "entry" : -1 },thing_template)
+
+	fill_cal(current_thing)
+	fill_cal(app_empty_object)
+	//
 	//
 	
 	let window_scale = { "w" : 0.4, "h" : 0.6 }
@@ -108,7 +239,6 @@
 					start_floating_window(0);
 				} else {
 					current_roller_title = athing.title
-					current_roller_subject = athing.subject
 				}
 			}
 		}
@@ -118,14 +248,33 @@
 	function handleEventPlanningMessage(event) {
 		let data = event.detail
 		day_data = data.day_info
+		day_event_count = day_data.event_count
 		start_floating_window(1,1.0,0.5);
 		fix_z_topper(1);
 	}
 
 	function clickEmptyElement(thing_counter) {
-		 let elem = clonify(app_empty_object)
-		 elem.id = thing_counter
-		 return elem
+		//
+		let y = g_mo_gen.year
+		let m = g_mo_gen.month
+		m = (m + thing_counter - 1) % 12
+		if ( m === 0 ) y++
+		let ee_date = new Date(y,m)
+		//
+		let ee_thing = Object.assign({ "id" : 0, "entry" : 0 },thing_template)
+		let mo_gen = new MonthContainer(ee_date.getTime())
+		//
+		ee_thing.month = mo_gen.month
+		ee_thing.year = mo_gen.year
+		ee_thing.start_time = mo_gen.start_time
+		ee_thing.end_time = mo_gen.end_time
+		ee_thing.cal = mo_gen.cal
+		ee_thing.month_str = title_months[mo_gen.month]
+		fill_cal(ee_thing)
+		//
+		//
+		ee_thing.id = thing_counter
+		return ee_thing
 	}
 	
 
@@ -185,7 +334,7 @@
 		if ( needs_data(start,end) ) {
 			data_fetcher(start,things.length)
 		} else {
-			things = place_data(things,other_things,article_index)
+			pre_data_fetcher()
 		}
 	}
 
@@ -236,6 +385,55 @@
 		return usable_data
 	}
 
+
+	function pre_data_fetcher(qstart,alt_length) {
+		let l = (alt_length === undefined) ? things.length : alt_length
+		let stindex = (qstart === undefined) ? (article_index - 1): qstart
+		//
+		stindex = Math.max(0,stindex)
+		try {
+
+			let search_result = {
+				"data" : [],
+				"count" : l
+			}
+
+			let ee_date = new Date()
+			for ( let ee = 0; ee < l; ee++ ) {
+				let ee_thing = Object.assign({ "id" : 0, "entry" : 0 },thing_template)
+				let mo_gen = new MonthContainer(ee_date.getTime())
+				//
+				ee_thing.month = mo_gen.month
+				ee_thing.year = mo_gen.year
+				ee_thing.start_time = mo_gen.start_time
+				ee_thing.end_time = mo_gen.end_time
+				ee_thing.cal = mo_gen.cal
+				ee_thing.month_str = title_months[mo_gen.month]
+
+				fill_cal(ee_thing)
+				search_result.data.push(ee_thing)
+				//
+				let y = mo_gen.year
+				let m = mo_gen.month
+				m = (m + 1) % 12
+				if ( m === 0 ) y++
+				ee_date = new Date(y,m)
+			}
+
+			let [a_i,lo,ot] = process_search_results(stindex,qstart,search_result,other_things,unload_data)
+			article_index = a_i
+			article_count = lo
+			other_things = ot
+
+			if ( other_things !== false ) {
+				things = merge_data(merge_calendars,things,other_things,article_index)
+			}
+
+		} catch (e) {
+			alert(e.message)
+		}
+	}
+
 	async function data_fetcher(qstart,alt_length) {
 		let l = (alt_length === undefined) ? things.length : alt_length
 		let stindex = (qstart === undefined) ? (article_index - 1): qstart
@@ -260,7 +458,35 @@
 			let prot = location.protocol
 			let sp = '//'
 			//data_stem = ""  // TEST  /${data_stem}
-			let search_result = await link_server_fetch(`${prot}${sp}${srver}/${data_stem}/${rest}`,post_params, postData)
+			//let search_result = await link_server_fetch(`${prot}${sp}${srver}/${data_stem}/${rest}`,post_params, postData)
+
+			let search_result = {
+				"data" : [],
+				"count" : l
+			}
+
+			let ee_date = new Date()
+			for ( let ee = 0; ee < l; ee++ ) {
+				let ee_thing = Object.assign({ "id" : 0, "entry" : 0 },thing_template)
+				let mo_gen = new MonthContainer(ee_date.getTime())
+				//
+				ee_thing.month = mo_gen.month
+				ee_thing.year = mo_gen.year
+				ee_thing.start_time = mo_gen.start_time
+				ee_thing.end_time = mo_gen.end_time
+				ee_thing.cal = mo_gen.cal
+				ee_thing.month_str = title_months[mo_gen.month]
+
+				fill_cal(ee_thing)
+				search_result.data.push(ee_thing)
+				//
+				let y = mo_gen.year
+				let m = mo_gen.month
+				m = (m + 1) % 12
+				if ( m === 0 ) y++
+				ee_date = new Date(y,m)
+			}
+
 
 			let [a_i,lo,ot] = process_search_results(stindex,qstart,search_result,other_things,unload_data)
 			article_index = a_i
@@ -268,7 +494,7 @@
 			other_things = ot
 
 			if ( other_things !== false ) {
-				things = place_data(things,other_things,article_index)
+				things = merge_data(merge_calendars,things,other_things,article_index)
 			}
 
 		} catch (e) {
@@ -276,25 +502,6 @@
 		}
 	}
 
-
-	let count_value;
-	const unsubscribe = picker.subscribe(value => {
-		count_value = value;
-		link_picker.map_picks(things)
-	});
-
-
-	function pop_up_selections(ev) {
-		all_link_picks = link_picker.get_pick_values()
-		start_floating_window(1);
-	}
-
-	async function link_pick_remover() {
-		for ( let link in all_link_picks ) {
-			await window.remove_contact(link)
-		}
-	}
-	
 </script>
 
 
@@ -345,7 +552,6 @@
 		<div class="sel-titles blg-ctl-button" ><button on:click={present_assest_editing}>add entry</button></div>
 		{/if}
 		<div class="sel-titles" >Title: {current_roller_title}</div>
-		<div class="sel-titles" style="width: 15%;"><button on:click={pop_up_selections}>show selections</button></div>
 	</div>
   
 	<div class="blg-grid-container">
@@ -362,7 +568,7 @@
 
 
 <FloatWindow title="Day Planner" index={1} scale_size_array={all_window_scales} >
-	<DayEvents {...current_day_data} />
+	<DayEvents {...current_day_data} bind:day_event_count/>
 </FloatWindow>
 
 

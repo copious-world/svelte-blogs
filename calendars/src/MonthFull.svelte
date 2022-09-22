@@ -1,23 +1,34 @@
 <script>
 	import { createEventDispatcher } from 'svelte';
-	import {EventDays} from 'event-days'
+	import {day_is_today} from '../../common/date_utils'
 
 	const dispatch = createEventDispatcher();
-
-	// ref ... https://gist.github.com/akirattii/9165836
 
 	// `current` is updated whenever the prop value changes...
 	export let dates;
 	export let entry;
 	export let title;
 	export let ucwid;
-	export let when;
 	export let comment;
 	export let month;
+	export let month_str;
 	export let year;
 	export let cal			// the calendar object 
+	export let total_events
 
-	let MonthFull = EventDays.MonthFull
+
+	const ONE_HOUR = (3600*1000)
+	const ONE_HALF_HOUR = (3600*500)
+	const ONE_QUARTER_HOUR = (3600*250)
+	const ONE_QUARTER_HOUR_MINUTES = (15)
+	const ONE_HALF_HOUR_MINUTES  = (30)
+
+	const USE_AS_BLOCK = "block"
+	const USE_AS_MEET = "meeting"
+	const USE_AS_ACTIVITY = "activity"
+	const USE_AS_OPEN = "open"
+
+	// ---- ---- ---- ---- ---- ---- ---- ---- ----
 
 	function convert_date(secsdate) {
 		if ( secsdate === 'never' ) {
@@ -29,77 +40,49 @@
 		}
 	}
 
-	let today = new Date()
-	let test_current_mo = today.getMonth()
-	let current_day = today.getDate()
-	let current_year = today.getFullYear()
+	let calc_day = new Date()
+	let current_month = calc_day.getMonth()
+	let current_day = calc_day.getDate()
+	let current_year = calc_day.getFullYear()
 
-	let current_month = 0
-	$: current_month = test_current_mo
-
-	let test_cal = []
-	test_cal.push([{ "month" : 7, "day" : 29},
-		{ "month" : 7, "day" : 30, "year" : year},
-		{ "month" : 7, "day" : 31, "year" : year},
-		{ "month" : 8, "day" : 1, "year" : year},
-		{"month" : 8, "day" : 2, "year" : year},
-		{"month" : 8, "day" : 3, "year" : year},
-		{"month" : 8, "day" : 4, "year" : year}])
-	let nw = []
-	for ( let d = 5; d < 12; d++ ) {
-		nw.push({"month" : 8, "day" : d, "year" : year })
+	$: {
+		calc_day = new Date(year,month)
+		current_month = month
+		current_day = calc_day.getDate()
+		current_year = calc_day.getFullYear()
 	}
-	test_cal.push(nw)
-	nw = []
-	for ( let d = 12; d < 19; d++ ) {
-		nw.push({"month" : 8, "day" : d, "year" : year })
-	}
-	test_cal.push(nw)
-	nw = []
-	for ( let d = 19; d < 26; d++ ) {
-		nw.push({"month" : 8, "day" : d, "year" : year })
-	}
-	test_cal.push(nw)
-	test_cal.push([
-		{"month" : 8, "day" : 26, "has_events" : true, "year" : year },
-		{"month" : 8, "day" : 27, "year" : year},
-		{"month" : 8, "day" : 28, "year" : year},
-		{"month" : 8, "day" : 29, "year" : year},
-		{"month" : 8, "day" : 30, "year" : year},
-		{ "month" : 9, "day" : 1, "year" : year},
-		{ "month" : 9, "day" : 2, "year" : year}
-	])
 
+	//let updated_when
+	//let created_when
+	//$: updated_when = convert_date(dates.updated)
+	//$: created_when = convert_date(when)
 
-	let updated_when
-	let created_when
-
-	$: updated_when = convert_date(dates.updated)
-	$: created_when = convert_date(when)
 
 	let going_session = false
 
-
-	function event_management(event) {
+	function event_management(event,day_key) {
 		//
 		let tid = event.currentTarget.innerHTML
+		//
+		let day_info = cal.map[day_key]
+		//
+		day_info = Object.assign({},day_info,{
+			"month" : current_month,
+			"year" : current_year,
+			"monthstr" : month_str
+		})
+		//
+		console.log(day_info)
+		//
 		dispatch('message', {
 			"type": 'event-click',
 			"text": ('click ' + tid),
-			"day_info" : {
-				"day" : tid,
-				"month" : current_month,
-				"year" : current_year,
-				"ev_list" : {
-					"10:00" : "nothing",
-					"12:00" : "lunch",
-					"18:00" : "dinner"
-				}
-			}
-		});
+			"day_info" : day_info
+		})
 		//
 	}
 
+	// current_day == a_day.day
 
 </script>
  
@@ -107,7 +90,7 @@
 	<div style="padding:6px;" >
 		<div class="calendar">
 			<header>
-			  <h1>{month} {year}</h1>
+			  <h1>{month_str} {year}</h1>
 			</header>
 		  
 			<ul class="weekdays">
@@ -135,22 +118,27 @@
 			</ul>
 			<div class="scroller-grid">
 				<ol class="day-grid">
-					{#each test_cal as a_week}
-						{#each a_week as a_day}
-							{#if a_day.month === test_current_mo }
-								{#if a_day.has_events }
-								<li class="event-access-plus" style="{current_day == a_day.day ? 'border:solid 2px lime' : '' }" on:click={event_management}>{a_day.day}</li>
-								{:else}
-								<li class="event-access" style="{current_day == a_day.day ? 'border:solid 2px lime' : '' }" on:click={event_management}>{a_day.day}</li>
-								{/if}
+					{#each cal.table as a_week}
+						{#each a_week as a_day_key}
+							{#if a_day_key !== false }
+								{#each [cal.map[a_day_key]] as a_day}
+									{#if a_day.has_events }
+									<li class="event-access-plus" style="{ day_is_today(a_day,year,month) ? 'border:solid 2px lime' : '' }" on:click={(ev) => {event_management(ev,a_day_key)}}>{a_day.day}</li>
+									{:else}
+									<li class="event-access" style="{ day_is_today(a_day,year,month) ? 'border:solid 2px lime' : '' }" on:click={(ev) => {event_management(ev,a_day_key)}}>{a_day.day}</li>
+									{/if}
+								{/each}
 							{:else}
-								<li class="exclude-day">{a_day.day}</li>
+								<li class="exclude-day">-</li>
 							{/if}
 						{/each}
 					{/each}
 				</ol>	
 			</div>
 			<!-- class="month=prev"class="month-next">  -->
+			<div class = "ev-count">
+				Number of events taking_place: {total_events}
+			</div>
 		  </div>
 	</div>
 </div>
@@ -163,7 +151,8 @@
 	}
 
 	.scroller-grid {
-		max-height: 100%;
+		height: calc(100vh - 2%);
+		max-height: 120%;
 		overflow-y: scroll;
 	}
 
@@ -178,6 +167,13 @@
 		color: #fff;
 		min-height: 10vh;
 		text-align: center;
+	}
+
+
+	.ev-count {
+		margin-top: 6px;
+		padding:4px;
+		color: rgb(70, 112, 70);
 	}
 
 	ul, ol {

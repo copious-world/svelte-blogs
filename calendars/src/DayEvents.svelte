@@ -1,8 +1,8 @@
 <script>
 export let day
-export let month
-export let year
-export let ev_list
+export let monthstr
+export let all_day_list
+export let day_event_count = 0
 
 
 const ONE_HOUR = (3600*1000)
@@ -31,89 +31,115 @@ let maybe_event_lb = 15
 let maybe_event_ub = 30
 let maybe_event_step = 15
 
+let maybe_event_code = ""
+
 let show_editor = false
 let editor_for_new = false
 let editor_for_update = false
 let editor_for_cancel = false
 
-let ev_list_keys = []
-$: ev_list_keys = Object.keys(ev_list)
-
-let all_day = []
-let monthstr = ""
-
-let d_date = new Date(year,month,day);
-$: {
-    d_date = new Date(year,month,day)
-    monthstr = d_date.toLocaleDateString()
-    for ( let i = 0; i < 48; i++ ) {
-        let hour = d_date.getHours()
-        let minutes = d_date.getMinutes()
-        let blocked = (hour < 10) || (hour >= 19) ? USE_AS_BLOCK : USE_AS_OPEN
-        all_day[i] = {
-            "index" : i,
-            "time" : d_date.toLocaleTimeString(),
-            "use" : blocked,
-            "on_hour" : USE_AS_OPEN,
-            "on_half_hour" : (minutes !== 0),
-            "changed" : false,
-            "how_long" : 15
-        }
-        let time = d_date.getTime()
-        time += ONE_HALF_HOUR
-        d_date = new Date(time)
-    }
-}
 
 
+let dropped_event = false
 let changed_event = false
-$: if ( changed_event ) {
+
+
+$: if ( changed_event && (all_day_list !== undefined) ) {
     changed_event = false
-    let model_ev = all_day[maybe_event_index]
+    let model_ev = all_day_list[maybe_event_index]
     model_ev.changed = true
+    model_ev.how_long = maybe_event_how_long
+    model_ev.label = maybe_event_topic
+    model_ev.person_id = maybe_event_id
+    model_ev.email = maybe_event_email
+    model_ev.contact_phone = maybe_event_contact_phone
+    model_ev.on_zoom = maybe_event_zoom
+    model_ev.in_person = maybe_event_in_person
+
     let total_time = maybe_event_how_long
     let ch_i = maybe_event_index
     while ( total_time > 0 ) {
         total_time -= 30
         ch_i++
         if ( total_time > 0 ) {
-            let ntxt_slot = all_day[ch_i]
+            let ntxt_slot = all_day_list[ch_i]
             ntxt_slot.changed = true
             ntxt_slot.use = model_ev.use
-            all_day[ch_i] = ntxt_slot
+            ntxt_slot.how_long = model_ev.how_long
+            ntxt_slot.label = model_ev.label
+            //
+            ntxt_slot.person_id = model_ev.person_id
+            ntxt_slot.email = model_ev.email
+            ntxt_slot.contact_phone = model_ev.contact_phone
+            ntxt_slot.on_zoom = model_ev.on_zoom
+            ntxt_slot.in_person = model_ev.in_person
+            //
+            all_day_list[ch_i] = ntxt_slot
         }
     }
-    all_day[maybe_event_index] = model_ev
+    all_day_list[maybe_event_index] = model_ev
 }
 
 
-/*
-if ( i == 28 ) {
-    all_day[i].use = USE_AS_ACTIVITY
+$: if ( dropped_event && (all_day_list !== undefined)) {
+    dropped_event = false
+    let model_ev = all_day_list[maybe_event_index]
+    model_ev.how_long = 15
+    model_ev.label = ""
+    model_ev.person_id = ""
+    model_ev.email = ""
+    model_ev.contact_phone = ""
+    model_ev.on_zoom = false
+    model_ev.in_person = false
+    model_ev.use = USE_AS_OPEN
+
+    let total_time = maybe_event_how_long
+    let ch_i = maybe_event_index
+    while ( total_time > 0 ) {
+        total_time -= 30
+        ch_i++
+        if ( total_time > 0 ) {
+            let ntxt_slot = all_day_list[ch_i]
+            ntxt_slot.changed = true
+            ntxt_slot.use = model_ev.use
+            ntxt_slot.how_long = model_ev.how_long
+            ntxt_slot.label = model_ev.label
+            //
+            ntxt_slot.person_id = model_ev.person_id
+            ntxt_slot.email = model_ev.email
+            ntxt_slot.contact_phone = model_ev.contact_phone
+            ntxt_slot.on_zoom = model_ev.on_zoom
+            ntxt_slot.in_person = model_ev.in_person
+            //
+            ntxt_slot.use = USE_AS_OPEN
+            //
+            all_day_list[ch_i] = ntxt_slot
+        }
+    }
+    all_day_list[maybe_event_index] = model_ev
 }
-if ( i == 32 ) {
-    all_day[i].use = USE_AS_MEET
-    all_day[i].on_hour = USE_AS_MEET
-}
-*/
 
 function hide_editor() {
     show_editor = false
+    editor_for_new = false
+    editor_for_update = false
+    editor_for_cancel = false
 }
 
 function handle_change_request(hour_data) {
-
-
+    //
     let real_start = hour_data
-    let ri = hour_data.index
-    while ( ri > 0 ) {
-        ri--
-        let maybe_real = all_day[ri]
-        if ( maybe_real.use === real_start.use ) {
-            real_start = maybe_real
-        } else break
+    //
+    if ( hour_data.use !== USE_AS_OPEN ) {
+        let ri = hour_data.index
+        while ( ri > 0 ) {
+            ri--
+            let maybe_real = all_day_list[ri]
+            if ( (maybe_real.use === real_start.use) && (maybe_real.label === real_start.label) ) {
+                real_start = maybe_real
+            } else break
+        }
     }
-
     //
     if ( real_start.use === USE_AS_OPEN ) {
         editor_for_new = true
@@ -127,35 +153,53 @@ function handle_change_request(hour_data) {
     maybe_event_index = real_start.index
     maybe_event_time = real_start.time
     maybe_event_half_hour = real_start.on_half_hour
+    //
+    maybe_event_topic = real_start.label
+    maybe_event_id = real_start.person_id
+    maybe_event_email = real_start.email
+    maybe_event_contact_phone = real_start.contact_phone
+    maybe_event_zoom = real_start.on_zoom
+    maybe_event_in_person = real_start.in_person
+    //
     show_editor = true
     //
-    let current_ub = 0
-    let i = maybe_event_index
-    while ( ++i < 48 ) {
-        current_ub += ONE_HALF_HOUR_MINUTES
-        let nxt_slot = all_day[i]
-        if ( nxt_slot.use !== USE_AS_OPEN ) break
+    if ( editor_for_new ) {
+        let current_ub = 0
+        let i = maybe_event_index
+        while ( ++i < 48 ) {
+            current_ub += ONE_HALF_HOUR_MINUTES
+            let nxt_slot = all_day_list[i]
+            if ( nxt_slot.use !== USE_AS_OPEN ) break
+        }
+        maybe_event_ub = current_ub
+    } else if ( editor_for_update ) {       // can increase the duration of the event
+        let current_ub = 0
+        let i = maybe_event_index
+        while ( ++i < 48 ) {
+            current_ub += ONE_HALF_HOUR_MINUTES
+            let nxt_slot = all_day_list[i]
+            if ( ( nxt_slot.use !== USE_AS_OPEN ) && ( nxt_slot.label !== maybe_event_topic ) )  break
+        }
+        maybe_event_ub = current_ub
     }
-    maybe_event_ub = current_ub
     //
 }
 
 
+
 function publish_event_request(ev) {
-    let ev_data = all_day[maybe_event_index]
+    let ev_data = all_day_list[maybe_event_index]
     ev_data.use = USE_AS_MEET
-    ev_data.how_long = 
+
     hide_editor()
     changed_event = true
+    day_event_count++
     //
-    editor_for_new = false
-    editor_for_update = false
-    editor_for_cancel = false
 }
 
 
 function publish_event_update(ev) {
-    let model_ev = all_day[maybe_event_index]
+    let model_ev = all_day_list[maybe_event_index]
     model_ev.use = USE_AS_MEET
     hide_editor()
 
@@ -166,19 +210,15 @@ function publish_event_update(ev) {
         total_time -= 30
         ch_i++
         if ( total_time > 0 ) {
-            let ntxt_slot = all_day[ch_i]
+            let ntxt_slot = all_day_list[ch_i]
             ntxt_slot.changed = false
             ntxt_slot.use = USE_AS_OPEN
+            ntxt_slot.label = ""
         }
     }
 
     model_ev.changed = true
     changed_event = true
-
-    editor_for_new = false
-    editor_for_update = false
-    editor_for_cancel = false
-
 }
 
 
@@ -186,18 +226,17 @@ function publish_event_cancel(ev) {
     //
     hide_editor()
     //
-    changed_event = true
-    editor_for_new = false
-    editor_for_update = false
-    editor_for_cancel = false
-
+    changed_event = false
+    dropped_event = true
+    day_event_count--
+    //
 }
 
 
 
 </script>
 <div>
-<h2>{monthstr}</h2>
+<h2>{monthstr}&nbsp;&nbsp;{day}</h2>
 <div>
     {#if show_editor }
     <div class="scheduler-box">
@@ -212,13 +251,24 @@ function publish_event_cancel(ev) {
         {/if}
         <span class="scheduler-label">{maybe_event_time}</span><br>
         <!--   value fields -->
-        <span class="scheduler-label">Enter a topic:</span><input type="text" bind:value={maybe_event_topic}><br>
+        {#if !(editor_for_cancel) } 
+        <span class="scheduler-label">Enter a topic:</span><input type="text" bind:value={maybe_event_topic} placeholder="Enter a topic label"><br>
         <span class="scheduler-label">Enter your id:</span><input type="text"  bind:value={maybe_event_id}><br>
         <span class="scheduler-label">Enter your email:</span><input type="text"  bind:value={maybe_event_email}><br>
         <span class="scheduler-label">Enter your phone:</span><input type="text"  bind:value={maybe_event_contact_phone}><br>
         <span class="scheduler-label">by zoom: </span><input type="checkbox" bind:checked={maybe_event_zoom}>
         <span class="scheduler-label">in person: </span><input type="checkbox" bind:checked={maybe_event_in_person}><br>
         <span class="scheduler-label">for {maybe_event_how_long} minutes</span><input type="range" bind:value={maybe_event_how_long} min={maybe_event_lb} max={maybe_event_ub} step={maybe_event_step}><br>
+        {:else}
+        <span class="scheduler-label">Topic:</span>{maybe_event_topic}<br>
+        <span class="scheduler-label">Enter your id:</span><input type="text"  bind:value={maybe_event_id}><br>
+        <span class="scheduler-label">Enter your event code:</span><input type="text"  bind:value={maybe_event_code}><br>
+        <span class="scheduler-label">Email:</span>{maybe_event_email}<br>
+        <span class="scheduler-label">Phone:</span>{maybe_event_contact_phone}<br>
+        <span class="scheduler-label">by zoom: </span><input type="checkbox" bind:checked={maybe_event_zoom} disabled />
+        <span class="scheduler-label">in person: </span><input type="checkbox" bind:checked={maybe_event_in_person}  disabled /><br>
+        <span class="scheduler-label">for {maybe_event_how_long} minutes</span>{maybe_event_how_long}<br>
+        {/if}
 
         {#if editor_for_new }
         <button on:click={publish_event_request}>request</button>
@@ -226,35 +276,43 @@ function publish_event_cancel(ev) {
         {#if editor_for_update }
         <button on:click={publish_event_update}>update</button>
         {/if}
-        {#if editor_for_cancel }
+        {#if (editor_for_cancel || editor_for_update) }
         <button on:click={publish_event_cancel}>drop</button>
         {/if}
 
-        <button on:click={publish_event_cancel}>cancel</button>
+        <button on:click={hide_editor}>cancel</button>
 
     </div>
     {/if}
     <h3> events </h3>
     <div class="day-list-holder">
-        {#each all_day as hour_data}
-            {#if hour_data.use === USE_AS_BLOCK }
-                {#if !(hour_data.on_half_hour) }
-                    <div class="hour-display blocked-hour" >
-                        {hour_data.time}
-                    </div>
-                {/if}
-            {:else}
-                {#if !(hour_data.on_half_hour) }
-                    <div class="hour-display {hour_data.use}" on:click={(ev) => { handle_change_request(hour_data) }} >
-                        {hour_data.time}
-                    </div>
+        {#if (all_day_list !== undefined) }
+            {#each all_day_list as hour_data}
+                {#if hour_data.use === USE_AS_BLOCK }
+                    {#if !(hour_data.on_half_hour) }
+                        <div class="hour-display blocked-hour" >
+                            {hour_data.time}
+                        </div>
+                    {/if}
                 {:else}
-                    <div class="half-hour-display {hour_data.use}" on:click={(ev) => { handle_change_request(hour_data) }}>
-                        +30:
-                    </div>
+                    {#if !(hour_data.on_half_hour) }
+                        <div class="hour-display {hour_data.use}" on:click={(ev) => { handle_change_request(hour_data) }} >
+                            {hour_data.time}
+                            {#if hour_data.label.length > 0}
+                                <span>{hour_data.label}</span>
+                            {/if}
+                        </div>
+                    {:else}
+                        <div class="half-hour-display {hour_data.use}" on:click={(ev) => { handle_change_request(hour_data) }}>
+                            +30:
+                            {#if hour_data.label.length > 0}
+                                <span>{hour_data.label}</span>
+                            {/if}
+                        </div>
+                    {/if}
                 {/if}
-            {/if}
-        {/each}
+            {/each}
+        {/if}
     </div>
 </div>
 </div>
