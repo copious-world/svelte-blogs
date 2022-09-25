@@ -1,11 +1,11 @@
 <script>
 	//
 	import {link_picker,picker} from "../../common/link-pick.js"
-	import {day_is_today} from '../../common/date_utils'
 	//
 	import { onMount } from 'svelte';
 
 	// `current` is updated whenever the prop value changes...
+	export let id;
 	export let dates;
 	export let entry;
 	export let score;
@@ -89,24 +89,24 @@
 		picked_this = link_picker.is_picked(entry)
 	});
 
+	$: if ( id !== undefined ) {
+		//
+		setTimeout(() => {
+			let thing_box = document.getElementById(`xy_${id}`)
+			if ( thing_box ) {
+				thing_box.style.height = "90px";
+			}
+		},5)
+		//
+	}
+
 </script>
 
-{#if dates && (dates.created != 'never') }
-<div class="blg-el-wrapper" >
-	<input type="checkbox" bind:checked={picked_this} on:click={toggle_pick} />
-	<span class="thng-score">{score_rounded}</span>
-	<span style="color: darkbrown">{ucwid}</span>
-	<span style="background-color: yellowgreen">{created_when}</span>
-	<h6>{ucwid}</h6>
-	<div class="teaser">
-		{@html truncated}
-	</div>	
-</div>
-{:else}
+
 <div class="blg-el-wrapper">
 	{#if show_clock }
 		<span class="blg-item-title" >Today Is</span>
-		<span style="color:navy;font-weight:bolder;font-size:76%">{date_string}</span>
+		<span style="color:navy;font-weight:bolder;font-size:70%">{date_string}</span>
 	{:else}
 		<span class="blg-item-title" >{month_str} is </span>
 		<span style="color:navy;font-weight:bolder">{months_away}</span>
@@ -119,33 +119,15 @@
 	<div>
 		<h6>{month_str} {year}</h6>
 		<div>
-			<ol class="day-grid">
-				{#each cal.table as a_week}
-					{#each a_week as a_day_key}
-						{#if a_day_key !== false }
-							{#each [cal.map[a_day_key]] as a_day}
-								{#if a_day.has_events }
-								<li class="event-access-plus" style="{ day_is_today(a_day,year,month) ? 'border:solid 2px lime' : '' }" >{a_day.day}</li>
-								{:else}
-								<li class="event-access" style="{ day_is_today(a_day,year,month) ? 'border:solid 2px lime' : '' }" >{a_day.day}</li>
-								{/if}
-							{/each}
-						{:else}
-							<li class="exclude-day">-</li>
-						{/if}
-					{/each}
-				{/each}
-			</ol>	
 		</div>
-		<!-- class="month=prev"class="month-next">  -->
 	</div>
 </div>
-{/if}
+
 <style>
 
 	.blg-el-wrapper {
 		overflow-y: hidden;
-		height:inherit;
+		height:100px;
 	}
 
 	span {

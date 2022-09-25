@@ -13,7 +13,35 @@
 	import { get_search } from "../../common/search_box.js"
 
 	import { EventDays } from 'event-days'
+	import panzoom from 'panzoom';
+
+
+
 	import { onMount } from 'svelte';
+
+
+
+	let panzoomOptions = {
+		maxZoom: 5,
+		minZoom: 1,
+		initialZoom: 1,
+		zoomDoubleClickSpeed: 1,
+		transformOrigin: {x: 0, y: 0},
+		zoomSpeed: 0.25,
+		preserveAspecRatio: false,
+		scaleFactors: { x : 1.0, y : 0.0 }
+		// beforeMouseDown: (e) => {
+		//   return !e.altKey;
+		// },
+	};
+
+	let x = 1000;
+  	let y = 1000;
+
+	let canvasElt = null;
+	let panzoomInstance = null;
+
+
 
 	let session = ""
 	let going_session = ""
@@ -255,6 +283,7 @@
 	let all_window_scales = []
 	all_window_scales = popup_size()
 
+
 	//
 	onMount(() => {
 		session = window.retrieve_session()
@@ -266,14 +295,45 @@
 			window_scale.w = scale.w;
 			//
 		})
+
+		console.log(panzoom)
+		
+		// panzoom
+
+		panzoomInstance = panzoom(canvasElt,panzoomOptions);
+		// panzoomInstance.moveTo(centerX, centerY);
+
+
+		panzoomInstance.on("transform", (e) => {
+			/*
+			// keep track of the element's scale so we can adjust dragging to match
+			if ( canvasElt ) {
+				//console.log(e)
+				console.log('Fired when the `element` is being transformed: ', ccc, canvasElt.style.transform)
+
+				const level = parseFloat(
+					canvasElt.style.transform.split(",")[0].replace("matrix(", "")
+				);
+			}
+			*/
+		});
+
+
+		panzoomInstance.on('zoom', (e) => {		/// left to right only
+			let tt = e.getTransform()
+			tt.y = 0
+			console.log(tt)
+		});
+
+
+		panzoomInstance.on('pan', (e) => {		/// left to right only
+			let tt = e.getTransform()
+			tt.y = 0
+		});
+
+
 	})
 
-
-	function present_assest_editing() {
-		if ( going_session && (typeof window.launch_comment_editor === "function") ) {
-			window.launch_asset_editor(going_session)
-		}
-	}
 
 
 	function handleMessage(event) {
@@ -559,10 +619,17 @@
 
 </script>
 
-
-
 <div>
-
+	<div class="calendar-admin-slider" >
+		<svg style="width:100%">
+			<!-- this is the draggable root -->
+			<g bind:this={canvasElt} > 
+			  <circle cx='10' cy='100' r='5' fill='red'></circle>
+			  <circle cx='100' cy='100' r='5' fill='red'></circle>
+			</g>
+		</svg>
+	</div>
+		
 	<div style="border: solid 2px navy;padding: 4px;background-color:#EFEFEF;">
 		<div class="blg-ctrl-panel" style="display:inline-block;vertical-align:bottom;background-color:#EFFFFE" >
 			<span style="color:navy;font-weight:bold">Boxes</span>
@@ -602,12 +669,7 @@
 			</select>
 		</div>
 	</div>
-	<div style="border: solid 1px grey;padding: 4px;background-color:#F5F6EF;">
-		{#if going_session }
-		<div class="sel-titles blg-ctl-button" ><button on:click={present_assest_editing}>add entry</button></div>
-		{/if}
-		<div class="sel-titles" >Title: {current_roller_title}</div>
-	</div>
+
   
 	<div class="blg-grid-container">
 		<ThingGrid things={things} thing_component={Thing} on:message={handleMessage} />
@@ -630,6 +692,13 @@
 
 <style>
 
+
+	.calendar-admin-slider {
+		border: solid 2px rgb(9, 84, 9);
+		padding: 4px;
+		background-color:white;
+		height: 120px;
+	}
 
 	.blg-grid-container {
 		border-top : solid 2px green;
