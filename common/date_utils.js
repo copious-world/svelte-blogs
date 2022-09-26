@@ -31,3 +31,60 @@ export function day_is_before_today(a_day,year,month) {
 
     return false
 }
+
+
+export function first_day_of_month(a_date) {
+    // a_date should be a Date object
+    let mo = a_date.getMonth()
+    let year = a_date.getFullYear()
+
+    let nd = new Date(year,mo)
+    let t = nd.getTime()
+    return t
+}
+
+
+export function first_day_of_next_month(a_date) {
+    // a_date should be a Date object
+    let mo = a_date.getMonth()
+    let year = a_date.getFullYear()
+
+    mo = (mo + 1) % 12
+    if ( mo === 0 ) year++
+
+    let nd = new Date(year,mo)
+    let t = nd.getTime()
+    return t
+}
+
+export function first_day_of_relative_month(a_date,mo_offset) {
+    // a_date should be a Date object
+    let mo = a_date.getMonth()
+    let year = a_date.getFullYear()
+    //
+    if ( mo_offset !== 0 ) {
+        let mm = mo + mo_offset
+        if ( mo_offset > 0 ) {
+            if ( mm > 12 ) {
+                let yoffset = Math.trunc((mm - 12)/12) + 1
+                year += yoffset
+                mo = mm % 12
+            } else {
+                mo = mm
+            }
+        } else {
+            if ( mm < 0 ) {
+                mo = (mm % 12) + 12
+                let yoffset = Math.trunc((mo_offset - mo)/12)
+                year += yoffset
+            } else {
+                mo = mm
+            }
+        }
+    }
+    
+    let nd = new Date(year,mo)
+    let t = nd.getTime()
+    return t
+}
+

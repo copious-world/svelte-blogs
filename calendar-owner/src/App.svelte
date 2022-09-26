@@ -11,15 +11,20 @@
 	import { process_search_results, place_data, merge_data, clonify, make_empty_thing, link_server_fetch } from '../../common/data-utils.js'
 	import { popup_size } from '../../common/display-utils.js'
 	import { get_search } from "../../common/search_box.js"
+	import { first_day_of_relative_month } from "../../common/date_utils.js"
+
 
 	import { EventDays } from 'event-days'
 	import panzoom from 'panzoom';
 
 
-
 	import { onMount } from 'svelte';
 
-
+	let current_date = new Date()
+	let title_months = [
+		"January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December" 
+	]
+	
 
 	let panzoomOptions = {
 		maxZoom: 5,
@@ -39,6 +44,7 @@
   	let y = 1000;
 
 	let canvasElt = null;
+	let controllerElt = null;
 	let panzoomInstance = null;
 
 
@@ -75,9 +81,13 @@
 
 	let info_delta = 3
 
+
 	for ( let i = 0; i < 1000; i++ ) {
 		line_points.push({ x : (i*division_width + left_shift), y : 0, index : (divider_starts + i)})
-		info_points.push({ x : (i*division_width + left_shift), y : 0, index : (divider_starts + i)})
+		let mo_time = first_day_of_relative_month(current_date,(divider_starts + i))
+		let da = new Date(mo_time)
+		let mo_label = title_months[da.getMonth()] + " " + da.getFullYear()
+		info_points.push({ x : (i*division_width + left_shift), y : 0, index : (divider_starts + i), label : mo_label })
 	}
 
 	let original_info_points = info_points.map(p => {
@@ -148,7 +158,7 @@
 	}
 
 	//
-	let current_date = new Date()
+
 	let g_mo_gen = new MonthContainer(current_date.getTime(),ManageableTSAgenda)
 
 
@@ -191,10 +201,7 @@
 	//
 	let current_roller_title = ""
 
-	let title_months = [
-		"January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December" 
-	]
-	
+
 	let model_month_entry = {
 		"_tracking" : false,
 		"color": 'grey',
@@ -619,6 +626,79 @@
 	}
 
 
+	let g_starting_point = { x: 0, y : 0 } 
+	let g_update_point = { x: 0, y : 0 }
+	let g_tracking_mouse = false
+
+	let g_current_rect = false
+
+
+	function place_rect_in_scalable(created_rect) {
+		controllerElt.removeChild(created_rect)
+		canvasElt.appendChild(created_rect)
+	}
+
+	function handle_editor(ev) {
+		let option = ev.altKey
+		if ( option ) {
+			const rect = ev.currentTarget.getBoundingClientRect()
+
+			g_tracking_mouse = true
+			g_starting_point = { x: (ev.clientX - rect.x), y: (ev.clientY - rect.y) }
+			g_update_point = { x: (ev.clientX - rect.x), y: (ev.clientY - rect.y) }
+
+			const  svgns = "http://www.w3.org/2000/svg";
+			//const  xlinkns = "http://www.w3.org/1999/xlink";
+
+			let n_rect = document.createElementNS(svgns, "rect");
+			// rect.setAttributeNS(xlinkns, "href", "#MidCLine1");
+			n_rect.setAttribute("y", g_update_point.y );
+			n_rect.setAttribute("x", g_update_point.x );
+			n_rect.setAttribute("height", '20px' );
+			n_rect.setAttribute("width", '3px' );
+			controllerElt.appendChild(n_rect);
+
+			g_current_rect = n_rect
+
+			ev.preventDefault()
+			ev.stopPropagation()
+		} else {
+			controllerElt.style.cursor = "grabbing"
+		}
+	}
+
+	function handle_editor_end(ev) {
+		const rect = ev.currentTarget.getBoundingClientRect()
+
+		g_tracking_mouse = false
+		controllerElt.style.cursor = "pointer"
+		g_update_point = { x: (ev.clientX - rect.x), y: (ev.clientY - rect.y) }
+		//
+		if ( g_current_rect ) {
+			let recalc_width = 0
+			recalc_width = g_update_point.x - g_starting_point.x
+			if ( recalc_width < 3 ) recalc_width = 3
+			g_current_rect.setAttribute('width',recalc_width)
+			place_rect_in_scalable(g_current_rect)
+			g_current_rect = false
+		}
+	}
+
+
+	function moving_mouse(ev) {
+		if ( g_tracking_mouse ) {
+			const rect = ev.currentTarget.getBoundingClientRect()
+			g_update_point = { x: (ev.clientX - rect.x), y: (ev.clientY - rect.y) }
+			if ( g_current_rect ) {
+				let recalc_width = 0
+				recalc_width = g_update_point.x - g_starting_point.x
+				if ( recalc_width < 3 ) recalc_width = 3
+				g_current_rect.setAttribute('width',recalc_width)
+			}
+		}
+	}
+
+
 </script>
 <!-- 
 <text  x="50" y="59"  fill="navy"   stroke="nne" stroke-width="1" vector-effect="non-scaling-size" >This is a test</text>
@@ -662,15 +742,21 @@
 		<svg style="width:100%">
 			<!-- this is the draggable root -->
 			<g>
-				<path fill="red" stroke="black" vector-effect="non-scaling-stroke" d="M5.27 59.70L5.27 9.28L10.62 9.28L10.62 29.36Q15.86 24.12 21.02 24.12L21.02 24.12Q26.89 24.12 29.60 29.29L29.60 29.29Q31.11 32.20 31.11 36.35L31.11 36.35L31.11 59.70L25.77 59.70L25.77 37.93Q25.77 29.21 20.18 29.21L20.18 29.21Q16.42 29.21 13.57 31.96L13.57 31.96Q10.62 34.91 10.62 38.71L10.62 38.71L10.62 59.70L5.27 59.70ZM62.05 49.08L67.68 49.08Q64.55 61.10 54.07 61.10L54.07 61.10Q47.57 61.10 43.77 55.69L43.77 55.69Q40.32 50.73 40.32 42.61L40.32 42.61Q40.32 34.84 43.56 29.88L43.56 29.88Q47.36 24.12 54 24.12L54 24.12Q66.97 24.12 67.82 43.70L67.82 43.70L45.74 43.70Q46.16 56.29 54.14 56.29L54.14 56.29Q60.47 56.29 62.05 49.08L62.05 49.08ZM45.95 39.09L62.05 39.09Q60.89 28.93 54 28.93L54 28.93Q47.36 28.93 45.95 39.09L45.95 39.09ZM92.81 9.28L92.81 51.82Q92.81 54.91 95.77 54.91L95.77 54.91Q98.19 54.91 101.07 54.35L101.07 54.35L101.07 59.73Q96.82 60.33 94.82 60.33L94.82 60.33Q87.19 60.33 87.19 52.84L87.19 52.84L87.19 9.28L92.81 9.28ZM128.81 9.28L128.81 51.82Q128.81 54.91 131.77 54.91L131.77 54.91Q134.19 54.91 137.07 54.35L137.07 54.35L137.07 59.73Q132.82 60.33 130.82 60.33L130.82 60.33Q123.19 60.33 123.19 52.84L123.19 52.84L123.19 9.28L128.81 9.28ZM162.07 24.12L162.07 24.12Q168.68 24.12 172.44 29.95L172.44 29.95Q175.68 34.80 175.68 42.61L175.68 42.61Q175.68 48.48 173.74 52.91L173.74 52.91Q170.16 61.14 161.93 61.14L161.93 61.14Q155.57 61.14 151.77 55.72L151.77 55.72Q148.32 50.77 148.32 42.61L148.32 42.61Q148.32 33.82 152.30 28.79L152.30 28.79Q156.09 24.12 162.07 24.12ZM161.93 29.14L161.93 29.14Q158.06 29.14 155.88 33.19L155.88 33.19Q153.95 36.74 153.95 42.61L153.95 42.61Q153.95 48.02 155.53 51.43L155.53 51.43Q157.71 56.11 162 56.11L162 56.11Q165.94 56.11 168.12 52.07L168.12 52.07Q170.05 48.52 170.05 42.68L170.05 42.68Q170.05 36.60 168.05 33.12L168.05 33.12Q165.90 29.14 161.93 29.14Z"/>
 				{#each info_points as point }
-					<text x='{point.x}' y='100' stroke='none' fill='rgb(80,200,90)'vector-effect="non-scaling-size" >{point.index}</text>
+					<text x='{point.x}' y='100' stroke='none' fill='rgb(50,130,60)' vector-effect="non-scaling-size" font-size='12' font-weight='bold' >{point.label}</text>
 				{/each}
 			</g>
-			<g bind:this={canvasElt} > 
-				{#each line_points as point }
-					<line x1='{point.x}' x2='{point.x}' y1='0' y2='110' height='100' stroke-width="2"  stroke="rgb(0,0,0)" vector-effect="non-scaling-stroke" />
+			<g bind:this={canvasElt} cursor='pointer' > 
+				{#each line_points as point}
+					{#if point.x < 0 } 
+						<rect x='{point.x}' y='-2' height='114' width='{division_width}' stroke-width='1' stroke="rgb(0,0,0)" fill='rgba(155,155,155,0.25)' ></rect>
+					{:else}
+						<line x1='{point.x}' x2='{point.x}' y1='0' y2='110'  stroke-width='2'  stroke="rgb(0,0,0)" vector-effect="non-scaling-stroke" />
+					{/if}
 				{/each}
+			</g>
+			<g bind:this={controllerElt} class="cursor-grabber" on:mousedown={handle_editor} on:mouseup={handle_editor_end} on:mousemove={moving_mouse}>
+				<rect x='0' y='-2' height='114' width='100%' stroke-width='1' stroke="rgb(0,0,0)" fill='rgba(255,255,255,0.01)'></rect>
 			</g>
 		</svg>
 	</div>
@@ -697,7 +783,6 @@
 			</div>
 		</div>
 		<div class="blg-ctrl-panel" style="display:inline-block;background-color:#FFFFFA" >
-			
 			<button class="blg-ctl-button" on:click={handleClick_first}>&le;</button>
 			<input class="blg-ctl-slider" type=range bind:value={article_index} min=1 max={article_count} on:change={handle_index_changed} >
 			<button class="blg-ctl-button" on:click={handleClick_last}>&ge;</button>
@@ -784,5 +869,12 @@
 		margin: 6px;
 	}
 
+	.cursor-grabber {
+		cursor: pointer;
+	}
+
+	.cursor-grabbing:focus {
+		cursor: grabbing;
+	}
 
 </style>
