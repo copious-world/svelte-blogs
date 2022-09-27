@@ -731,15 +731,41 @@
 
 
 
+	// ---- STARTING TIME SLOT EDITING CONTROLS
+
+
+	function deselect_all_selected_rects(info_rect) {
+		for ( let slot_bound of g_all_time_slots ) {
+			if ( (info_rect !== slot_bound) && slot_bound.selected  ) {
+				slot_bound.selected = false
+				slot_bound.el.setAttribute('fill','black')
+			}
+		}
+	}
+
+	function show_width_control(info_rect) {
+		width_control.setAttribute('x',(info_rect.x + info_rect.width - 5))
+		width_control.style.visibility = 'visible'
+		deselect_all_selected_rects(info_rect)
+	}
+
+	function hide_width_control(info_rect) {
+		width_control.style.visibility = 'hidden'
+	}
+
+	// ---- ---- ---- ---- ---- ---- ---- ---- ----
 
 	let g_starting_point = { x: 0, y : 0 } 
 	let g_update_point = { x: 0, y : 0 }
 	let g_tracking_mouse = false
-	const c_TIME_SLOT_HEIGHT = 16
+	const c_TIME_SLOT_HEIGHT = 12
 
 	let g_current_rect = false
 	let g_tracking_rect = false
 
+	let g_selected_svg_timeslot_rect = false
+
+	let width_control = false
 
 
 	function click_in_rect(point) {
@@ -777,7 +803,8 @@
 
 	function handle_editor(ev) {
 		let option = ev.altKey
-		if ( option ) {
+		let command = ev.metaKey
+		if ( option || command ) {
 			const rect = ev.currentTarget.getBoundingClientRect()
 			let maybe_update = { x: (ev.clientX - rect.x), y: (ev.clientY - rect.y) }
 			//
@@ -785,10 +812,22 @@
 			if ( found_rect ) {
 				ev.preventDefault()
 				ev.stopPropagation()
-				handle_click_in_rect(found_rect)
-				g_starting_point = { x: (ev.clientX - rect.x), y: (ev.clientY - rect.y) }
-				found_rect.delta_x = g_starting_point.x - found_rect.x
-				found_rect.delta_y = g_starting_point.y - found_rect.y
+				if ( command ) {
+					found_rect.selected = !found_rect.selected
+					if ( found_rect.selected ) {
+						g_selected_svg_timeslot_rect = found_rect
+						show_width_control(found_rect)
+						found_rect.el.setAttribute('fill','darkorange')
+					} else {
+						hide_width_control(found_rect)
+						found_rect.el.setAttribute('fill','black')
+					}
+				} else {
+					handle_click_in_rect(found_rect)
+					g_starting_point = { x: (ev.clientX - rect.x), y: (ev.clientY - rect.y) }
+					found_rect.delta_x = g_starting_point.x - found_rect.x
+					found_rect.delta_y = g_starting_point.y - found_rect.y
+				}
 			} else {
 
 				g_tracking_mouse = true
@@ -851,7 +890,8 @@
 				'unit_width' : window_rect.width/scx,
 				'unit_height' : window_rect.height/scy,
 				//
-				'el' : created_rect
+				'el' : created_rect,
+				'selected' : false
 			}
 
 		return info
@@ -933,6 +973,59 @@
 		}
 	}
 
+	// ---- ---- ---- ---- ---- ---- ---- ---- ----
+
+	let g_wc_start_point = false
+	function manage_width(ev) {
+		ev.preventDefault()
+		ev.stopPropagation()
+
+		const rect = ev.currentTarget.getBoundingClientRect()
+		g_wc_start_point = { x: ev.clientX, y: ev.clientY }
+		window.addEventListener('mousemove',width_tracking)
+		window.addEventListener('mouseup',width_end_tracking)
+	}
+
+	function width_tracking(ev) {
+		ev.preventDefault()
+		ev.stopPropagation()
+		if ( g_wc_start_point && width_control) {
+			let maybe_update = { x: (ev.clientX - g_wc_start_point.x), y: (ev.clientY - g_wc_start_point.y) }
+			g_wc_start_point = { x: ev.clientX, y: ev.clientY }
+			//
+			let cur_loc = parseInt(width_control.getAttribute('x'))
+			let new_x = maybe_update.x + cur_loc
+
+			if ( g_selected_svg_timeslot_rect ) {
+				let w_sel = g_selected_svg_timeslot_rect.el.getAttribute('width')
+				w_sel = new_x - g_selected_svg_timeslot_rect.x
+				g_selected_svg_timeslot_rect.el.setAttribute('width',w_sel)
+			}
+
+			width_control.setAttribute('x',`${new_x}px`)
+		}
+	}
+
+	function width_end_tracking(ev) {
+		ev.preventDefault()
+		ev.stopPropagation()
+		window.removeEventListener('mousemove',width_tracking)
+		window.removeEventListener('mouseup',width_end_tracking)
+		if ( g_wc_start_point ) {
+			if ( width_control ) {
+				let maybe_update = { x: (ev.clientX - g_wc_start_point.x), y: (ev.clientY - g_wc_start_point.y) }
+				g_wc_start_point = { x: ev.clientX, y: ev.clientY }
+				//
+				let cur_loc = parseInt(width_control.getAttribute('x'))
+				let new_x = maybe_update.x + cur_loc
+
+				width_control.setAttribute('x',`${new_x}px`)
+			}
+			g_wc_start_point = false
+		}
+	}
+
+	// ---- ---- ---- ---- ---- ---- ---- ---- ----
 
 </script>
 <div>
@@ -955,6 +1048,12 @@
 			</g>
 			<g bind:this={controllerElt} class="cursor-grabber" on:mousedown={handle_editor} on:mouseup={handle_editor_end} on:mousemove={moving_mouse}>
 				<rect x='0' y='-2' height='114' width='100%' stroke-width='1' stroke="rgb(0,0,0)" fill='rgba(255,255,255,0.01)'></rect>
+				<svg bind:this={width_control}  style="visibility:hidden" x="-5">
+					<line x1='5' x2='5' y1='0' y2='110'  stroke-width='3'  stroke="rgb(245,220,100)" vector-effect="non-scaling-stroke" />
+					<polygon points="5 0, 0 6, 10 6"/>
+					<circle cx='5' cy='50' r='5' on:mousedown={manage_width} on:mouseup={width_end_tracking} on:mousemove={width_tracking}/>
+					<polygon points="5 110, 0 105, 10 105"/>
+				</svg>
 			</g>
 		</svg>
 	</div>
