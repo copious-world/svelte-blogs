@@ -34,7 +34,10 @@
 		transformOrigin: {x: 0, y: 0},
 		zoomSpeed: 0.25,
 		preserveAspecRatio: false,
-		scaleFactors: { x : 1.0, y : 0.0 }
+		scaleFactors: { x : 1.0, y : 0.0 },
+		smoothScroll : {
+			reactZeroVelocity : true
+		}
 		// beforeMouseDown: (e) => {
 		//   return !e.altKey;
 		// },
@@ -70,6 +73,9 @@
 	const MonthContainer = EventDays.MonthContainer
 	const Slot = EventDays.Slot
 	const TimeSlotAgenda = EventDays.TimeSlotAgenda
+
+
+	let g_all_time_slots = []
 
 
 	let line_points = []
@@ -281,6 +287,7 @@
 	all_window_scales = popup_size()
 
 
+	let g_last_known_transition = false
 	//
 	onMount(() => {
 		session = window.retrieve_session()
@@ -301,6 +308,7 @@
 		// panzoomInstance.moveTo(centerX, centerY);
 
 
+		let final_timeout = false
 		panzoomInstance.on('zoom', (e) => {		/// left to right only
 			let tt = e.getTransform()
 			tt.y = 0
@@ -311,6 +319,24 @@
 				return oo
 			})
 			info_points = repoint
+			//
+			if ( final_timeout ) {
+				clearTimeout(final_timeout)
+				final_timeout = false
+			}
+			final_timeout = setTimeout(() => {
+				g_all_time_slots = g_all_time_slots.map(p => {
+					//
+					let oo = Object.assign({},p)
+					//
+					oo.x = oo.unit_x*tt.scaleX + tt.x
+					oo.width = (oo.unit_width)*(tt.scaleX)
+					//
+					return oo
+				})
+			},30)
+			//
+			g_last_known_transition = tt
 		});
 
 		panzoomInstance.on('zoomend', (e) => {		/// left to right only
@@ -323,6 +349,23 @@
 				return oo
 			})
 			info_points = repoint
+			//
+			//  update slots so that they can be found on a mouse click
+
+			g_all_time_slots = g_all_time_slots.map(p => {
+				//
+				let oo = Object.assign({},p)
+				//
+				console.log(1,oo)
+				oo.x = oo.unit_x*tt.scaleX + tt.x
+				oo.width = (oo.unit_width)*(tt.scaleX)
+				console.log(2,tt.scaleX,oo)
+				//
+				return oo
+			})
+
+			//
+			g_last_known_transition = tt
 		});
 
 
@@ -335,10 +378,71 @@
 				oo.x = oo.x*tt.scaleX + tt.x + (info_delta*tt.scaleX)
 				return oo
 			})
+			//
 			info_points = repoint
-
+			//
+			g_last_known_transition = tt
 		});
 
+		panzoomInstance.on('panend', (e) => {		/// left to right only
+			let tt = e.getTransform()
+			tt.y = 0
+
+			let repoint = original_info_points.map(p => {
+				let oo = Object.assign({},p)
+				oo.x = oo.x*tt.scaleX + tt.x + (info_delta*tt.scaleX)
+				return oo
+			})
+			//
+			info_points = repoint
+			//
+			//  update slots so that they can be found on a mouse click
+			g_all_time_slots = g_all_time_slots.map(p => {
+				//
+				let oo = Object.assign({},p)
+				oo.x = oo.unit_x*tt.scaleX + tt.x
+				//
+				return oo
+			})
+			//
+			g_last_known_transition = tt
+
+			//console.log(tt)
+		});
+
+
+		panzoomInstance.on('decelerated-to-zero', (e) => {
+			let tt = panzoomInstance.getTransform()
+			//  update slots so that they can be found on a mouse click
+			g_all_time_slots = g_all_time_slots.map(p => {
+				//
+				let oo = Object.assign({},p)
+				oo.x = oo.unit_x*tt.scaleX + tt.x
+				//
+				return oo
+			})
+			//
+			g_last_known_transition = tt
+			//console.log(tt)
+		})
+
+
+/*
+		let info = {
+				'x' : window_rect.x,
+				'y' : window_rect.y,
+				'height' : window_rect.height,
+				'width' : window_rect.width,
+				//
+				'unit_x' : x,
+				'unit_y' : y,
+				'unit_width' : window_rect.width/scx,
+				'unit_height' : window_rect.height/scy,
+				//
+				'el' : g_current_rect
+			}
+
+*/
 
 	})
 
@@ -626,46 +730,134 @@
 	}
 
 
+
+
 	let g_starting_point = { x: 0, y : 0 } 
 	let g_update_point = { x: 0, y : 0 }
 	let g_tracking_mouse = false
+	const c_TIME_SLOT_HEIGHT = 16
 
 	let g_current_rect = false
+	let g_tracking_rect = false
 
 
-	function place_rect_in_scalable(created_rect) {
-		controllerElt.removeChild(created_rect)
-		canvasElt.appendChild(created_rect)
+
+	function click_in_rect(point) {
+		for ( let slot_bound of g_all_time_slots ) {
+			if ( (slot_bound.x <= point.x) && (point.x <= (slot_bound.x + slot_bound.width)) ) {
+				if ( (point.y >= slot_bound.y) && (point.y <= (slot_bound.y + c_TIME_SLOT_HEIGHT)) ) {
+					return slot_bound
+				}
+			}
+		}
+		return false
 	}
+	//
+	function handle_click_in_rect(found_rect) {
+		//console.log(found_rect)
+		g_tracking_rect = found_rect
+		found_rect.el.setAttribute('fill','green')
+		canvasElt.removeChild(found_rect.el)
+		//
+		let tt = g_last_known_transition
+		//
+		if ( tt ) {
+			let x = found_rect.x
+			let w = found_rect.width
+			found_rect.el.setAttribute('x',x)
+			found_rect.el.setAttribute('width',w)
+		}
+		//
+		controllerElt.appendChild(found_rect.el)
+
+
+		// begin tracking
+	}
+
 
 	function handle_editor(ev) {
 		let option = ev.altKey
 		if ( option ) {
 			const rect = ev.currentTarget.getBoundingClientRect()
+			let maybe_update = { x: (ev.clientX - rect.x), y: (ev.clientY - rect.y) }
+			//
+			let found_rect = click_in_rect(maybe_update)
+			if ( found_rect ) {
+				ev.preventDefault()
+				ev.stopPropagation()
+				handle_click_in_rect(found_rect)
+				g_starting_point = { x: (ev.clientX - rect.x), y: (ev.clientY - rect.y) }
+				found_rect.delta_x = g_starting_point.x - found_rect.x
+				found_rect.delta_y = g_starting_point.y - found_rect.y
+			} else {
 
-			g_tracking_mouse = true
-			g_starting_point = { x: (ev.clientX - rect.x), y: (ev.clientY - rect.y) }
-			g_update_point = { x: (ev.clientX - rect.x), y: (ev.clientY - rect.y) }
+				g_tracking_mouse = true
+				g_starting_point = { x: (ev.clientX - rect.x), y: (ev.clientY - rect.y) }
+				g_update_point = maybe_update
+				const  svgns = "http://www.w3.org/2000/svg";
+				//const  xlinkns = "http://www.w3.org/1999/xlink";
 
-			const  svgns = "http://www.w3.org/2000/svg";
-			//const  xlinkns = "http://www.w3.org/1999/xlink";
+				let n_rect = document.createElementNS(svgns, "rect");
+				// rect.setAttributeNS(xlinkns, "href", "#MidCLine1");
+				n_rect.setAttribute("y", g_update_point.y );
+				n_rect.setAttribute("x", g_update_point.x );
+				n_rect.setAttribute("height", `${c_TIME_SLOT_HEIGHT}px` );
+				n_rect.setAttribute("width", '3px' );
 
-			let n_rect = document.createElementNS(svgns, "rect");
-			// rect.setAttributeNS(xlinkns, "href", "#MidCLine1");
-			n_rect.setAttribute("y", g_update_point.y );
-			n_rect.setAttribute("x", g_update_point.x );
-			n_rect.setAttribute("height", '20px' );
-			n_rect.setAttribute("width", '3px' );
-			controllerElt.appendChild(n_rect);
+				controllerElt.appendChild(n_rect);
 
-			g_current_rect = n_rect
+				g_current_rect = n_rect
 
-			ev.preventDefault()
-			ev.stopPropagation()
+				ev.preventDefault()
+				ev.stopPropagation()
+			}
 		} else {
 			controllerElt.style.cursor = "grabbing"
 		}
 	}
+
+
+
+	function place_rect_in_scalable(created_rect,window_rect) {
+		//
+		controllerElt.removeChild(created_rect)
+		let x = parseInt(created_rect.getAttribute('x'))
+		let y = parseInt(created_rect.getAttribute('y'))
+		let w = parseInt(created_rect.getAttribute('width'))
+		if ( w < 5 ) return false
+		//
+		let tt = g_last_known_transition
+		//
+		if ( tt ) {
+			x = (x - tt.x)/tt.scaleX
+			w = w/tt.scaleX
+			created_rect.setAttribute('x',x)
+			created_rect.setAttribute('width',w)
+		}
+		canvasElt.appendChild(created_rect)
+		// ---- ---- ---- ---- ---- ---- ---- ----
+		//
+		let scx = tt ? tt.scaleX : 1.0
+		let scy = tt ? tt.scaleY : 1.0
+
+		let info = {
+				'x' : window_rect.x,
+				'y' : window_rect.y,
+				'height' : window_rect.height,
+				'width' : window_rect.width,
+				//
+				'unit_x' : x,
+				'unit_y' : y,
+				'unit_width' : window_rect.width/scx,
+				'unit_height' : window_rect.height/scy,
+				//
+				'el' : created_rect
+			}
+
+		return info
+
+	}
+
 
 	function handle_editor_end(ev) {
 		const rect = ev.currentTarget.getBoundingClientRect()
@@ -679,8 +871,36 @@
 			recalc_width = g_update_point.x - g_starting_point.x
 			if ( recalc_width < 3 ) recalc_width = 3
 			g_current_rect.setAttribute('width',recalc_width)
-			place_rect_in_scalable(g_current_rect)
+			//
+			let window_rect = {
+				x : g_starting_point.x,
+				y : g_starting_point.y,
+				width : recalc_width,
+				height : c_TIME_SLOT_HEIGHT
+			}
+			let rect_info = place_rect_in_scalable(g_current_rect,window_rect)
+			//
+			if ( rect_info ) g_all_time_slots.push(rect_info)
+			//
 			g_current_rect = false
+		} else if ( g_tracking_rect ) {
+			//
+			let window_rect = {
+				x : g_tracking_rect.x,
+				y : g_tracking_rect.y,
+				width : g_tracking_rect.width,
+				height : g_tracking_rect.height
+			}
+			let rect_info = place_rect_in_scalable(g_tracking_rect.el,window_rect,true)
+			//
+			g_tracking_rect.x = rect_info.x
+			g_tracking_rect.y = rect_info.y
+			g_tracking_rect.unit_x = rect_info.unit_x
+			g_tracking_rect.unit_y = rect_info.unit_y
+
+			//
+			g_tracking_rect.el.setAttribute('fill','black')
+			g_tracking_rect = false
 		}
 	}
 
@@ -695,48 +915,26 @@
 				if ( recalc_width < 3 ) recalc_width = 3
 				g_current_rect.setAttribute('width',recalc_width)
 			}
+		} else if ( g_tracking_rect ) {
+			//
+			const rect = ev.currentTarget.getBoundingClientRect()
+			g_update_point = { x: (ev.clientX - rect.x), y: (ev.clientY - rect.y) }
+			//
+			let el = g_tracking_rect.el
+			let new_x = g_update_point.x
+			let new_y = g_update_point.y
+
+			g_tracking_rect.x = (new_x - g_tracking_rect.delta_x)
+			g_tracking_rect.y = (new_y - g_tracking_rect.delta_y)
+			 
+			el.setAttribute('x',`${(new_x - g_tracking_rect.delta_x)}px`)
+			el.setAttribute('y',`${(new_y - g_tracking_rect.delta_y)}px`)
+
 		}
 	}
 
 
 </script>
-<!-- 
-<text  x="50" y="59"  fill="navy"   stroke="nne" stroke-width="1" vector-effect="non-scaling-size" >This is a test</text>
-
-<path
-	stroke="black"
-	d="M 50 50 l 0.0001 0"
-	vector-effect="non-scaling-stroke"
-	stroke-linecap="round"
-	stroke-width="100"
-/>
-<path
-	stroke="white"
-	d="M 50 50 l 0.0001 0"
-	vector-effect="non-scaling-stroke"
-	stroke-linecap="round"
-	stroke-width="98"
-/>
-
-<path
-	d="M 100 50 l 0.0001 0"
-	vector-effect="non-scaling-stroke"
-	stroke-width="100"
-	stroke-linecap="square"
-	stroke="black"
-/>
-<path
-	d="M 100 50 l 0.0001 0"
-	vector-effect="non-scaling-stroke"
-	stroke-width="98"
-	stroke-linecap="square"
-	stroke="white"
-/>
-
-<path d="M25 15 L 25 35" fill="none" stroke="red" stroke-width="2" stroke-linecap="round" vector-effect="non-scaling-stroke"/>
-
-
--->
 <div>
 	<div class="calendar-admin-slider" >
 		<svg style="width:100%">
