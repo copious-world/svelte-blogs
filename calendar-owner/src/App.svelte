@@ -87,6 +87,8 @@
 
 	let info_delta = 3
 
+	let width_control_reference_x = false
+
 
 	for ( let i = 0; i < 1000; i++ ) {
 		line_points.push({ x : (i*division_width + left_shift), y : 0, index : (divider_starts + i)})
@@ -320,20 +322,34 @@
 			})
 			info_points = repoint
 			//
+			//
+			width_control.style.visibility = "hidden"
+			//
 			if ( final_timeout ) {
 				clearTimeout(final_timeout)
 				final_timeout = false
 			}
 			final_timeout = setTimeout(() => {
-				g_all_time_slots = g_all_time_slots.map(p => {
-					//
-					let oo = Object.assign({},p)
+				let width_control_reference_object = false
+				//
+				g_all_time_slots = g_all_time_slots.map(oo => {
 					//
 					oo.x = oo.unit_x*tt.scaleX + tt.x
 					oo.width = (oo.unit_width)*(tt.scaleX)
 					//
+					if ( oo.selected ) {
+						width_control_reference_object = oo
+					}
+					//
 					return oo
 				})
+				//
+				if ( width_control_reference_object ) {
+					width_control.style.visibility = "visible"
+					let info_rect = width_control_reference_object
+					width_control.setAttribute('x',(info_rect.x + info_rect.width - 5))
+				}
+				//
 			},30)
 			//
 			g_last_known_transition = tt
@@ -352,14 +368,10 @@
 			//
 			//  update slots so that they can be found on a mouse click
 
-			g_all_time_slots = g_all_time_slots.map(p => {
+			g_all_time_slots = g_all_time_slots.map(oo => {
 				//
-				let oo = Object.assign({},p)
-				//
-				console.log(1,oo)
 				oo.x = oo.unit_x*tt.scaleX + tt.x
 				oo.width = (oo.unit_width)*(tt.scaleX)
-				console.log(2,tt.scaleX,oo)
 				//
 				return oo
 			})
@@ -381,6 +393,8 @@
 			//
 			info_points = repoint
 			//
+			width_control.style.visibility = "hidden"
+			//
 			g_last_known_transition = tt
 		});
 
@@ -396,53 +410,34 @@
 			//
 			info_points = repoint
 			//
-			//  update slots so that they can be found on a mouse click
-			g_all_time_slots = g_all_time_slots.map(p => {
-				//
-				let oo = Object.assign({},p)
-				oo.x = oo.unit_x*tt.scaleX + tt.x
-				//
-				return oo
-			})
 			//
 			g_last_known_transition = tt
-
-			//console.log(tt)
 		});
 
 
 		panzoomInstance.on('decelerated-to-zero', (e) => {
 			let tt = panzoomInstance.getTransform()
 			//  update slots so that they can be found on a mouse click
-			g_all_time_slots = g_all_time_slots.map(p => {
+			let width_control_reference_object = false
+			g_all_time_slots = g_all_time_slots.map(oo => {
 				//
-				let oo = Object.assign({},p)
 				oo.x = oo.unit_x*tt.scaleX + tt.x
+				if ( oo.selected ) {
+					width_control_reference_object = oo
+				}
 				//
 				return oo
 			})
 			//
+			if ( width_control_reference_object ) {
+				width_control.style.visibility = "visible"
+				let info_rect = width_control_reference_object
+				width_control.setAttribute('x',(info_rect.x + info_rect.width - 5))
+			}
+			//
 			g_last_known_transition = tt
 			//console.log(tt)
 		})
-
-
-/*
-		let info = {
-				'x' : window_rect.x,
-				'y' : window_rect.y,
-				'height' : window_rect.height,
-				'width' : window_rect.width,
-				//
-				'unit_x' : x,
-				'unit_y' : y,
-				'unit_width' : window_rect.width/scx,
-				'unit_height' : window_rect.height/scy,
-				//
-				'el' : g_current_rect
-			}
-
-*/
 
 	})
 
@@ -744,12 +739,14 @@
 	}
 
 	function show_width_control(info_rect) {
+		width_control_reference_x = (info_rect.x + info_rect.width - 5)
 		width_control.setAttribute('x',(info_rect.x + info_rect.width - 5))
 		width_control.style.visibility = 'visible'
 		deselect_all_selected_rects(info_rect)
 	}
 
-	function hide_width_control(info_rect) {
+	function hide_width_control() {
+		width_control_reference_x = false
 		width_control.style.visibility = 'hidden'
 	}
 
@@ -805,6 +802,7 @@
 		let option = ev.altKey
 		let command = ev.metaKey
 		if ( option || command ) {
+			hide_width_control()
 			const rect = ev.currentTarget.getBoundingClientRect()
 			let maybe_update = { x: (ev.clientX - rect.x), y: (ev.clientY - rect.y) }
 			//
@@ -815,11 +813,12 @@
 				if ( command ) {
 					found_rect.selected = !found_rect.selected
 					if ( found_rect.selected ) {
+console.log("onset",found_rect.width,found_rect.unit_width)
 						g_selected_svg_timeslot_rect = found_rect
 						show_width_control(found_rect)
 						found_rect.el.setAttribute('fill','darkorange')
 					} else {
-						hide_width_control(found_rect)
+						hide_width_control()
 						found_rect.el.setAttribute('fill','black')
 					}
 				} else {
@@ -829,6 +828,8 @@
 					found_rect.delta_y = g_starting_point.y - found_rect.y
 				}
 			} else {
+
+				deselect_all_selected_rects(false)
 
 				g_tracking_mouse = true
 				g_starting_point = { x: (ev.clientX - rect.x), y: (ev.clientY - rect.y) }
@@ -940,6 +941,7 @@
 
 			//
 			g_tracking_rect.el.setAttribute('fill','black')
+			g_tracking_rect.selected = false
 			g_tracking_rect = false
 		}
 	}
@@ -997,9 +999,14 @@
 			let new_x = maybe_update.x + cur_loc
 
 			if ( g_selected_svg_timeslot_rect ) {
-				let w_sel = g_selected_svg_timeslot_rect.el.getAttribute('width')
-				w_sel = new_x - g_selected_svg_timeslot_rect.x
-				g_selected_svg_timeslot_rect.el.setAttribute('width',w_sel)
+				let tt = g_last_known_transition
+				let scalex = tt ? tt.scaleX : 1.0
+				let oo = g_selected_svg_timeslot_rect
+				//
+				let box_w = (new_x - oo.x)
+				oo.width = box_w
+				oo.unit_width = box_w/scalex
+				oo.el.setAttribute('width',oo.unit_width)
 			}
 
 			width_control.setAttribute('x',`${new_x}px`)
@@ -1018,7 +1025,19 @@
 				//
 				let cur_loc = parseInt(width_control.getAttribute('x'))
 				let new_x = maybe_update.x + cur_loc
-
+				//
+				if ( g_selected_svg_timeslot_rect ) {
+					let tt = g_last_known_transition
+					let scalex = tt ? tt.scaleX : 1.0
+					let oo = g_selected_svg_timeslot_rect
+					//
+					let box_w = (new_x - oo.x)
+					oo.width = box_w
+					oo.unit_width = box_w/scalex
+					oo.el.setAttribute('width',oo.unit_width)
+console.log("offset",oo.width,oo.unit_width)
+				}
+				//
 				width_control.setAttribute('x',`${new_x}px`)
 			}
 			g_wc_start_point = false
