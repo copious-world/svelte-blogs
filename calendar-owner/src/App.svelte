@@ -798,6 +798,8 @@
 	}
 
 
+	let g_selected_ts = false
+
 	function handle_editor(ev) {
 		let option = ev.altKey
 		let command = ev.metaKey
@@ -813,11 +815,12 @@
 				if ( command ) {
 					found_rect.selected = !found_rect.selected
 					if ( found_rect.selected ) {
-console.log("onset",found_rect.width,found_rect.unit_width)
+						g_selected_ts = true
 						g_selected_svg_timeslot_rect = found_rect
 						show_width_control(found_rect)
 						found_rect.el.setAttribute('fill','darkorange')
 					} else {
+						g_selected_ts = false
 						hide_width_control()
 						found_rect.el.setAttribute('fill','black')
 					}
@@ -1035,7 +1038,6 @@ console.log("onset",found_rect.width,found_rect.unit_width)
 					oo.width = box_w
 					oo.unit_width = box_w/scalex
 					oo.el.setAttribute('width',oo.unit_width)
-console.log("offset",oo.width,oo.unit_width)
 				}
 				//
 				width_control.setAttribute('x',`${new_x}px`)
@@ -1045,6 +1047,10 @@ console.log("offset",oo.width,oo.unit_width)
 	}
 
 	// ---- ---- ---- ---- ---- ---- ---- ---- ----
+
+	function open_editor(ev) {
+		// 
+	}
 
 </script>
 <div>
@@ -1090,12 +1096,19 @@ console.log("offset",oo.width,oo.unit_width)
 				+
 			</button>
 		</div>
-		<div class="blg-ctrl-panel" style="display:inline-block;vertical-align:bottom;background-color:#EFEFFE" >
-			<button on:click={handleClick_fetch}>
-				search
+		{#if g_selected_ts }
+		<div class="blg-ctrl-panel" style="display:inline-block;vertical-align:top;background-color:#DEEEDE" >
+			<button on:click={open_editor} style="color:mediumvioletred;font-weight:bold;font-size:smaller">
+				Edit
+			</button>
+		</div>
+		{/if}
+		<div class="blg-ctrl-panel" style="display:inline-block;vertical-align:top;background-color:#EFEFFE" >
+			<button on:click={handleClick_fetch}  style="font-size:smaller" >
+				Update
 			</button>
 			<div style="display:inline-block;">
-			&nbsp;<input type=text bind:value={search_topic} on:keypress={handle_keyDown} >
+			&nbsp;<input type=text bind:value={search_topic} on:keypress={handle_keyDown} style="font-size:smaller">
 			</div>
 		</div>
 		<div class="blg-ctrl-panel" style="display:inline-block;background-color:#FFFFFA" >
@@ -1105,15 +1118,7 @@ console.log("offset",oo.width,oo.unit_width)
 			<input type=number class="blg-ctl-number-field" bind:value={article_index} min=1 max={article_count} on:change={handle_index_changed} >
 			of {article_count}
 		</div>
-		<div class="blg-ctrl-panel" style="display:inline-block;background-color:#FFFFFA" >
-			<select bind:value={search_ordering} on:change="{handle_order_change}">
-				{#each qlist_ordering as ordering}
-					<option value={ordering}>
-						{ordering.text}
-					</option>
-				{/each}
-			</select>
-		</div>
+
 	</div>
 
   
