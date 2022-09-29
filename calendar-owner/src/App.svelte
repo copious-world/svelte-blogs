@@ -4,6 +4,7 @@
 	import FullMonth from './MonthFull.svelte';
 	import Thing from './Thing.svelte'
 	import DayEvents from './DayEvents.svelte'
+	import TimeSlotEditor from './TimeSlotEditor.svelte';
 	//
 	import ThingGrid from 'grid-of-things';
 	import FloatWindow from 'svelte-float-window';
@@ -11,7 +12,7 @@
 	import { process_search_results, place_data, merge_data, clonify, make_empty_thing, link_server_fetch } from '../../common/data-utils.js'
 	import { popup_size } from '../../common/display-utils.js'
 	import { get_search } from "../../common/search_box.js"
-	import { first_day_of_relative_month } from "../../common/date_utils.js"
+	import { first_day_of_relative_month, first_day_of_next_month } from "../../common/date_utils.js"
 
 
 	import { EventDays } from 'event-days'
@@ -25,6 +26,13 @@
 		"January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December" 
 	]
 	
+	// ----
+	let current_time_slot = {
+		"slot_name" : "",
+    	"start_day" : "9/29",
+    	"end_day"  : "10/29",
+    	"description" : "This is a test of tests"
+	}
 
 	let panzoomOptions = {
 		maxZoom: 5,
@@ -38,9 +46,6 @@
 		smoothScroll : {
 			reactZeroVelocity : true
 		}
-		// beforeMouseDown: (e) => {
-		//   return !e.altKey;
-		// },
 	};
 
 	let x = 1000;
@@ -819,6 +824,8 @@
 						g_selected_svg_timeslot_rect = found_rect
 						show_width_control(found_rect)
 						found_rect.el.setAttribute('fill','darkorange')
+						//
+						rect_to_time_slot_editor(found_rect)
 					} else {
 						g_selected_ts = false
 						hide_width_control()
@@ -926,6 +933,8 @@
 			//
 			if ( rect_info ) g_all_time_slots.push(rect_info)
 			//
+			rect_to_time_slot_editor(rect_info)
+
 			g_current_rect = false
 		} else if ( g_tracking_rect ) {
 			//
@@ -941,7 +950,8 @@
 			g_tracking_rect.y = rect_info.y
 			g_tracking_rect.unit_x = rect_info.unit_x
 			g_tracking_rect.unit_y = rect_info.unit_y
-
+			//
+			rect_to_time_slot_editor(g_tracking_rect)
 			//
 			g_tracking_rect.el.setAttribute('fill','black')
 			g_tracking_rect.selected = false
@@ -1010,6 +1020,8 @@
 				oo.width = box_w
 				oo.unit_width = box_w/scalex
 				oo.el.setAttribute('width',oo.unit_width)
+				//
+				rect_to_time_slot_editor(oo)
 			}
 
 			width_control.setAttribute('x',`${new_x}px`)
@@ -1038,6 +1050,8 @@
 					oo.width = box_w
 					oo.unit_width = box_w/scalex
 					oo.el.setAttribute('width',oo.unit_width)
+					//
+					rect_to_time_slot_editor(oo)
 				}
 				//
 				width_control.setAttribute('x',`${new_x}px`)
@@ -1050,6 +1064,81 @@
 
 	function open_editor(ev) {
 		// 
+		start_floating_window(2)
+	}
+
+
+	let edit_op_possibly_delete = false
+
+	function handle_delete() {
+		if ( edit_op_possibly_delete ) {
+			let idx = g_all_time_slots.indexOf(edit_op_possibly_delete)
+			if ( idx >= 0 ) {
+				g_all_time_slots.splice(idx,1)
+				let svg_el = edit_op_possibly_delete.el
+				if ( svg_el ) {
+					canvasElt.removeChild(svg_el)
+				}
+			}
+		}
+	}
+
+	function save_time_slot() {
+		let keep_it  = edit_op_possibly_delete
+	}
+
+	function handle_time_slot_editor(event) {
+		let cmd_dscr = event.detail
+		if ( cmd_dscr.type === "command" ) {
+			switch ( cmd_dscr.cmd ) {
+				case 'delete-time-slot' : {
+					handle_delete() 
+					break;
+				}
+				case 'save-time-slot' { 
+					save_time_slot()
+					break
+				}
+			}
+		}
+	}
+
+	//
+
+	function rect_to_time_slot_editor(found_rect) {
+		edit_op_possibly_delete = found_rect
+		//
+		let disp_offset = found_rect.unit_x
+		let disp_end = found_rect.unit_width + disp_offset
+		let pitch = division_width
+		//
+		let mo_start = Math.trunc(disp_offset/pitch)
+		let mo_end = Math.trunc(disp_end/pitch)
+		//
+		let cday = new Date()
+		let d1 = first_day_of_relative_month(cday,mo_start)
+		let d2 =  first_day_of_relative_month(cday,mo_end)
+		//
+		let mo_of_d1 = new Date(d1)
+		let mo_of_d2 = new Date(d2)
+
+		let n_d1 = first_day_of_next_month(mo_of_d1)
+		let n_d2 = first_day_of_next_month(mo_of_d2)
+
+		// start
+		let partial_mo = (disp_offset % pitch)/pitch
+		let t1_partial = (n_d1 - d1)*partial_mo
+		d1 += t1_partial
+		// end
+		partial_mo = (disp_end % pitch)/pitch
+		let t2_partial = (n_d2 - d2)*partial_mo
+		d2 += t2_partial
+		//
+		let mody_of_d1 = new Date(d1)
+		let mody_of_d2 = new Date(d2)
+		//
+		current_time_slot.start_day = mody_of_d1.toLocaleDateString()
+		current_time_slot.end_day = mody_of_d2.toLocaleDateString()
 	}
 
 </script>
@@ -1076,7 +1165,7 @@
 				<svg bind:this={width_control}  style="visibility:hidden" x="-5">
 					<line x1='5' x2='5' y1='0' y2='110'  stroke-width='3'  stroke="rgb(245,220,100)" vector-effect="non-scaling-stroke" />
 					<polygon points="5 0, 0 6, 10 6"/>
-					<circle cx='5' cy='50' r='5' on:mousedown={manage_width} on:mouseup={width_end_tracking} on:mousemove={width_tracking}/>
+					<circle cx='5' cy='50' r='5' fill='rgba(255,50,0,0.9)'  on:mousedown={manage_width} on:mouseup={width_end_tracking} on:mousemove={width_tracking}/>
 					<polygon points="5 110, 0 105, 10 105"/>
 				</svg>
 			</g>
@@ -1139,6 +1228,10 @@
 	<DayEvents {...current_day_data} bind:day_event_count/>
 </FloatWindow>
 
+
+<FloatWindow title="Time Slot Editor" index={2} scale_size_array={all_window_scales} >
+	<TimeSlotEditor {...current_time_slot} on:message={handle_time_slot_editor} />
+</FloatWindow>
 
 
 <style>
