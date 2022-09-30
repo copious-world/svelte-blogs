@@ -11,6 +11,11 @@
     export let start_day
     export let end_day
     export let description
+    export let pattern
+    export let activity
+    export let begin_at
+    export let end_at
+    
 
     let model_day_data = {
         "day" : 0,
@@ -88,6 +93,7 @@
 
 
     let type_of_activity = [
+        { id: 0, text: `open` },
 		{ id: 1, text: `meeting` },
 		{ id: 2, text: `teaching` },
 		{ id: 3, text: `music` },

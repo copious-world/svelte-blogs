@@ -12,7 +12,7 @@
 	import { process_search_results, place_data, merge_data, clonify, make_empty_thing, link_server_fetch } from '../../common/data-utils.js'
 	import { popup_size } from '../../common/display-utils.js'
 	import { get_search } from "../../common/search_box.js"
-	import { first_day_of_relative_month, first_day_of_next_month } from "../../common/date_utils.js"
+	import { first_day_of_relative_month, rect_to_time_slot, time_slot_to_rect } from "../../common/date_utils.js"
 
 
 	import { EventDays } from 'event-days'
@@ -21,6 +21,24 @@
 
 	import { onMount } from 'svelte';
 
+
+	const ABRITRARY_MAX_CANVAS_HEIGHT = 450
+	const ABRITRARY_MIN_CANVAS_HEIGHT = 120
+	//
+	const ONE_HOUR = (3600*1000)
+	const ONE_HALF_HOUR = (3600*500)
+	const ONE_QUARTER_HOUR = (3600*250)
+	const ONE_QUARTER_HOUR_MINUTES = (15)
+	const ONE_HALF_HOUR_MINUTES  = (30)
+	//
+	const USE_AS_BLOCK = "block"
+	const USE_AS_MEET = "meeting"
+	const USE_AS_ACTIVITY = "activity"
+	const USE_AS_OPEN = "open"
+
+
+	let timeline_slider_height = ABRITRARY_MIN_CANVAS_HEIGHT
+
 	let current_date = new Date()
 	let title_months = [
 		"January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December" 
@@ -28,10 +46,35 @@
 	
 	// ----
 	let current_time_slot = {
+		"name" : false,
 		"slot_name" : "",
     	"start_day" : "9/29",
     	"end_day"  : "10/29",
-    	"description" : "This is a test of tests"
+    	"description" : "This is a test of tests",
+		//
+		"x" : 0,
+		"y" : 0,
+		"height" : 0,
+		"width" : 0,
+		//
+		"unit_x" : 0,
+		"unit_y" : 0,
+		"unit_width" : 0,
+		"unit_height" : 0,
+		"start_time"  : 0,
+		"end_time" : 0,
+		"begin_at" : 0,
+		"end_at" : 0,
+		"pattern" : {
+			"sunday" :false,
+			"monday" :false,
+			"tuesday" :false,
+			"wednesday" :false,
+			"thursday" :false,
+			"friday" :false,
+			"staturday" :false
+		},
+		"activity" : USE_AS_OPEN
 	}
 
 	let panzoomOptions = {
@@ -55,6 +98,9 @@
 	let controllerElt = null;
 	let panzoomInstance = null;
 
+	let canvas_resizer = false
+	let app_view = false
+
 
 
 	let session = ""
@@ -62,17 +108,6 @@
 
 	let day_event_count = 0
 
-	//
-	const ONE_HOUR = (3600*1000)
-	const ONE_HALF_HOUR = (3600*500)
-	const ONE_QUARTER_HOUR = (3600*250)
-	const ONE_QUARTER_HOUR_MINUTES = (15)
-	const ONE_HALF_HOUR_MINUTES  = (30)
-	//
-	const USE_AS_BLOCK = "block"
-	const USE_AS_MEET = "meeting"
-	const USE_AS_ACTIVITY = "activity"
-	const USE_AS_OPEN = "open"
 	//
 
 	const MonthContainer = EventDays.MonthContainer
@@ -1063,7 +1098,6 @@
 	// ---- ---- ---- ---- ---- ---- ---- ---- ----
 
 	function open_editor(ev) {
-		// 
 		start_floating_window(2)
 	}
 
@@ -1085,6 +1119,8 @@
 
 	function save_time_slot() {
 		let keep_it  = edit_op_possibly_delete
+		//
+		g_human_time_slot_storage.update_time_slot(keep_it)
 	}
 
 	function handle_time_slot_editor(event) {
@@ -1095,7 +1131,7 @@
 					handle_delete() 
 					break;
 				}
-				case 'save-time-slot' { 
+				case 'save-time-slot' : { 
 					save_time_slot()
 					break
 				}
@@ -1105,73 +1141,189 @@
 
 	//
 
-	function rect_to_time_slot_editor(found_rect) {
+	async function rect_to_time_slot_editor(found_rect) {
 		edit_op_possibly_delete = found_rect
 		//
-		let disp_offset = found_rect.unit_x
-		let disp_end = found_rect.unit_width + disp_offset
-		let pitch = division_width
+		let scaleX = 1.0
+		let tt = g_last_known_transition
+		if ( tt ) {
+			scaleX = tt.scaleX
+		}
+		let pitch = division_width*scaleX
 		//
-		let mo_start = Math.trunc(disp_offset/pitch)
-		let mo_end = Math.trunc(disp_end/pitch)
+		let [mody_of_d1,mody_of_d2] = rect_to_time_slot(found_rect,pitch)
 		//
-		let cday = new Date()
-		let d1 = first_day_of_relative_month(cday,mo_start)
-		let d2 =  first_day_of_relative_month(cday,mo_end)
 		//
-		let mo_of_d1 = new Date(d1)
-		let mo_of_d2 = new Date(d2)
+		let create_new = false
 
-		let n_d1 = first_day_of_next_month(mo_of_d1)
-		let n_d2 = first_day_of_next_month(mo_of_d2)
-
-		// start
-		let partial_mo = (disp_offset % pitch)/pitch
-		let t1_partial = (n_d1 - d1)*partial_mo
-		d1 += t1_partial
-		// end
-		partial_mo = (disp_end % pitch)/pitch
-		let t2_partial = (n_d2 - d2)*partial_mo
-		d2 += t2_partial
-		//
-		let mody_of_d1 = new Date(d1)
-		let mody_of_d2 = new Date(d2)
+		if ( (typeof found_rect.name !== "string") || !(found_rect.name.length) ) {
+			create_new = true
+			let dtime = mody_of_d1.getTime()
+			current_time_slot.slot_name = `unnamed-${found_rect.y}-${dtime}`
+			//
+			found_rect.name = current_time_slot.slot_name
+			found_rect.description = ""
+			found_rect.begin_at = ""
+			found_rect.end_at = ""
+			found_rect.activity = USE_AS_OPEN
+			found_rect.pattern = {
+					"sunday" :false,
+					"monday" :false,
+					"tuesday" :false,
+					"wednesday" :false,
+					"thursday" :false,
+					"friday" :false,
+					"staturday" :false
+				}
+		}
+		current_time_slot.name = found_rect.name
 		//
 		current_time_slot.start_day = mody_of_d1.toLocaleDateString()
 		current_time_slot.end_day = mody_of_d2.toLocaleDateString()
+		current_time_slot.start_time = mody_of_d1.getTime()
+		current_time_slot.end_time = mody_of_d2.getTime()
+		//
+		current_time_slot.description = found_rect.description
+		current_time_slot.begin_at = found_rect.begin_at
+		current_time_slot.end_at = found_rect.end_at
+		current_time_slot.activity = found_rect.activity
+		current_time_slot.pattern = found_rect.pattern
+
+		if ( create_new ) {
+			await g_human_time_slot_storage.add_time_slot(current_time_slot)
+		}
+	}
+
+
+	let time_line_display = false
+	function time_line_slots_to_display(slot_list) {
+		for ( let a_slot of slot_list ) {
+			//
+			let scaleX = 1.0
+			let tt = g_last_known_transition
+			if ( tt ) {
+				scaleX = tt.scaleX
+			}
+			//
+			let d1 = new Date(a_slot.start_time)
+			let d2 = new Date(a_slot.end_time)
+			//
+			let [rect_start, rect_width] = time_slot_to_rect(d1,d2,division_width*scaleX)
+
+			let ypos = (a_slot.y_percent*timeline_slider_height)
+
+			let window_rect = {
+				x : rect_start,
+				y : ypos,
+				width : rect_width,
+				height : c_TIME_SLOT_HEIGHT
+			}
+
+			const  svgns = "http://www.w3.org/2000/svg";
+			let n_rect = document.createElementNS(svgns, "rect");
+			n_rect.setAttribute("y", window_rect.y );
+			n_rect.setAttribute("x", window_rect.x );
+			n_rect.setAttribute("height", `${c_TIME_SLOT_HEIGHT}px` );
+			n_rect.setAttribute("width", window_rect.width );
+			controllerElt.appendChild(n_rect);
+			//
+			let rect_info = place_rect_in_scalable(n_rect,window_rect)
+			if ( rect_info ) g_all_time_slots.push(rect_info)
+		}
+
+	}
+
+
+
+	//'ns-resize'
+
+	let g_canvas_tracking_start_point = false
+	function canvas_resizer_activate(ev) {
+		ev.preventDefault()
+		ev.stopPropagation()
+		window.addEventListener('mousemove',canvas_resizer_track)
+		window.addEventListener('mouseup',canvas_resizer_end)
+		canvas_resizer.style.cursor = 'ns-resize'
+		app_view.style.cursor = 'ns-resize'
+
+		g_canvas_tracking_start_point = { x: ev.clientX, y: ev.clientY }
+	}
+
+	function canvas_resizer_track(ev) {
+		ev.preventDefault()
+		ev.stopPropagation()
+		//
+		if ( g_canvas_tracking_start_point ) {
+			canvas_resizer.style.cursor = 'ns-resize'
+			let maybe_update = { x: (ev.clientX - g_canvas_tracking_start_point.x), y: (ev.clientY - g_canvas_tracking_start_point.y) }
+			g_canvas_tracking_start_point = { x: ev.clientX, y: ev.clientY }
+			timeline_slider_height += maybe_update.y
+			if ( timeline_slider_height > ABRITRARY_MAX_CANVAS_HEIGHT ) {
+				timeline_slider_height = ABRITRARY_MAX_CANVAS_HEIGHT
+			}
+			if ( timeline_slider_height < ABRITRARY_MIN_CANVAS_HEIGHT ) {
+				timeline_slider_height = ABRITRARY_MIN_CANVAS_HEIGHT
+			}
+		}
+	}
+
+	function canvas_resizer_end(ev) {
+		window.removeEventListener('mousemove',canvas_resizer_track)
+		window.removeEventListener('mouseup',canvas_resizer_end)
+		canvas_resizer.style.cursor = 'pointer'
+		app_view.style.cursor = 'default'
+
+		//
+		if ( g_canvas_tracking_start_point ) {
+			let maybe_update = { x: (ev.clientX - g_canvas_tracking_start_point.x), y: (ev.clientY - g_canvas_tracking_start_point.y) }
+			//
+			timeline_slider_height += maybe_update.y
+			if ( timeline_slider_height > ABRITRARY_MAX_CANVAS_HEIGHT ) {
+				timeline_slider_height = ABRITRARY_MAX_CANVAS_HEIGHT
+			}
+			if ( timeline_slider_height < ABRITRARY_MIN_CANVAS_HEIGHT ) {
+				timeline_slider_height = ABRITRARY_MIN_CANVAS_HEIGHT
+			}
+			//
+			g_canvas_tracking_start_point = false
+		}
 	}
 
 </script>
-<div>
-	<div class="calendar-admin-slider" >
-		<svg style="width:100%">
+<div bind:this={app_view} >
+	<div bind:this={time_line_display} class="calendar-admin-slider" style="height:{timeline_slider_height}px">
+		<svg style="width:100%" height="inherit">
 			<!-- this is the draggable root -->
 			<g>
 				{#each info_points as point }
-					<text x='{point.x}' y='100' stroke='none' fill='rgb(50,130,60)' vector-effect="non-scaling-size" font-size='12' font-weight='bold' >{point.label}</text>
+					<text x='{point.x}' y='{timeline_slider_height - 20}' stroke='none' fill='rgb(50,130,60)' vector-effect="non-scaling-size" font-size='12' font-weight='bold' >{point.label}</text>
 				{/each}
 			</g>
 			<g bind:this={canvasElt} cursor='pointer' > 
 				{#each line_points as point}
 					{#if point.x < 0 } 
-						<rect x='{point.x}' y='-2' height='114' width='{division_width}' stroke-width='1' stroke="rgb(0,0,0)" fill='rgba(155,155,155,0.25)' ></rect>
+						<rect x='{point.x}' y='-2' height='{timeline_slider_height - 6}' width='{division_width}' stroke-width='1' stroke="rgb(0,0,0)" fill='rgba(155,155,155,0.25)' ></rect>
 					{:else}
-						<line x1='{point.x}' x2='{point.x}' y1='0' y2='110'  stroke-width='2'  stroke="rgb(0,0,0)" vector-effect="non-scaling-stroke" />
+						<line x1='{point.x}' x2='{point.x}' y1='0' y2='{timeline_slider_height - 10}'  stroke-width='2'  stroke="rgb(0,0,0)" vector-effect="non-scaling-stroke" />
 					{/if}
 				{/each}
 			</g>
 			<g bind:this={controllerElt} class="cursor-grabber" on:mousedown={handle_editor} on:mouseup={handle_editor_end} on:mousemove={moving_mouse}>
-				<rect x='0' y='-2' height='114' width='100%' stroke-width='1' stroke="rgb(0,0,0)" fill='rgba(255,255,255,0.01)'></rect>
+				<rect x='0' y='-2' height='{timeline_slider_height - 6}' width='100%' stroke-width='1' stroke="rgb(0,0,0)" fill='rgba(255,255,255,0.01)'></rect>
 				<svg bind:this={width_control}  style="visibility:hidden" x="-5">
-					<line x1='5' x2='5' y1='0' y2='110'  stroke-width='3'  stroke="rgb(245,220,100)" vector-effect="non-scaling-stroke" />
+					<line x1='5' x2='5' y1='-5' y2='{timeline_slider_height}'  stroke-width='3'  stroke="rgb(245,220,100)" vector-effect="non-scaling-stroke" />
 					<polygon points="5 0, 0 6, 10 6"/>
-					<circle cx='5' cy='50' r='5' fill='rgba(255,50,0,0.9)'  on:mousedown={manage_width} on:mouseup={width_end_tracking} on:mousemove={width_tracking}/>
-					<polygon points="5 110, 0 105, 10 105"/>
+					<circle cx='5' cy='{timeline_slider_height/2 - 3}' r='5' fill='rgba(255,50,0,0.9)'  on:mousedown={manage_width} on:mouseup={width_end_tracking} on:mousemove={width_tracking}/>
+					<polygon points="5 {timeline_slider_height - 10}, 0 {timeline_slider_height - 15}, 10 {timeline_slider_height - 15}"/>
 				</svg>
 			</g>
 		</svg>
 	</div>
-		
+	<svg class='canvas-resize-cntrl' bind:this={canvas_resizer} width="100%" height="6px" style="margin;0px;" on:mousedown={canvas_resizer_activate} on:mousemove={canvas_resizer_track} on:mouseup={canvas_resizer_end}>
+		<rect x='0' y='2' height='2' width='100%' stroke-width='0' stroke="rgb(0,0,0)" fill='rgba(20,40,185,0.9)' ></rect>
+		<polygon points="5 0, 0 6, 10 6"/>
+		<polygon points="15 6, 10 0, 20 0"/>
+	</svg>
 	<div style="border: solid 2px navy;padding: 4px;background-color:#EFEFEF;">
 		<div class="blg-ctrl-panel" style="display:inline-block;vertical-align:bottom;background-color:#EFFFFE" >
 			<span style="color:navy;font-weight:bold">Boxes</span>
@@ -1241,7 +1393,6 @@
 		border: solid 2px rgb(9, 84, 9);
 		padding: 4px;
 		background-color:white;
-		height: 120px;
 	}
 
 	.blg-grid-container {
@@ -1274,21 +1425,18 @@
 		border: none;
 	}
 
-	.sel-titles {
-		display:inline-block;
-		width:35%;
-		font-weight:bold;
-		color:black;
-		font-size:0.75em;
-		margin: 6px;
-	}
-
 	.cursor-grabber {
 		cursor: pointer;
 	}
 
-	.cursor-grabbing:focus {
-		cursor: grabbing;
+	.canvas-resize-cntrl {
+		background-color: antiquewhite;
+		border: solid 1px rgb(110, 64, 110);
+		padding:0px;
+		width:100%;
+		height: fit-content;
+		cursor:pointer;
+		margin: 0px;
 	}
 
 </style>

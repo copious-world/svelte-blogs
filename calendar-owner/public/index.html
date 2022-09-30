@@ -27,630 +27,630 @@
 
 </script>
 
-	<style>
-		/*csslint important:false*/
+<style>
+	/*csslint important:false*/
 
-		/* ==========================================================================
-		Pure Base Extras
-		========================================================================== */
+	/* ==========================================================================
+	Pure Base Extras
+	========================================================================== */
 
-		/**
-		* Extra rules that Pure adds on top of Normalize.css
+	/**
+	* Extra rules that Pure adds on top of Normalize.css
 
-		html {
-		}
-		*/
+	html {
+	}
+	*/
 
-		/**
-		* Always hide an element when it has the `hidden` HTML attribute.
-		*/
+	/**
+	* Always hide an element when it has the `hidden` HTML attribute.
+	*/
 
-		.hidden,
-		[hidden] {
-			display: none !important;
-		}
+	.hidden,
+	[hidden] {
+		display: none !important;
+	}
 
-		/**
-		* Add this class to an image to make it fit within it's fluid parent wrapper while maintaining
-		* aspect ratio.
-		*/
-		.pure-img {
-			max-width: 100%;
-			height: auto;
-			display: block;
-		}
+	/**
+	* Add this class to an image to make it fit within it's fluid parent wrapper while maintaining
+	* aspect ratio.
+	*/
+	.pure-img {
+		max-width: 100%;
+		height: auto;
+		display: block;
+	}
 
-		.items {
-			display: flex;
-			flex-wrap: wrap;
-			margin-left: -10px;
-			margin-top: -10px;
-		}
-	
-		.items .item {
-			flex: 1 0 300px;
-			box-sizing: border-box;
-			background: -webkit-linear-gradient(to right, rgba(242, 242, 210, 0.3), white));
-			background: linear-gradient(to right, rgba(242, 242, 210, 0.3), white );
-			color: #171e42;
-			padding: 10px;
-			margin-left: 10px;
-			margin-top: 0px;
-		}
-	
-		.items .extra-i {
-			padding-left: 10%;
-			padding-bottom: 4px;
-			padding-right: 12px;
-			font-size: 110%;
-			font-family: sans-serif;
-		}
-	
-		.middleBanner {
-			text-align: 'center';
-			padding-left: 10%;
-			padding-right: 10%;
-			font-weight:bold;
-			color: darkgreen;
-			padding-top:4%;
-			overflow:auto;
-		}
+	.items {
+		display: flex;
+		flex-wrap: wrap;
+		margin-left: -10px;
+		margin-top: -10px;
+	}
 
-		.applink {
-			padding:3px;
-			background-color: cornsilk;
-			width:inherit;
-			min-height: 100%;
-			color:darkolivegreen;
-			font-weight: bolder;
+	.items .item {
+		flex: 1 0 300px;
+		box-sizing: border-box;
+		background: -webkit-linear-gradient(to right, rgba(242, 242, 210, 0.3), white));
+		background: linear-gradient(to right, rgba(242, 242, 210, 0.3), white );
+		color: #171e42;
+		padding: 10px;
+		margin-left: 10px;
+		margin-top: 0px;
+	}
 
-		}
-	
-		.extraBanner {
-			text-align: 'center';
-			padding-left: 10%;
-			padding-right: 10%;
-			font-weight:bold;
-			color: #FF4400;
-			padding-top:4%;
-		}
-	
-	
-		.fillLowerWrap {
-			width: 66%;
-			margin-left:0px;
-			margin-right:0px;
-			padding: 8px;
-			margin-top:8px;
-			background: -webkit-linear-gradient(to right, white, #FAFAFF);
-			background: linear-gradient(to right, white, #FAFAFF );
-			margin-left: 10px;
-		}
-	
-		.fitMenuLower {
-			width: 95%;
-			height: 50%;
-			margin-left:0px;
-			margin-right:0px;
-			padding: 8px;
-			margin-top:8px;
-			background: -webkit-linear-gradient(to right, white, #FAFAFF);
-			background: linear-gradient(to right, white, #FAFAFF );
-			margin-left: 10px;
-		}
-	
-		#squashMenu:hover {
-			border: 1px solid rgb(230,230,240,0.4);
-			padding-top:4px;
-			background-color: #EFEFEF;
-		}
-	
-		#squashMenuContainer {
-			position:absolute;
-			visibility:hidden;
-			top : 0; left : 0;
-			height:100%;
-			width: 55%;
-			z-index:100;
-			border: rgba(252, 190, 190, 0.4) 2px solid;
-			background-color: white;
-		}
-	
-		.fade_able {
-			position:absolute;
-			visibility:hidden;
-			top : 10px; left : 10px;
-			height:80%;
-			width: 40%;
-			z-index:101;
-			border: rgba(252, 190, 190, 0.4) 2px solid;
-			background-color: white;
-			overflow:hidden;
-		}
+	.items .extra-i {
+		padding-left: 10%;
+		padding-bottom: 4px;
+		padding-right: 12px;
+		font-size: 110%;
+		font-family: sans-serif;
+	}
 
+	.middleBanner {
+		text-align: 'center';
+		padding-left: 10%;
+		padding-right: 10%;
+		font-weight:bold;
+		color: darkgreen;
+		padding-top:4%;
+		overflow:auto;
+	}
+
+	.applink {
+		padding:3px;
+		background-color: cornsilk;
+		width:inherit;
+		min-height: 100%;
+		color:darkolivegreen;
+		font-weight: bolder;
+
+	}
+
+	.extraBanner {
+		text-align: 'center';
+		padding-left: 10%;
+		padding-right: 10%;
+		font-weight:bold;
+		color: #FF4400;
+		padding-top:4%;
+	}
+
+
+	.fillLowerWrap {
+		width: 66%;
+		margin-left:0px;
+		margin-right:0px;
+		padding: 8px;
+		margin-top:8px;
+		background: -webkit-linear-gradient(to right, white, #FAFAFF);
+		background: linear-gradient(to right, white, #FAFAFF );
+		margin-left: 10px;
+	}
+
+	.fitMenuLower {
+		width: 95%;
+		height: 50%;
+		margin-left:0px;
+		margin-right:0px;
+		padding: 8px;
+		margin-top:8px;
+		background: -webkit-linear-gradient(to right, white, #FAFAFF);
+		background: linear-gradient(to right, white, #FAFAFF );
+		margin-left: 10px;
+	}
+
+	#squashMenu:hover {
+		border: 1px solid rgb(230,230,240,0.4);
+		padding-top:4px;
+		background-color: #EFEFEF;
+	}
+
+	#squashMenuContainer {
+		position:absolute;
+		visibility:hidden;
+		top : 0; left : 0;
+		height:100%;
+		width: 55%;
+		z-index:100;
+		border: rgba(252, 190, 190, 0.4) 2px solid;
+		background-color: white;
+	}
+
+	.fade_able {
+		position:absolute;
+		visibility:hidden;
+		top : 10px; left : 10px;
+		height:80%;
+		width: 40%;
+		z-index:101;
+		border: rgba(252, 190, 190, 0.4) 2px solid;
+		background-color: white;
+		overflow:hidden;
+	}
+
+	.solid_able {
+		position:absolute;
+		visibility:hidden;
+		top : 10px; left : 10px;
+		height:80%;
+		width: 40%;
+		z-index:111;
+		border: rgba(252, 190, 190, 0.4) 2px solid;
+		background-color: white;
+		overflow: hidden;
+	}
+
+	@media screen and (max-width: 950px) {
 		.solid_able {
-			position:absolute;
-			visibility:hidden;
-			top : 10px; left : 10px;
-			height:80%;
-			width: 40%;
-			z-index:111;
-			border: rgba(252, 190, 190, 0.4) 2px solid;
-			background-color: white;
-			overflow: hidden;
+			width: 90%;
 		}
+	}
 
-		@media screen and (max-width: 950px) {
-			.solid_able {
-				width: 90%;
-			}
-		}
+	#thankyou_box {
+		position:absolute;
+		visibility:hidden;
+		top : 25%; left : 25%;
+		height:50%;
+		width: 50%;
+		z-index:150;
+		border: rgba(100, 5, 5, 0.6) 2px solid;
+		background-color: lightgoldenrodyellow;
+		overflow: auto;
+	}
 
-		#thankyou_box {
-			position:absolute;
-			visibility:hidden;
-			top : 25%; left : 25%;
-			height:50%;
-			width: 50%;
-			z-index:150;
-			border: rgba(100, 5, 5, 0.6) 2px solid;
-			background-color: lightgoldenrodyellow;
-			overflow: auto;
+	@media screen and (max-width: 1040px) {
+		.fade_able {
+			width: 60%;
 		}
+	}
 
-		@media screen and (max-width: 1040px) {
-			.fade_able {
-				width: 60%;
-			}
+	@media screen and (max-width: 600px) {
+		.fade_able {
+			width: 90%;
 		}
+	}
 
-		@media screen and (max-width: 600px) {
-			.fade_able {
-				width: 90%;
-			}
-		}
+	.fade_able_content {
+		height:100%;
+		width: 100%;
+		overflow:auto;
+	}
 
-		.fade_able_content {
-			height:100%;
-			width: 100%;
-			overflow:auto;
-		}
+	.togglebar {
+		height:20px;
+		visibility:inherit;
+		background-color: navy;
+		text-align:right;
+	}
 
-		.togglebar {
-			height:20px;
-			visibility:inherit;
-			background-color: navy;
-			text-align:right;
-		}
-	
-		.closer_x {
-			padding:2px;
-			color:purple;
-			font-weight:bolder;
-			border: solid 1px red;
-			cursor:pointer;
-		}
+	.closer_x {
+		padding:2px;
+		color:purple;
+		font-weight:bolder;
+		border: solid 1px red;
+		cursor:pointer;
+	}
 
-		@media (max-width: 1225px) {
-			.fillLowerWrap {
-				visibility : "none";
-				height : 0px;
-			}
-		}
-
-	
-		.fillLower {
-			border: darkred 2px solid;
-			height: 96%;
-			width: 96%;
-			margin-left: 10px;
-			padding:8px;
-			background: -webkit-linear-gradient(to right, rgba(252, 252, 240, 0.4), #FEFEFE);
-			background: linear-gradient(to right, rgba(252, 252, 240, 0.4), #FEFEFE );
-		}
-	
-		button {
-			cursor: pointer;
-			font-size: 101%;
-			font-weight: bold;
-			color: darkblue;
-			margin: 2px;
-			width:120px;
-		}
-	
-		button:hover {
-			background-color : #CACAFF;
-			color: darkred;
-		}
-	
-		@media screen and (max-width: 390px) {
-			.items .extra-i {
-				padding-left: 1%;
-			}
-		}
-	
-		@media screen and (max-width: 600px) {
-			.items .extra-i {
-				padding-left: 3%;
-			}
-		}
-	
-		.longviz {
-			visibility : "visibile";
-			height: 10px;
-			background-color:inherit;
-		}
-	
-		@media (max-width: 1040px) {
-			.longviz {
-				visibility : "none";
-				height : 0px;
-			}
-		}
-	
-		.shortviz {
+	@media (max-width: 1225px) {
+		.fillLowerWrap {
 			visibility : "none";
-			height:0px;
-			margin-top:6px;
+			height : 0px;
 		}
-
-		@media (max-width: 620px) {
-			.shortviz {
-				visibility : "visible";
-				height:2px;
-				background-color:darkgreen;
-				margin-bottom:12px;
-			}
-		}
-	
-		@media (min-width: 1040px) {
-			.shortviz {
-				visibility : "visible";
-				height:120px;
-				border: 2px darkblue solid;
-				background-color:#FFFFF6;
-				margin-bottom:30px;
-				margin-top:5px;
-			}
-		}
-	
-		@media (min-width: 380px) {
-			.items .item {
-				max-width: calc(100% - 20px);
-			}
-			.items .extra-i {
-				padding-left: 3%;
-			}
-		}
-		@media (min-width: 410px) {
-			.items .item {
-				max-width: calc(100% - 10px);
-			}
-		}
-		@media (min-width: 620px) {
-			.items .item {
-				max-width: calc(50% - 10px);
-			}
-		}
-		@media (min-width: 830px) {
-			.items .item {
-				max-width: calc(50% - 10px);
-			}
-		}
-		@media (min-width: 1040px) {
-			.items .item {
-				max-width: calc(33.33333% - 10px);
-			}
-		}
-		@media (min-width: 1250px) {
-			.items .item {
-				max-width: calc(25%- 10px);
-			}
-		}
-		@media (min-width: 1460px) {
-			.items .item {
-				max-width: calc(20% - 10px);
-			}
-		}
-		@media (min-width: 1670px) {
-			.items .item {
-				min-width: calc(16.66667% - 10px);
-			}
-		}
-	
-	
-		body {
-			border: 1px solid black;
-			
-			-moz-box-sizing: border-box;
-			box-sizing: border-box;
-		}
+	}
 
 
-		@media screen and (orientation: portrait) {
-			#mainNav {
-				width: 100%;
-			}
-		}
+	.fillLower {
+		border: darkred 2px solid;
+		height: 96%;
+		width: 96%;
+		margin-left: 10px;
+		padding:8px;
+		background: -webkit-linear-gradient(to right, rgba(252, 252, 240, 0.4), #FEFEFE);
+		background: linear-gradient(to right, rgba(252, 252, 240, 0.4), #FEFEFE );
+	}
 
-		@media screen and (orientation: landscape) {
-			#mainNav {
-				width: 100%;
-			}
+	button {
+		cursor: pointer;
+		font-size: 101%;
+		font-weight: bold;
+		color: darkblue;
+		margin: 2px;
+		width:120px;
+	}
+
+	button:hover {
+		background-color : #CACAFF;
+		color: darkred;
+	}
+
+	@media screen and (max-width: 390px) {
+		.items .extra-i {
+			padding-left: 1%;
 		}
-	
-		main {
-			border-left: solid 3px navy;
-			border-top: solid 1px #8833BB;
-			padding : 4px;
-		}
-	
-		#mainNav {
-			font-family: 'Montserrat', 'Helvetica Neue', Helvetica, Arial, sans-serif;
-			font-weight: 700;
-			text-transform: uppercase;
-			background: blue;
-			border-left: solid 3px navy;
-			border-top: solid 3px navy;
-			border-bottom: solid 3px rgba(252,252,255,0.7);
-			min-height: 90px
-			padding: 20px
-			background: -webkit-linear-gradient(to left, rgba(242, 242, 210, 0.3), white);
-			background: linear-gradient(to left, rgba(242, 242, 210, 0.3), white );
-			
-		}
-	
-		#mainNav table {
+	}
+
+	@media screen and (max-width: 600px) {
+		.items .extra-i {
 			padding-left: 3%;
 		}
-	
-	
-		#mainNav  table  a:focus { outline: none; }
-		#mainNav  table  .navbar-brand {
-			font-size: 1.1rem;
-			color: white;
+	}
+
+	.longviz {
+		visibility : "visibile";
+		height: 10px;
+		background-color:inherit;
+	}
+
+	@media (max-width: 1040px) {
+		.longviz {
+			visibility : "none";
+			height : 0px;
 		}
-	
-		#mainNav  table  .navbar-brand.active, #mainNav .navbar-brand:active, #mainNav .navbar-brand:focus, #mainNav .navbar-brand:hover {
-			color: white;
+	}
+
+	.shortviz {
+		visibility : "none";
+		height:0px;
+		margin-top:6px;
+	}
+
+	@media (max-width: 620px) {
+		.shortviz {
+			visibility : "visible";
+			height:2px;
+			background-color:darkgreen;
+			margin-bottom:12px;
 		}
-	
-		#mainNav  table  .navbar-nav {
-			letter-spacing: 1px; }
-	
-		#mainNav  table  .navbar-nav li.nav-item {
-			display:inline;
+	}
+
+	@media (min-width: 1040px) {
+		.shortviz {
+			visibility : "visible";
+			height:120px;
+			border: 2px darkblue solid;
+			background-color:#FFFFF6;
+			margin-bottom:30px;
+			margin-top:5px;
 		}
-	
+	}
+
+	@media (min-width: 380px) {
+		.items .item {
+			max-width: calc(100% - 20px);
+		}
+		.items .extra-i {
+			padding-left: 3%;
+		}
+	}
+	@media (min-width: 410px) {
+		.items .item {
+			max-width: calc(100% - 10px);
+		}
+	}
+	@media (min-width: 620px) {
+		.items .item {
+			max-width: calc(50% - 10px);
+		}
+	}
+	@media (min-width: 830px) {
+		.items .item {
+			max-width: calc(50% - 10px);
+		}
+	}
+	@media (min-width: 1040px) {
+		.items .item {
+			max-width: calc(33.33333% - 10px);
+		}
+	}
+	@media (min-width: 1250px) {
+		.items .item {
+			max-width: calc(25%- 10px);
+		}
+	}
+	@media (min-width: 1460px) {
+		.items .item {
+			max-width: calc(20% - 10px);
+		}
+	}
+	@media (min-width: 1670px) {
+		.items .item {
+			min-width: calc(16.66667% - 10px);
+		}
+	}
+
+
+	body {
+		border: 1px solid black;
 		
+		-moz-box-sizing: border-box;
+		box-sizing: border-box;
+	}
+
+
+	@media screen and (orientation: portrait) {
+		#mainNav {
+			width: 100%;
+		}
+	}
+
+	@media screen and (orientation: landscape) {
+		#mainNav {
+			width: 100%;
+		}
+	}
+
+	main {
+		border-left: solid 3px navy;
+		border-top: solid 1px #8833BB;
+		padding : 4px;
+	}
+
+	#mainNav {
+		font-family: 'Montserrat', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+		font-weight: 700;
+		text-transform: uppercase;
+		background: blue;
+		border-left: solid 3px navy;
+		border-top: solid 3px navy;
+		border-bottom: solid 3px rgba(252,252,255,0.7);
+		min-height: 90px
+		padding: 20px
+		background: -webkit-linear-gradient(to left, rgba(242, 242, 210, 0.3), white);
+		background: linear-gradient(to left, rgba(242, 242, 210, 0.3), white );
 		
-		#mainNav  table  .navbar-nav li.nav-item a.nav-link {
-			color: darkgreen;
-			text-decoration: none;
-			vertical-align: top;
-			padding-right: 10px;
-		}
-	
-		#mainNav  table  .navbar-nav li.nav-item a.nav-link:hover {
-			color: #18BC9C;
-			outline: none;
-			
-		}
-	
-	
-		#mainNav  table  .navbar-nav a.nav-text {
-			background-color : rgba(242,222,255,0.6);
-			border-radius: 25px;
-			margin-bottom: 9px;
-			margin-right: 6px;
-			white-space: nowrap;
-		}
+	}
+
+	#mainNav table {
+		padding-left: 3%;
+	}
 
 
-		#mainNav  table  .navbar-nav li.nav-item a.nav-link:active, #mainNav .navbar-nav li.nav-item a.nav-link:focus { color: white; }
+	#mainNav  table  a:focus { outline: none; }
+	#mainNav  table  .navbar-brand {
+		font-size: 1.1rem;
+		color: white;
+	}
+
+	#mainNav  table  .navbar-brand.active, #mainNav .navbar-brand:active, #mainNav .navbar-brand:focus, #mainNav .navbar-brand:hover {
+		color: white;
+	}
+
+	#mainNav  table  .navbar-nav {
+		letter-spacing: 1px; }
+
+	#mainNav  table  .navbar-nav li.nav-item {
+		display:inline;
+	}
+
+	
+	
+	#mainNav  table  .navbar-nav li.nav-item a.nav-link {
+		color: darkgreen;
+		text-decoration: none;
+		vertical-align: top;
+		padding-right: 10px;
+	}
+
+	#mainNav  table  .navbar-nav li.nav-item a.nav-link:hover {
+		color: #18BC9C;
+		outline: none;
 		
-		.footer-list li {
-			list-style-type: none;
-		}
-	
-		.footer-list li a:hover { color: gold; }
-		
-		.hover_group {
-			cursor:pointer;
-		}
-	
-		.hover_group rect {
-			fill:#e6e6e6;
-		}
-	
-		.hover_group:hover rect {
-			fill: #F6F6e6;
-		}
-	
-		footer {
-			padding:10px;
-			background: -webkit-linear-gradient(to left, rgba(252,252,255,0.5), #fffbe2 );
-			background: linear-gradient(to left, rgba(252,252,255,0.5), #fffbe2  );
-			text-align: center;
-			font-size: 0.85em;
-		}
-	
-		footer a {
-			text-decoration:none;
-			color:darkgreen;
-			font-weight:bold;
-			font-style: italic;
-		}
-	
-		.copiouslink:hover {
-			fill:navy;
-		}
-		.copiouslink {
-			fill:black;
-		}
-	
-		* {margin: 0; padding: 0; box-sizing: border-box}
-		
-		.PhIOtjDr_0 {
-			fill:none;
-			stroke:#1c1448;
-			stroke-width:4.59875107;
-			stroke-miterlimit:4;
-			stroke-dasharray: 2948 2950;
-			stroke-dashoffset: 2949;
-			animation: PhIOtjDr_draw 6666ms ease-in forwards;
-		}
+	}
 
-		@keyframes PhIOtjDr_draw {
-			100% {stroke-dashoffset: 0}
-		}
 
-		@keyframes PhIOtjDr_fade {
-			0% {stroke-opacity: 1}
-			97.1830985915493% {stroke-opacity: 1}
-			100% {stroke-opacity: 0}
-		}
+	#mainNav  table  .navbar-nav a.nav-text {
+		background-color : rgba(242,222,255,0.6);
+		border-radius: 25px;
+		margin-bottom: 9px;
+		margin-right: 6px;
+		white-space: nowrap;
+	}
+
+
+	#mainNav  table  .navbar-nav li.nav-item a.nav-link:active, #mainNav .navbar-nav li.nav-item a.nav-link:focus { color: white; }
 	
-		.form_el {
-			border:lightgray solid 1px;
-			padding:6px;
-			margin:2px;
-			width:80%;
-		}
+	.footer-list li {
+		list-style-type: none;
+	}
 
-		.form_el_inner {
-			border:lightgray solid 1px;
-			padding:6px;
-			margin:2px;
-			width:100%;
-		}
+	.footer-list li a:hover { color: gold; }
 	
-		label {
-			font-weight:bold;
-			color:darkgreen;
-			width:35%;
-		}
+	.hover_group {
+		cursor:pointer;
+	}
 
+	.hover_group rect {
+		fill:#e6e6e6;
+	}
+
+	.hover_group:hover rect {
+		fill: #F6F6e6;
+	}
+
+	footer {
+		padding:10px;
+		background: -webkit-linear-gradient(to left, rgba(252,252,255,0.5), #fffbe2 );
+		background: linear-gradient(to left, rgba(252,252,255,0.5), #fffbe2  );
+		text-align: center;
+		font-size: 0.85em;
+	}
+
+	footer a {
+		text-decoration:none;
+		color:darkgreen;
+		font-weight:bold;
+		font-style: italic;
+	}
+
+	.copiouslink:hover {
+		fill:navy;
+	}
+	.copiouslink {
+		fill:black;
+	}
+
+	* {margin: 0; padding: 0; box-sizing: border-box}
+	
+	.PhIOtjDr_0 {
+		fill:none;
+		stroke:#1c1448;
+		stroke-width:4.59875107;
+		stroke-miterlimit:4;
+		stroke-dasharray: 2948 2950;
+		stroke-dashoffset: 2949;
+		animation: PhIOtjDr_draw 6666ms ease-in forwards;
+	}
+
+	@keyframes PhIOtjDr_draw {
+		100% {stroke-dashoffset: 0}
+	}
+
+	@keyframes PhIOtjDr_fade {
+		0% {stroke-opacity: 1}
+		97.1830985915493% {stroke-opacity: 1}
+		100% {stroke-opacity: 0}
+	}
+
+	.form_el {
+		border:lightgray solid 1px;
+		padding:6px;
+		margin:2px;
+		width:80%;
+	}
+
+	.form_el_inner {
+		border:lightgray solid 1px;
+		padding:6px;
+		margin:2px;
+		width:100%;
+	}
+
+	label {
+		font-weight:bold;
+		color:darkgreen;
+		width:35%;
+	}
+
+	.field_el {
+		width:65%;
+	}
+
+	@media (max-width: 1040px) {
 		.field_el {
-			width:65%;
+			width:94%;
+			margin-left:3%;
+			margin-right:3%;
 		}
-	
-		@media (max-width: 1040px) {
-			.field_el {
-				width:94%;
-				margin-left:3%;
-				margin-right:3%;
-			}
-		}
+	}
 
-		#contact_box {
-			background: -webkit-linear-gradient(to right, rgba(252, 252, 240, 1.0), #FEFEFE));
-			background: linear-gradient(to right, rgba(252, 252, 240, 1.0), #FEFEFE );
-		}
-	
-		.textarea_field_el {
-			width: 94%;
-			margin:3%;
-		}
-	
-		.error-message {
-			visibility:hidden;
-			width:75%;
-			font-weight:bolder;
-			color:red;
-			background-color:white;
-			border: solid 1px orange;
-			padding:2px;
-			margin:3px;
-		}
+	#contact_box {
+		background: -webkit-linear-gradient(to right, rgba(252, 252, 240, 1.0), #FEFEFE));
+		background: linear-gradient(to right, rgba(252, 252, 240, 1.0), #FEFEFE );
+	}
 
-		/* The Modal (background) */
-		.modal {
-		  display: none; /* Hidden by default */
-		  position: relative; /* Stay in place */
-		  z-index: 1; /* Sit on top */
-		  left: 0;
-		  top: 0;
-		  width: 100%; /* Full width */
-		  height: 100%; /* Full height */
-		  overflow: auto; /* Enable scroll if needed */
-		  background-color: rgb(0,0,0); /* Fallback color */
-		  background-color: rgba(0,0,0,0.4); /* Black w/ opacity */
-		  -webkit-animation-name: fadeIn; /* Fade in the background */
-		  -webkit-animation-duration: 0.4s;
-		  animation-name: fadeIn;
-		  animation-duration: 0.4s
-		}
+	.textarea_field_el {
+		width: 94%;
+		margin:3%;
+	}
 
-		/* Modal Content */
-		.modal-content {
-		  position: inherit;
-		  top: 0;
-		  background-color: #fefefe;
-		  width: 100%;
-		  -webkit-animation-name: slideIn;
-		  -webkit-animation-duration: 0.4s;
-		  animation-name: slideIn;
-		  animation-duration: 0.4s
-		}
+	.error-message {
+		visibility:hidden;
+		width:75%;
+		font-weight:bolder;
+		color:red;
+		background-color:white;
+		border: solid 1px orange;
+		padding:2px;
+		margin:3px;
+	}
 
-		/* The Close Button */
-		.close {
-		  color: white;
-		  float: right;
-		  font-size: 18px;
-		  font-weight: bold;
-		}
+	/* The Modal (background) */
+	.modal {
+		display: none; /* Hidden by default */
+		position: relative; /* Stay in place */
+		z-index: 1; /* Sit on top */
+		left: 0;
+		top: 0;
+		width: 100%; /* Full width */
+		height: 100%; /* Full height */
+		overflow: auto; /* Enable scroll if needed */
+		background-color: rgb(0,0,0); /* Fallback color */
+		background-color: rgba(0,0,0,0.4); /* Black w/ opacity */
+		-webkit-animation-name: fadeIn; /* Fade in the background */
+		-webkit-animation-duration: 0.4s;
+		animation-name: fadeIn;
+		animation-duration: 0.4s
+	}
 
-		.close:hover,
-		.close:focus {
-		  color: #000;
-		  text-decoration: none;
-		  cursor: pointer;
-		}
+	/* Modal Content */
+	.modal-content {
+		position: inherit;
+		top: 0;
+		background-color: #fefefe;
+		width: 100%;
+		-webkit-animation-name: slideIn;
+		-webkit-animation-duration: 0.4s;
+		animation-name: slideIn;
+		animation-duration: 0.4s
+	}
 
-		.modal-header {
-		  padding: 2px 16px;
-		  background-color: #4ca85c;
-		  color: white;
-		}
+	/* The Close Button */
+	.close {
+		color: white;
+		float: right;
+		font-size: 18px;
+		font-weight: bold;
+	}
 
-		.modal-body {padding: 2px 16px;}
+	.close:hover,
+	.close:focus {
+		color: #000;
+		text-decoration: none;
+		cursor: pointer;
+	}
 
-		.modal-footer {
-		  padding: 2px 16px;
-		  margin-bottom: 20px;
-		  background-color: darkgreen;
-		  color: white;
-		}
+	.modal-header {
+		padding: 2px 16px;
+		background-color: #4ca85c;
+		color: white;
+	}
 
-		/* Add Animation */
-		@-webkit-keyframes slideIn {
-		  from {bottom: -300px; opacity: 0}
-		  to {bottom: 0; opacity: 1}
-		}
+	.modal-body {padding: 2px 16px;}
 
-		@keyframes slideIn {
-		  from {bottom: -300px; opacity: 0}
-		  to {top: 0; opacity: 1}
-		}
+	.modal-footer {
+		padding: 2px 16px;
+		margin-bottom: 20px;
+		background-color: darkgreen;
+		color: white;
+	}
 
-		@-webkit-keyframes fadeIn {
-		  from {opacity: 0}
-		  to {opacity: 1}
-		}
+	/* Add Animation */
+	@-webkit-keyframes slideIn {
+		from {bottom: -300px; opacity: 0}
+		to {bottom: 0; opacity: 1}
+	}
 
-		@keyframes fadeIn {
-		  from {opacity: 0}
-		  to {opacity: 1}
-		}
+	@keyframes slideIn {
+		from {bottom: -300px; opacity: 0}
+		to {top: 0; opacity: 1}
+	}
 
-		#logout-control-top {
-			visibility: hidden;
-			display: none;
-		}
+	@-webkit-keyframes fadeIn {
+		from {opacity: 0}
+		to {opacity: 1}
+	}
 
-	</style>
+	@keyframes fadeIn {
+		from {opacity: 0}
+		to {opacity: 1}
+	}
+
+	#logout-control-top {
+		visibility: hidden;
+		display: none;
+	}
+
+</style>
 </head>
 <script>
 	var g_siteURL = window.location.host;
@@ -676,7 +676,7 @@
 					</a>
 				</td>
 				<td>
-					copious.training : contact for scheduling
+					copious.training : Timeline Planner
 				</td>
 				<td>
 					&nbsp;
@@ -794,5 +794,744 @@
 		}
 
 	}
+
+
+
+// MODULE: ONE TABLE(windowized)
+
+// ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ----
+
+//>>  AppDBWrapper
+
+
+// In the following line, you should include the prefixes of implementations you want to test.
+window.indexedDB = window.indexedDB || window.mozIndexedDB || window.webkitIndexedDB || window.msIndexedDB;
+// DON'T use "var indexedDB = ..." if you're not in a function.
+// Moreover, you may need references to some window.IDB* objects:
+window.IDBTransaction = window.IDBTransaction || window.webkitIDBTransaction || window.msIDBTransaction || {READ_WRITE: "readwrite"}; // This line should only be needed if it is needed to support the object's constants for older browsers
+window.IDBKeyRange = window.IDBKeyRange || window.webkitIDBKeyRange || window.msIDBKeyRange;
+// (Mozilla has never prefixed these objects, so we don't need window.mozIDB*)
+
+
+/*
+
+// autoIncrement set to true  (for this special case DB use )
+
+DB_VERSION
+DATA_STORE
+describe_data
+
+*/
+
+
+function warn(str) {
+    //
+}
+
+
+// a session is a project...
+// a session object (sessionObject) is stored in the DB and may contain parts of data
+// part_id identifies a part of the data (e.g. a layer or a component)
+
+class AppDBWrapper {
+
+    constructor(name,conf) {
+        this._can_process_db = true
+        if ( !(window.indexedDB) ) {
+            this._can_process_db = false
+            console.log("Your browser doesn't support a stable version of IndexedDB. Such and such feature will not be available.");
+        }
+        //
+        let self = this
+        // DATA_STORE
+        // DB_VERSION
+        // describe_data
+        if ( conf ) {
+            for ( let ky in conf ) {
+                self[ky] = conf[ky]
+            }    
+        }
+        //
+        this.db = false
+        this.current_session_name = 'none'
+        this._session_name_list = []
+        this.name = name
+        //
+    }
+
+
+    set session_name(name) {
+        this.current_session_name = name
+    }
+
+    get session_name() {
+        return this.current_session_name
+    }
+
+    get name_list() {
+        return this._session_name_list
+    }
+
+    // // // // // // // // // // // // // // // // // // // // // // // // // // // // 
+
+    init_database() {
+        //
+        if ( !(this._can_process_db) ) return false
+        let self = this
+        let db_name = this.name
+        //
+        let p = new Promise((resolve,reject) => {
+
+            let request = window.indexedDB.open(db_name, this.DB_VERSION);
+            //
+            // <-- onerror
+            request.onerror = (event) => {
+                alert(`This web app will not store ${this.describe_data} without the use of computer storage.`)
+            };
+            
+            // <-- onsuccess
+            request.onsuccess = (event) => {
+                //
+                let db = event.target.result;
+                db.onerror = (event) => {
+                    console.log("Database error: " + event.target.error);
+                    reject(event.target.error)
+                };
+                //
+                self.db = db;
+                resolve(db)
+            }
+
+            // <-- onupgradeneeded
+            request.onupgradeneeded = (event) => {
+                //
+                let db = event.target.result;
+                //
+                try {
+                    let sessionObjectStore = db.createObjectStore(this.DATA_STORE, { autoIncrement : true });
+                    sessionObjectStore.createIndex("name", "name", { unique: true });
+                    sessionObjectStore.createIndex("sess_date_time", "sess_date_time", { unique: true });
+                } catch (e) {
+                }
+            //
+            };
+        })  // end of promise
+        //
+        return p
+    }
+
+
+    // // // // // // // // // // // // // // // // // // // // // // // // // // // // 
+
+    //      load_name_list
+    // -- 
+    load_name_list() {
+        if ( !(this.db) ) return
+        //
+        let transaction = this.db.transaction(this.DATA_STORE, "readonly");
+        let dataStore = transaction ? transaction.objectStore(this.DATA_STORE) : false
+        //
+        if ( !(dataStore) ) return false
+        let p = new Promise((resolve,reject) => {
+            this._session_name_list = []
+            let myIndex = dataStore.index('name');
+            myIndex.openCursor().onsuccess = (event) => {
+                let cursor = event.target.result;
+                if ( cursor ) {
+                    this._session_name_list.push(cursor.value.name)
+                    this.application_total_entry(cursor.value)
+                    cursor.continue();
+                } else {
+                    this.application_update_session_name_selections(this.current_session_name,this._session_name_list)
+                    resolve(true)
+                }
+            }
+        })
+        //
+        return p
+    }
+
+    // _apply_find_by_name
+    //  -- a generic that calls success_callback when an element matches the index, or not_found_callback otherwise.
+    //
+    _apply_find_by_name(sess_name, store, success_callback, not_found_callback) {
+        let nameIndex = store.index('name');
+        nameIndex.get(sess_name).onsuccess = (evt) => {
+            let value = evt.target.result;
+            if ( value ) {
+                if ( success_callback ) success_callback(value,nameIndex);
+            } else {
+                if ( not_found_callback ) not_found_callback();
+            }
+        };
+    }
+
+    // _add_session_to_db
+    //  -- adds the session object to the db, sets up the basic fields... 
+    //
+    _add_session_to_db(dataStore,application_op,part_id) {
+        //
+        let sessionObj = {
+            'name' : this.current_session_name,
+            'sess_date_time' : '' + Date.now(),
+            'data' : { },
+            'hashes' : { },
+            'edit_order' : []
+        }
+        //
+        if ( part_id ) sessionObj.edit_order.push(part_id)
+        //
+        if ( (application_op !== undefined) && (typeof application_op === 'function') ) {
+            application_op(sessionObj)
+        }
+        let request = dataStore.add(sessionObj);
+        return request
+    }
+  
+
+    // // // // // // // // // // // // // // // // // // // // // // // // // // // // 
+
+    // add_data -- 
+    //  Parameters: blob_data -- data stored as part of the session
+    //              session id could be a layer....
+    add_data(blob_data,part_id) {
+        if ( !(this._can_process_db) ) return false
+        if ( !(this.db) ) {
+          console.log(`db not initialized :: AppDBWrapper.add_data`)
+          return;
+        }
+        //
+        let transaction = this.db.transaction(this.DATA_STORE, "readwrite");
+        if ( !(transaction) ) return false
+        let dataStore = transaction.objectStore(this.DATA_STORE);
+        if ( !(dataStore) ) return false
+
+        let p = new Promise((resolve,reject) => {
+            let self = this
+            // update_list_callback
+            let update_list_callback = (value,dbIndex) => {     // if found update
+                if ( !dbIndex || (typeof value === "undefined") ) {
+                    resolve(false)
+                    return;
+                }
+                let keyRangeValue = IDBKeyRange.only(value.name);
+                dbIndex.openCursor(keyRangeValue).onsuccess = (event) => {
+                    let cursor = event.target.result;
+                    if ( cursor ) {
+                        // existing session 
+                        let sessionObj = cursor.value
+                        //
+                        let blob_url = (typeof blob_data === 'string') ? blob_data : URL.createObjectURL(blob_data);
+                        // map_id = part_id
+                        // store revised data
+                        sessionObj.data[part_id] = blob_data
+                        // make sure the structure has been set up if not already
+                        if ( sessionObj.hashes[part_id] === undefined ) {
+                            sessionObj.hashes[part_id] = {}
+                        }
+                        if ( sessionObj.hashes[part_id].op_history === undefined ) {
+                            sessionObj.hashes[part_id].op_history = []
+                        }
+                        // record the order in which sessions (layers) have been edited
+                        sessionObj.edit_order.push(part_id)
+                        //
+                        // update IndexedDB
+                        const request = cursor.update(sessionObj);
+                        request.onsuccess = async () => {
+                            try {
+                                self.application_data_update(blob_url,part_id,blob_data)  // application handling of data e.g visual rep
+                            } catch (e) {
+                                console.log(e)
+                            } finally {
+                                resolve(true)
+                            }
+                        };
+
+                        request.onerror = (event) => {
+                            resolve(false)
+                        }
+                        //
+                    } else {
+                        resolve(false)
+                    }
+                }
+            }
+            // add_new_callback
+            let add_new_callback = () => {          // if not found add a new one
+                //
+                let blob_url = (typeof blob_data === 'string') ? blob_data : URL.createObjectURL(blob_data);
+                //
+                let application_op = (sessionObj) => {
+                    //
+                    sessionObj.data[part_id] = blob_data
+                    if ( sessionObj.hashes[part_id] === undefined ) {
+                        sessionObj.hashes[part_id] = {}
+                    }
+                    sessionObj.hashes[part_id].op_history = []
+                    //
+                } 
+                //
+                let request = self._add_session_to_db(dataStore,application_op,part_id)
+                if ( request ) {
+                    request.onsuccess = (event) => {
+                        self.application_data_update(blob_url,part_id,blob_data)  // application handling of data e.g visual rep
+                        resolve(true)
+                    };
+                    request.onerror = (event) => {
+                        resolve(false)
+                    }
+                }
+                //
+            }
+            //
+            this._apply_find_by_name(this.current_session_name, dataStore, update_list_callback, add_new_callback)    
+        })
+        //
+        return p
+    }
+
+
+    //  remove_data: 
+    //      Parameters: part_id -- remove a sections of the data kept by the session named sess_name
+    //                  sess_name -- A session or separate project or publication...
+    //
+    remove_data(part_id,sess_name) {
+        //
+        if ( !(this._can_process_db) ) return false
+        //
+        if ( this.db === null ) {
+          console.log("db not initialized :: remove_audio_data")
+          return false;
+        }
+        //
+        let transaction = this.db.transaction(this.DATA_STORE, "readwrite");
+        if ( !(transaction) ) return false
+        let dataStore = transaction.objectStore(this.DATA_STORE);
+        if ( !(dataStore) ) return false
+        //
+
+        let p = new Promise((resolve,reject) => {
+            // remove_from_list_callback
+            let remove_from_list_callback = async (value,dbIndex) => {
+                let keyRangeValue = IDBKeyRange.only(value.name);
+                dbIndex.openCursor(keyRangeValue).onsuccess = (event) => {
+                    let cursor = event.target.result;
+                    if ( cursor ) {
+                        let sessionObj = cursor.value
+                        delete sessionObj.data[part_id]
+                        //
+                        const request = cursor.update(sessionObj);
+                        request.onsuccess = async () => {
+                            //  item has been removed
+                            console.log(`deleted ${part_id}`)
+                            await this.app_secure_total_session(sess_name)
+                            resolve(true)
+                        };
+                        //
+                        request.onerror = (e) => {
+                            resolve(false)
+                        }
+                    }
+                    resolve(false)
+                }
+            }
+
+            // not_found_callback 
+            let not_found_callback = () => {
+                warn(`The session ${sess_name} is not in the database`)
+                resolve(false)
+            }
+
+            this._apply_find_by_name(sess_name, dataStore, remove_from_list_callback, not_found_callback)
+        })
+
+        return p
+    }
+      
+    //  remove_data: 
+    //      Parameters: part_id -- remove a sections of the data kept by the session named sess_name
+    //                  sess_name -- A session or separate project or publication...
+    //
+    get_data(part_id,sess_name) {
+        //
+        if ( !(this._can_process_db) ) return false
+        //
+        if ( this.db === null ) {
+          console.log("db not initialized :: remove_audio_data")
+          return false;
+        }
+        //
+        let transaction = this.db.transaction(this.DATA_STORE, "readwrite");
+        if ( !(transaction) ) return false
+        let dataStore = transaction.objectStore(this.DATA_STORE);
+        if ( !(dataStore) ) return false
+        //
+
+        let p = new Promise((resolve,reject) => {
+            // remove_from_list_callback
+            let get_from_list_callback = async (value,dbIndex) => {
+                let keyRangeValue = IDBKeyRange.only(value.name);
+                dbIndex.openCursor(keyRangeValue).onsuccess = (event) => {
+                    let cursor = event.target.result;
+                    if ( cursor ) {
+                        let sessionObj = cursor.value
+                        let value =  sessionObj.data[part_id]
+                        if ( value === undefined ) {
+                            resolve(false)
+                        } else {
+                            resolve(value)
+                        }
+                    }
+                    resolve(false)
+                }
+            }
+        
+            // not_found_callback 
+            let not_found_callback = () => {
+                warn(`The session ${sess_name} is not in the database`)
+                resolve(false)
+            }
+        
+            this._apply_find_by_name(sess_name, dataStore, get_from_list_callback, not_found_callback)
+        })
+
+        return p
+    }
+      
+ 
+    // // // // // // // // // // // // // // // // // // // // // // // // // // // // 
+
+    //  get_session: 
+    //      Parameters: sess_name -- A session or separate project or publication...
+    //  Returns the object controlling all the data within the session.
+    get_session(sess_name) {
+        //
+        if ( !(this._can_process_db) ) return false
+        //
+        if ( this.db === null ) {
+          console.log("db not initialized :: get_data")
+          return false;
+        }
+        //
+        let transaction = this.db.transaction(this.DATA_STORE, "readwrite");
+        if ( !(transaction) ) return false
+        let dataStore = transaction.objectStore(this.DATA_STORE);
+        if ( !(dataStore) ) return false
+        //
+        let p = new Promise((resolve,reject) => {
+          //
+          // get_elem_callback
+          let get_elem_callback = (value,dbIndex) => {          // element.name == sess_name exists
+            //
+            let keyRangeValue = IDBKeyRange.only(value.name);
+            //
+            dbIndex.openCursor(keyRangeValue).onsuccess = (event) => {
+              let cursor = event.target.result;
+              if ( cursor ) {
+                let sessionObj = cursor.value
+                resolve(sessionObj)
+              } else {
+                reject(null)
+              }
+            }
+          }
+          //
+          // not_found_callback
+          let not_found_callback = () => {                       // element.name == sess_name  NOT FOUND
+            reject(null)
+          }
+          //
+          this._apply_find_by_name(sess_name, dataStore, get_elem_callback, not_found_callback)
+        })
+        //
+        return p
+    }
+
+     
+    //  delete_session: 
+    //      Parameters: sess_name -- A session or separate project or publication...
+    //
+    delete_session(sess_name) {
+        //
+        if ( !(this._can_process_db) ) return false
+
+        if ( sess_name !== 'none ') {
+            if ( this.db === null ) {
+                console.log("db not initialized :: delete_session")
+                return false;
+            }
+            //
+            let transaction = this.db.transaction(this.DATA_STORE, "readwrite");
+            if ( !(transaction) ) return false
+            let dataStore = transaction.objectStore(this.DATA_STORE);
+            if ( !(dataStore) ) return false
+        
+            let p = new Promise((resolve,reject) => {
+                // delete_from_list_callback
+                let delete_from_list_callback = (value,dbIndex) => {
+                    //
+                    let keyRangeValue = IDBKeyRange.only(value.name);
+                    //
+                    dbIndex.openCursor(keyRangeValue).onsuccess = (event) => {
+                        let cursor = event.target.result;
+                        if ( cursor ) {
+                            let request = cursor.delete();
+                            request.onsuccess = () => {
+                                this.current_session_name = 'none'   /// here last
+                                this.load_name_list()
+                                this.application_revise_current_session(this.current_session_name)
+                                resolve(true)
+                            };
+                        }
+                        resolve(false)
+                    }
+                }
+                //
+                let not_found_callback = () => {
+                    warn(`The session ${sess_name} is not in the database`)
+                    resolve(false)
+                }
+                //
+                this._apply_find_by_name(sess_name, dataStore, delete_from_list_callback, not_found_callback)    
+            })
+            //
+            return p
+        }
+        return false
+    }
+
+
+    // // // // // // // // // // // // // // // // // // // // // // // // // // // // 
+
+    application_data_update(blob_url,part_id,blob_data) {
+        // implemented by derived method (override)
+    }
+
+    async app_secure_total_session(sess_name) {
+         // implemented by derived method (override)
+    }
+
+    application_revise_current_session(sess_name) {
+        // implemented by derived method (override)
+    }
+
+    application_update_session_name_selections(sess_name,name_list) {
+
+    }
+
+    application_total_entry(sess_obj) {
+        
+    }
+
+}
+
+
+
+
+//$$EXPORTABLE::
+/*
+AppDBWrapper
+*/
+
+
+class TimeLineDB extends AppDBWrapper {
+	//
+	constructor(conf) {
+		super("human-timeslot-records",conf)
+		this.current_time_slot_name = ""
+		this.current_description = ""
+		this.current_file_list = []
+		//
+		this.current_time_slot = false
+		this.current_time_slot_data = false
+		//
+		this.clear_identity_list_data()
+	}
+
+	async add_time_slot(time_slot_object) {
+		this.current_session_name = time_slot_object.name   // a combination of times_start and label
+		let part_id = "timeslot-meta"
+		//
+		let blob_data = time_slot_object
+		//
+		blob_data = JSON.stringify(blob_data)
+		await this.add_data(blob_data,part_id)
+	}
+
+	async update_time_slot(time_slot_object) {
+		await this.add_time_slot(time_slot_object)
+	}
+
+	async get_time_slot(a_time_slot) {
+		try {
+			let time_slot_Obj = await this.get_session(a_time_slot)
+			if ( time_slot_Obj ) {
+				//
+				this.current_time_slot = time_slot_Obj
+				//
+				this.current_time_slot_name = time_slot_Obj.name
+				//
+				this.current_session_name = time_slot_Obj.name
+				//
+				this.current_time_slot_info = time_slot_Obj.user_info
+				//
+				this.current_time_slot_data = time_slot_Obj.data
+				//
+				this.current_file_list = []
+				let data_map = time_slot_Obj.data
+				for ( let part_id in data_map ) {
+					if ( part_id !== "timeslot-meta" ) {
+						this.current_file_list.push(JSON.parse(data_map[part_id]))
+					}
+				}
+				//
+				return time_slot_Obj
+			}
+		} catch (e) {
+			console.log("get_time_slot")
+		}
+	}
+
+	get_file_details(part_id) {
+		if ( !(part_id) || (part_id.length === 0) ) return ""
+		if ( this.current_time_slot ) {
+			let time_slot_Obj = this.current_time_slot
+			if ( time_slot_Obj ) {
+				let data_map = time_slot_Obj.data
+				if ( typeof data_map[part_id] === "string" ) {
+					return JSON.parse(data_map[part_id])    
+				}
+			}
+		}
+		return false
+	}
+
+	//
+	async add_file(file_name,description,svg,to_layer) {
+		if ( svg === undefined ) svg = ""
+		if ( to_layer == undefined ) to_layer = 0
+		let file_record = {
+			"name" : file_name, 
+			"description" : description,
+			"data" : "", "ouput" : "", "svg" : svg, "layer" : to_layer }
+		//
+		let data = JSON.stringify(file_record)
+		await this.add_data(data,file_name)
+	}
+
+	//
+	async remove_file(file_name) {
+		this.current_session_name = this.current_time_slot_name
+		await this.remove_data(file_name,this.current_time_slot_name)
+	}
+
+	//
+	async remove_time_slot() {
+		this.current_session_name = this.current_time_slot_name
+		await this.delete_session(this.current_time_slot_name)
+	}
+
+	// 
+	async get_file_names() {
+		let sess_name = this.current_session_name
+		try {
+			let sess_data = await this.get_session(sess_name)
+			if ( sess_data ) {
+				let f_names = Object.keys(sess_data.data)
+				return f_names
+			}    
+		} catch (e) {
+			console.log("get_file_names")
+		}
+		return []
+	}
+
+	async get_file_entries() {
+		let sess_name = this.current_session_name
+		try {
+			let sess_data = await this.get_session(sess_name)
+			if ( sess_data ) {
+				let f_names = sess_data.data.map((f_data) => JSON.parse(f_data))
+				return f_names
+			}
+		} catch (e) {
+			console.log("get_file_entries")
+		}
+		return []    
+	}
+
+	// // // // // // // // // // // // // // // // // // // // // // // // // // // // 
+
+	app_add_fields(sessionObj) {
+		sessionObj.project_name = this.current_time_slot_name
+		sessionObj.author = this.current_author
+		sessionObj.description = this.current_description
+	}
+
+	application_data_update(blob_url,part_id,blob_data) {
+		// implemented by derived method (override)
+	}
+
+	async app_secure_total_session(sess_name) {
+		// implemented by derived method (override)
+	}
+
+	application_revise_current_session(sess_name) {
+		// implemented by derived method (override)
+	}
+
+	application_update_session_name_selections(sess_name,name_list) {
+
+	}
+
+	clear_identity_list_data() {
+		this.identity_list = []
+		this.time_slot_list = []
+	}
+
+	application_total_entry(identity) {
+		this.identity_list.push(identity)
+		this.time_slot_list.push(identity.user_info)
+	}
+
+	async get_known_time_slots() {
+		this.clear_identity_list_data()
+		await g_human_time_slot_storage.load_name_list()
+		return [this.time_slot_list,this.identity_list]
+	}
+
+}
+
+
+
+//$>>	db_startup
+
+const DB_VERSION = 1
+const DATA_STORE = "timeslot-projects"
+const describe_data = "time slot records"
+
+let g_human_time_slot_storage = false
+let g_human_time_slot_storage_ref = [false]
+
+async function db_startup() {
+    //
+    g_human_time_slot_storage = new TimeLineDB({
+        "DB_VERSION" : DB_VERSION,
+        "DATA_STORE" : DATA_STORE,
+        "describe_data" : describe_data
+    })
+
+    await g_human_time_slot_storage.init_database()
+    await g_human_time_slot_storage.load_name_list()
+
+    g_human_time_slot_storage_ref[0] = g_human_time_slot_storage
+    
+    return g_human_time_slot_storage
+}
+
+
+
+db_startup()
+
 
 </script>
