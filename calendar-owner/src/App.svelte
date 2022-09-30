@@ -479,9 +479,70 @@
 			//console.log(tt)
 		})
 
+
+		setTimeout(load_data_from_db,20)
+
 	})
 
+	// ----  ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ----
+	// METHODS FOR RESIZING the time slot canvas
+	//'ns-resize'
 
+	let g_canvas_tracking_start_point = false
+	function canvas_resizer_activate(ev) {
+		ev.preventDefault()
+		ev.stopPropagation()
+		window.addEventListener('mousemove',canvas_resizer_track)
+		window.addEventListener('mouseup',canvas_resizer_end)
+		canvas_resizer.style.cursor = 'ns-resize'
+		app_view.style.cursor = 'ns-resize'
+
+		g_canvas_tracking_start_point = { x: ev.clientX, y: ev.clientY }
+	}
+
+	function canvas_resizer_track(ev) {
+		ev.preventDefault()
+		ev.stopPropagation()
+		//
+		if ( g_canvas_tracking_start_point ) {
+			canvas_resizer.style.cursor = 'ns-resize'
+			let maybe_update = { x: (ev.clientX - g_canvas_tracking_start_point.x), y: (ev.clientY - g_canvas_tracking_start_point.y) }
+			g_canvas_tracking_start_point = { x: ev.clientX, y: ev.clientY }
+			timeline_slider_height += maybe_update.y
+			if ( timeline_slider_height > ABRITRARY_MAX_CANVAS_HEIGHT ) {
+				timeline_slider_height = ABRITRARY_MAX_CANVAS_HEIGHT
+			}
+			if ( timeline_slider_height < ABRITRARY_MIN_CANVAS_HEIGHT ) {
+				timeline_slider_height = ABRITRARY_MIN_CANVAS_HEIGHT
+			}
+		}
+	}
+
+	function canvas_resizer_end(ev) {
+		window.removeEventListener('mousemove',canvas_resizer_track)
+		window.removeEventListener('mouseup',canvas_resizer_end)
+		canvas_resizer.style.cursor = 'pointer'
+		app_view.style.cursor = 'default'
+
+		//
+		if ( g_canvas_tracking_start_point ) {
+			let maybe_update = { x: (ev.clientX - g_canvas_tracking_start_point.x), y: (ev.clientY - g_canvas_tracking_start_point.y) }
+			//
+			timeline_slider_height += maybe_update.y
+			if ( timeline_slider_height > ABRITRARY_MAX_CANVAS_HEIGHT ) {
+				timeline_slider_height = ABRITRARY_MAX_CANVAS_HEIGHT
+			}
+			if ( timeline_slider_height < ABRITRARY_MIN_CANVAS_HEIGHT ) {
+				timeline_slider_height = ABRITRARY_MIN_CANVAS_HEIGHT
+			}
+			//
+			g_canvas_tracking_start_point = false
+		}
+	}
+
+
+	// ----  ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ----
+	// METHODS FOR Handling grid box selection
 
 	function handleMessage(event) {
 		let key = "xy_"
@@ -540,6 +601,8 @@
 	}
 	
 
+
+	// MANAGE ELEMENTS SHOWING UP IN THE GRID
 	
 	let things = [				// window
 		app_empty_object
@@ -629,10 +692,19 @@
 	}
 
 
+
+	// ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ----
+	// FETCH BUTTON RESPONSE 
+
 	function handleClick_fetch(ev) {
 		article_index = 1
 		data_fetcher()
 	}
+
+
+
+	// ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ----
+	// DATA HANDLING FROM AFTER FETCHING ... prefetch -- generate empty data locally
 
 	function unload_data(data) {
 		let usable_data = data.map(datum => {
@@ -766,6 +838,9 @@
 
 
 
+
+	// ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ----
+	// 
 	// ---- STARTING TIME SLOT EDITING CONTROLS
 
 
@@ -973,20 +1048,22 @@
 			g_current_rect = false
 		} else if ( g_tracking_rect ) {
 			//
+			let previous_rect = Object.assign({},g_tracking_rect)
 			let window_rect = {
 				x : g_tracking_rect.x,
 				y : g_tracking_rect.y,
 				width : g_tracking_rect.width,
 				height : g_tracking_rect.height
 			}
-			let rect_info = place_rect_in_scalable(g_tracking_rect.el,window_rect,true)
+			//
+			let rect_info = place_rect_in_scalable(g_tracking_rect.el,window_rect)
 			//
 			g_tracking_rect.x = rect_info.x
 			g_tracking_rect.y = rect_info.y
 			g_tracking_rect.unit_x = rect_info.unit_x
 			g_tracking_rect.unit_y = rect_info.unit_y
 			//
-			rect_to_time_slot_editor(g_tracking_rect)
+			rect_to_time_slot_editor(g_tracking_rect,previous_rect)
 			//
 			g_tracking_rect.el.setAttribute('fill','black')
 			g_tracking_rect.selected = false
@@ -1023,7 +1100,8 @@
 		}
 	}
 
-	// ---- ---- ---- ---- ---- ---- ---- ---- ----
+	// ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ----
+	// WIDTH TRACKING --- handle using the width control...
 
 	let g_wc_start_point = false
 	function manage_width(ev) {
@@ -1095,7 +1173,9 @@
 		}
 	}
 
+	//---- ---- ---- ---- ---- ---- ---- ---- ----
 	// ---- ---- ---- ---- ---- ---- ---- ---- ----
+	// TIME LINE EDITOR DIALOG -  DATABASE FUNCTIONS
 
 	function open_editor(ev) {
 		start_floating_window(2)
@@ -1104,7 +1184,7 @@
 
 	let edit_op_possibly_delete = false
 
-	function handle_delete() {
+	async function handle_delete() {
 		if ( edit_op_possibly_delete ) {
 			let idx = g_all_time_slots.indexOf(edit_op_possibly_delete)
 			if ( idx >= 0 ) {
@@ -1113,6 +1193,11 @@
 				if ( svg_el ) {
 					canvasElt.removeChild(svg_el)
 				}
+				//
+				if ( g_human_time_slot_storage ) {
+					await g_human_time_slot_storage.delete_session(edit_op_possibly_delete.name)
+				}
+				//
 			}
 		}
 	}
@@ -1141,7 +1226,9 @@
 
 	//
 
-	async function rect_to_time_slot_editor(found_rect) {
+	async function rect_to_time_slot_editor(found_rect,previous_rect) {
+		if ( !found_rect ) return
+
 		edit_op_possibly_delete = found_rect
 		//
 		let scaleX = 1.0
@@ -1156,10 +1243,12 @@
 		//
 		let create_new = false
 
-		if ( (typeof found_rect.name !== "string") || !(found_rect.name.length) ) {
+		if ( !(previous_rect) && ( (typeof found_rect.name !== "string") || !(found_rect.name.length) ) ) {
 			create_new = true
 			let dtime = mody_of_d1.getTime()
-			current_time_slot.slot_name = `unnamed-${found_rect.y}-${dtime}`
+			//
+			let y_rep = Math.floor(found_rect.unit_y)
+			current_time_slot.slot_name = `unnamed-${y_rep}-${dtime}`
 			//
 			found_rect.name = current_time_slot.slot_name
 			found_rect.description = ""
@@ -1175,7 +1264,12 @@
 					"friday" :false,
 					"staturday" :false
 				}
+		} else if ( previous_rect ) {
+			// the rect position (and times) have changed
+			create_new = true
+			await g_human_time_slot_storage.delete_session(previous_rect.name)
 		}
+		//
 		current_time_slot.name = found_rect.name
 		//
 		current_time_slot.start_day = mody_of_d1.toLocaleDateString()
@@ -1188,7 +1282,12 @@
 		current_time_slot.end_at = found_rect.end_at
 		current_time_slot.activity = found_rect.activity
 		current_time_slot.pattern = found_rect.pattern
-
+		//
+		current_time_slot.unit_y = found_rect.unit_y
+		current_time_slot.unit_x = found_rect.unit_x
+		current_time_slot.unit_width = found_rect.unit_width
+		current_time_slot.unit_height = found_rect.unit_height
+		//
 		if ( create_new ) {
 			await g_human_time_slot_storage.add_time_slot(current_time_slot)
 		}
@@ -1210,7 +1309,7 @@
 			//
 			let [rect_start, rect_width] = time_slot_to_rect(d1,d2,division_width*scaleX)
 
-			let ypos = (a_slot.y_percent*timeline_slider_height)
+			let ypos = a_slot.unit_y
 
 			let window_rect = {
 				x : rect_start,
@@ -1235,58 +1334,19 @@
 
 
 
-	//'ns-resize'
-
-	let g_canvas_tracking_start_point = false
-	function canvas_resizer_activate(ev) {
-		ev.preventDefault()
-		ev.stopPropagation()
-		window.addEventListener('mousemove',canvas_resizer_track)
-		window.addEventListener('mouseup',canvas_resizer_end)
-		canvas_resizer.style.cursor = 'ns-resize'
-		app_view.style.cursor = 'ns-resize'
-
-		g_canvas_tracking_start_point = { x: ev.clientX, y: ev.clientY }
-	}
-
-	function canvas_resizer_track(ev) {
-		ev.preventDefault()
-		ev.stopPropagation()
-		//
-		if ( g_canvas_tracking_start_point ) {
-			canvas_resizer.style.cursor = 'ns-resize'
-			let maybe_update = { x: (ev.clientX - g_canvas_tracking_start_point.x), y: (ev.clientY - g_canvas_tracking_start_point.y) }
-			g_canvas_tracking_start_point = { x: ev.clientX, y: ev.clientY }
-			timeline_slider_height += maybe_update.y
-			if ( timeline_slider_height > ABRITRARY_MAX_CANVAS_HEIGHT ) {
-				timeline_slider_height = ABRITRARY_MAX_CANVAS_HEIGHT
-			}
-			if ( timeline_slider_height < ABRITRARY_MIN_CANVAS_HEIGHT ) {
-				timeline_slider_height = ABRITRARY_MIN_CANVAS_HEIGHT
-			}
+	async function load_data_from_db() {
+		let list_o_names = g_human_time_slot_storage.name_list
+		let slot_list = []
+		for ( let name of list_o_names ) {
+			let tslot_entry = await g_human_time_slot_storage.get_time_slot(name)
+			try {
+				let tslot_str = tslot_entry.data["timeslot-meta"]
+				let tslot = JSON.parse(tslot_str)
+				//console.log(tslot)
+				slot_list.push(tslot)
+			} catch (e) {}
 		}
-	}
-
-	function canvas_resizer_end(ev) {
-		window.removeEventListener('mousemove',canvas_resizer_track)
-		window.removeEventListener('mouseup',canvas_resizer_end)
-		canvas_resizer.style.cursor = 'pointer'
-		app_view.style.cursor = 'default'
-
-		//
-		if ( g_canvas_tracking_start_point ) {
-			let maybe_update = { x: (ev.clientX - g_canvas_tracking_start_point.x), y: (ev.clientY - g_canvas_tracking_start_point.y) }
-			//
-			timeline_slider_height += maybe_update.y
-			if ( timeline_slider_height > ABRITRARY_MAX_CANVAS_HEIGHT ) {
-				timeline_slider_height = ABRITRARY_MAX_CANVAS_HEIGHT
-			}
-			if ( timeline_slider_height < ABRITRARY_MIN_CANVAS_HEIGHT ) {
-				timeline_slider_height = ABRITRARY_MIN_CANVAS_HEIGHT
-			}
-			//
-			g_canvas_tracking_start_point = false
-		}
+		time_line_slots_to_display(slot_list) 
 	}
 
 </script>

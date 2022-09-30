@@ -157,7 +157,7 @@ export function time_slot_to_rect(date1,date2,pitch) {
         save_x += pitch
     }
 
-    let rect_start = save_x + last_mo_partail_1
+    let rect_start = save_x + last_mo_partail_1 - pitch
 
     mo_time = start_time
     save_x = 0
@@ -168,7 +168,7 @@ export function time_slot_to_rect(date1,date2,pitch) {
     }
 
     let rect_end =  save_x + last_mo_partail_2
-    let rect_width = rect_end - rect_start 
+    let rect_width = rect_end - rect_start - pitch
 
     return [ rect_start, rect_width  ]
 }
