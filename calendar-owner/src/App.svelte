@@ -1043,7 +1043,7 @@
 			//
 			if ( rect_info ) g_all_time_slots.push(rect_info)
 			//
-			rect_to_time_slot_editor(rect_info)
+			rect_to_time_slot_editor(rect_info,false,true)
 
 			g_current_rect = false
 		} else if ( g_tracking_rect ) {
@@ -1237,10 +1237,11 @@
 		let tt = g_last_known_transition
 		if ( tt ) {
 			scaleX = tt.scaleX
+			if ( scaleX === 0 ) return
 		}
 		let pitch = division_width*scaleX
 		//
-		let [mody_of_d1,mody_of_d2] = rect_to_time_slot(found_rect,pitch)
+		let [mody_of_d1,mody_of_d2] = rect_to_time_slot(found_rect,(pitch/scaleX))
 		//
 		//
 		let create_new = false

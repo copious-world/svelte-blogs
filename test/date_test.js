@@ -1,39 +1,8 @@
 
 
-let local_clock_date = new Date()
+////  ----
 
-export function day_is_today(a_day,year,month) {
-    let lc_year = local_clock_date.getFullYear()
-    let lc_month = local_clock_date.getMonth()
-    let lc_day = local_clock_date.getDate()
-    if ( lc_year !== year ) return false
-    if ( lc_month !== month ) return false
-    if ( lc_day !== a_day.day ) return false
-    return true
-}
-
-
-export function day_is_before_today(a_day,year,month) {
-    let lc_year = local_clock_date.getFullYear()
-    let lc_month = local_clock_date.getMonth()
-    let lc_day = local_clock_date.getDate()
-    //
-    let day_date = new Date(lc_year,lc_month,lc_day)
-    //
-    let c_time = day_date.getTime()
-
-    let b_date = new Date(year,month,a_day)
-    let b_time = b_date.getTime()
-
-    if ( b_time < c_time ) {
-        return true
-    }
-
-    return false
-}
-
-
-export function first_day_of_month(a_date) {
+function first_day_of_month(a_date) {
     // a_date should be a Date object
     let mo = a_date.getMonth()
     let year = a_date.getFullYear()
@@ -44,7 +13,7 @@ export function first_day_of_month(a_date) {
 }
 
 
-export function first_day_of_next_month(a_date) {
+function first_day_of_next_month(a_date) {
     // a_date should be a Date object
     let mo = a_date.getMonth()
     let year = a_date.getFullYear()
@@ -57,7 +26,7 @@ export function first_day_of_next_month(a_date) {
     return t
 }
 
-export function first_day_of_relative_month(a_date,mo_offset) {
+function first_day_of_relative_month(a_date,mo_offset) {
     // a_date should be a Date object
     let mo = a_date.getMonth()
     let year = a_date.getFullYear()
@@ -89,10 +58,9 @@ export function first_day_of_relative_month(a_date,mo_offset) {
 }
 
 
-// calculate endpoint
 
-export function rect_to_time_slot(found_rect,pitch) {
-    //
+function rect_to_time_slot(found_rect,pitch) {
+
     let disp_offset = found_rect.unit_x
     let disp_end = found_rect.unit_width + disp_offset
     if ( disp_offset % pitch === 0 ) {
@@ -131,8 +99,7 @@ export function rect_to_time_slot(found_rect,pitch) {
 }
 
 
-
-export function time_slot_to_rect(date1,date2,pitch) {
+function time_slot_to_rect(date1,date2,pitch) {
     //
     let ts_start = date1.getTime()
     let ts_end = date2.getTime()
@@ -178,3 +145,34 @@ export function time_slot_to_rect(date1,date2,pitch) {
 
     return [ rect_start, rect_width  ]
 }
+
+
+let rec0 = [400,600]
+let found_rect = {
+    "unit_x" : rec0[0],
+    "unit_width" : rec0[1]
+}
+
+let [d1,d2] = rect_to_time_slot(found_rect,200)
+console.log(d1,d2)
+let d1_test = new Date(d1.getTime())
+let d2_test = new Date(d2.getTime())
+
+console.log(d1_test)
+console.log(d2_test)
+
+let rec = time_slot_to_rect(d1_test,d2_test,200)
+console.log(rec0)
+console.log(rec)
+
+found_rect = {
+    "unit_x" : rec[0],
+    "unit_width" : rec[1]
+}
+
+let [d3,d4] = rect_to_time_slot(found_rect,200)
+let d3_test = new Date(d3)
+let d4_test = new Date(d4)
+
+console.log(d3_test)
+console.log(d4_test)
