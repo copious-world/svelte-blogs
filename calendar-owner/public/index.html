@@ -1276,9 +1276,9 @@ class AppDBWrapper {
                         let cursor = event.target.result;
                         if ( cursor ) {
                             let request = cursor.delete();
-                            request.onsuccess = () => {
+                            request.onsuccess = async () => {
                                 this.current_session_name = 'none'   /// here last
-                                this.load_name_list()
+                                await this.load_name_list()
                                 this.application_revise_current_session(this.current_session_name)
                                 resolve(true)
                             };
@@ -1338,6 +1338,7 @@ class TimeLineDB extends AppDBWrapper {
 	//
 	constructor(conf) {
 		super("human-timeslot-records",conf)
+		this.current_session_name = conf.time_slot_sessions
 		this.current_time_slot_name = ""
 		this.current_description = ""
 		this.current_file_list = []
@@ -1349,90 +1350,43 @@ class TimeLineDB extends AppDBWrapper {
 	}
 
 	async add_time_slot(time_slot_object) {
-		this.current_session_name = time_slot_object.name   // a combination of times_start and label
-		let part_id = "timeslot-meta"
-		//
+		let part_id = time_slot_object.name
 		let blob_data = time_slot_object
-		//
 		blob_data = JSON.stringify(blob_data)
-		await this.add_data(blob_data,part_id)
+		return await this.add_data(blob_data,part_id)
 	}
 
-	async update_time_slot(time_slot_object) {
+	async update_time_slot(time_slot_object) {  // db will update the found object or add it new
 		await this.add_time_slot(time_slot_object)
 	}
 
-	async get_time_slot(a_time_slot) {
+	async get_time_slot(a_time_slot_name) {
 		try {
-			let time_slot_Obj = await this.get_session(a_time_slot)
+			let time_slot_Obj_str = await this.get_data(a_time_slot_name,this.current_session_name)
+			let time_slot_Obj = JSON.parse(time_slot_Obj_str)
 			if ( time_slot_Obj ) {
 				//
 				this.current_time_slot = time_slot_Obj
 				//
 				this.current_time_slot_name = time_slot_Obj.name
 				//
-				this.current_session_name = time_slot_Obj.name
-				//
-				this.current_time_slot_info = time_slot_Obj.user_info
-				//
-				this.current_time_slot_data = time_slot_Obj.data
-				//
-				this.current_file_list = []
-				let data_map = time_slot_Obj.data
-				for ( let part_id in data_map ) {
-					if ( part_id !== "timeslot-meta" ) {
-						this.current_file_list.push(JSON.parse(data_map[part_id]))
-					}
-				}
-				//
 				return time_slot_Obj
 			}
 		} catch (e) {
 			console.log("get_time_slot")
 		}
-	}
-
-	get_file_details(part_id) {
-		if ( !(part_id) || (part_id.length === 0) ) return ""
-		if ( this.current_time_slot ) {
-			let time_slot_Obj = this.current_time_slot
-			if ( time_slot_Obj ) {
-				let data_map = time_slot_Obj.data
-				if ( typeof data_map[part_id] === "string" ) {
-					return JSON.parse(data_map[part_id])    
-				}
-			}
-		}
 		return false
 	}
 
-	//
-	async add_file(file_name,description,svg,to_layer) {
-		if ( svg === undefined ) svg = ""
-		if ( to_layer == undefined ) to_layer = 0
-		let file_record = {
-			"name" : file_name, 
-			"description" : description,
-			"data" : "", "ouput" : "", "svg" : svg, "layer" : to_layer }
-		//
-		let data = JSON.stringify(file_record)
-		await this.add_data(data,file_name)
-	}
 
-	//
-	async remove_file(file_name) {
-		this.current_session_name = this.current_time_slot_name
-		await this.remove_data(file_name,this.current_time_slot_name)
-	}
 
 	//
 	async remove_time_slot() {
-		this.current_session_name = this.current_time_slot_name
-		await this.delete_session(this.current_time_slot_name)
+		return await this.remove_data(this.current_time_slot_name,this.current_session_name)
 	}
 
 	// 
-	async get_file_names() {
+	async get_time_slot_names() {
 		let sess_name = this.current_session_name
 		try {
 			let sess_data = await this.get_session(sess_name)
@@ -1446,13 +1400,17 @@ class TimeLineDB extends AppDBWrapper {
 		return []
 	}
 
-	async get_file_entries() {
+	async get_slot_entries() {
 		let sess_name = this.current_session_name
 		try {
 			let sess_data = await this.get_session(sess_name)
 			if ( sess_data ) {
-				let f_names = sess_data.data.map((f_data) => JSON.parse(f_data))
-				return f_names
+				let t_slots = []
+				for ( let ky in sess_data.data ) {
+					let f_data = sess_data.data[ky]
+					t_slots.push(JSON.parse(f_data))
+				}
+				return t_slots
 			}
 		} catch (e) {
 			console.log("get_file_entries")
@@ -1463,9 +1421,9 @@ class TimeLineDB extends AppDBWrapper {
 	// // // // // // // // // // // // // // // // // // // // // // // // // // // // 
 
 	app_add_fields(sessionObj) {
-		sessionObj.project_name = this.current_time_slot_name
-		sessionObj.author = this.current_author
-		sessionObj.description = this.current_description
+		//sessionObj.project_name = this.current_time_slot_name
+		//sessionObj.author = this.current_author
+		//sessionObj.description = this.current_description
 	}
 
 	application_data_update(blob_url,part_id,blob_data) {
@@ -1480,24 +1438,22 @@ class TimeLineDB extends AppDBWrapper {
 		// implemented by derived method (override)
 	}
 
-	application_update_session_name_selections(sess_name,name_list) {
-
-	}
+	application_update_session_name_selections(sess_name,name_list) {}
 
 	clear_identity_list_data() {
 		this.identity_list = []
-		this.time_slot_list = []
+		this.time_line_list = []
 	}
 
-	application_total_entry(identity) {
-		this.identity_list.push(identity)
-		this.time_slot_list.push(identity.user_info)
+	application_total_entry(session_object) {
+		///this.identity_list.push(identity)
+		this.time_line_list.push(session_object.data)
 	}
 
-	async get_known_time_slots() {
+	async get_known_time_lines() {
 		this.clear_identity_list_data()
 		await g_human_time_slot_storage.load_name_list()
-		return [this.time_slot_list,this.identity_list]
+		return [this.time_line_list,this.identity_list]
 	}
 
 }
@@ -1509,6 +1465,7 @@ class TimeLineDB extends AppDBWrapper {
 const DB_VERSION = 1
 const DATA_STORE = "timeslot-projects"
 const describe_data = "time slot records"
+const candidate_session_name = "copious-training-sessions"
 
 let g_human_time_slot_storage = false
 let g_human_time_slot_storage_ref = [false]
@@ -1518,7 +1475,8 @@ async function db_startup() {
     g_human_time_slot_storage = new TimeLineDB({
         "DB_VERSION" : DB_VERSION,
         "DATA_STORE" : DATA_STORE,
-        "describe_data" : describe_data
+        "describe_data" : describe_data,
+		"time_slot_sessions" : candidate_session_name
     })
 
     await g_human_time_slot_storage.init_database()

@@ -1195,7 +1195,10 @@
 				}
 				//
 				if ( g_human_time_slot_storage ) {
-					await g_human_time_slot_storage.delete_session(edit_op_possibly_delete.name)
+					try {
+						await g_human_time_slot_storage.get_time_slot(edit_op_possibly_delete.name)
+						await g_human_time_slot_storage.remove_time_slot()
+					} catch (e) {}
 				}
 				//
 			}
@@ -1204,7 +1207,6 @@
 
 	function save_time_slot() {
 		let keep_it  = edit_op_possibly_delete
-		//
 		g_human_time_slot_storage.update_time_slot(keep_it)
 	}
 
@@ -1248,9 +1250,9 @@
 			let dtime = mody_of_d1.getTime()
 			//
 			let y_rep = Math.floor(found_rect.unit_y)
-			current_time_slot.slot_name = `unnamed-${y_rep}-${dtime}`
+			found_rect.slot_name = `unnamed-${y_rep}-${dtime}`
+			found_rect.name = found_rect.slot_name
 			//
-			found_rect.name = current_time_slot.slot_name
 			found_rect.description = ""
 			found_rect.begin_at = ""
 			found_rect.end_at = ""
@@ -1264,13 +1266,33 @@
 					"friday" :false,
 					"staturday" :false
 				}
-		} else if ( previous_rect ) {
+		} else if ( previous_rect ) {  // updating
 			// the rect position (and times) have changed
 			create_new = true
-			await g_human_time_slot_storage.delete_session(previous_rect.name)
+			try {
+				await g_human_time_slot_storage.get_time_slot(previous_rect.name)
+				await g_human_time_slot_storage.remove_time_slot()
+			} catch (e) {}
+			//
+			let formed_name = previous_rect.name
+			if ( formed_name.indexOf('unnamed-') === 0 ) {
+				let dtime = mody_of_d1.getTime()
+				let y_rep = Math.floor(found_rect.unit_y)
+				let slot_name = `unnamed-${y_rep}-${dtime}`
+				//
+				found_rect.name = slot_name
+				found_rect.slot_name = slot_name
+			} else {
+				let name_parts = formed_name.split('-') // label and start time
+				found_rect.slot_name = name_parts[0]
+				let dtime = mody_of_d1.getTime()
+				name_parts[name_parts.length-1] = dtime
+				name_parts.name = name_parts.join('-')
+			}
 		}
 		//
 		current_time_slot.name = found_rect.name
+		current_time_slot.slot_name = found_rect.slot_name
 		//
 		current_time_slot.start_day = mody_of_d1.toLocaleDateString()
 		current_time_slot.end_day = mody_of_d2.toLocaleDateString()
@@ -1327,27 +1349,24 @@
 			controllerElt.appendChild(n_rect);
 			//
 			let rect_info = place_rect_in_scalable(n_rect,window_rect)
-			if ( rect_info ) g_all_time_slots.push(rect_info)
+			if ( rect_info ) {
+				for ( let sl in a_slot ) {
+					if ( sl in rect_info ) continue
+					rect_info[sl] = a_slot[sl]
+				}
+				g_all_time_slots.push(rect_info)
+			}
 		}
 
 	}
-
 
 
 	async function load_data_from_db() {
-		let list_o_names = g_human_time_slot_storage.name_list
-		let slot_list = []
-		for ( let name of list_o_names ) {
-			let tslot_entry = await g_human_time_slot_storage.get_time_slot(name)
-			try {
-				let tslot_str = tslot_entry.data["timeslot-meta"]
-				let tslot = JSON.parse(tslot_str)
-				//console.log(tslot)
-				slot_list.push(tslot)
-			} catch (e) {}
-		}
+		let slot_list = await g_human_time_slot_storage.get_slot_entries()
 		time_line_slots_to_display(slot_list) 
 	}
+
+	//
 
 </script>
 <div bind:this={app_view} >
