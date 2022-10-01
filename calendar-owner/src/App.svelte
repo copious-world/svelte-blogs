@@ -1164,7 +1164,7 @@
 					oo.unit_width = box_w/scalex
 					oo.el.setAttribute('width',oo.unit_width)
 					//
-					rect_to_time_slot_editor(oo)
+					rect_to_time_slot_editor(oo,false,true)
 				}
 				//
 				width_control.setAttribute('x',`${new_x}px`)
@@ -1228,7 +1228,7 @@
 
 	//
 
-	async function rect_to_time_slot_editor(found_rect,previous_rect) {
+	async function rect_to_time_slot_editor(found_rect,previous_rect,changed) {
 		if ( !found_rect ) return
 
 		edit_op_possibly_delete = found_rect
@@ -1312,6 +1312,8 @@
 		//
 		if ( create_new ) {
 			await g_human_time_slot_storage.add_time_slot(current_time_slot)
+		} else if ( changed ) {
+			await g_human_time_slot_storage.update_time_slot(current_time_slot)
 		}
 	}
 
