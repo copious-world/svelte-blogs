@@ -3,7 +3,9 @@ export let day
 export let monthstr
 export let all_day_list
 export let day_event_count = 0
-
+export let model_how_long
+export let model_general_class
+export let slot_of_change
 
 const ONE_HOUR = (3600*1000)
 const ONE_HALF_HOUR = (3600*500)
@@ -38,7 +40,9 @@ let editor_for_new = false
 let editor_for_update = false
 let editor_for_cancel = false
 
-
+$: if ( typeof model_how_long === 'number' ) {
+    maybe_event_how_long = model_how_long
+}
 
 let dropped_event = false
 let changed_event = false
@@ -48,7 +52,6 @@ $: all_day_display = all_day_list
 
 $: if ( (changed_event) && (all_day_list !== undefined) ) {
     changed_event = false
-    update_display = false
     let model_ev = all_day_list[maybe_event_index]
     model_ev.changed = true
     model_ev.how_long = maybe_event_how_long
@@ -58,6 +61,10 @@ $: if ( (changed_event) && (all_day_list !== undefined) ) {
     model_ev.contact_phone = maybe_event_contact_phone
     model_ev.on_zoom = maybe_event_zoom
     model_ev.in_person = maybe_event_in_person
+
+    if ( model_general_class ) {
+        slot_of_change = model_ev
+    }
 
     let total_time = maybe_event_how_long
     let ch_i = maybe_event_index
@@ -146,11 +153,14 @@ function handle_change_request(hour_data) {
     //
     if ( real_start.use === USE_AS_OPEN ) {
         editor_for_new = true
-    } else if ( (real_start.use !== USE_AS_BLOCK) && (real_start.changed) ) {
+    } else if ( (real_start.use !== USE_AS_BLOCK) ) { //  && (real_start.changed)
         editor_for_update = true
-    } else if ( (real_start.use !== USE_AS_BLOCK) && !(real_start.changed) ) {
+    } 
+    /*
+    else if ( (real_start.use !== USE_AS_BLOCK) && !(real_start.changed) ) {
         editor_for_cancel = true
     }
+    */
     //
     maybe_event_how_long = real_start.how_long
     maybe_event_index = real_start.index
@@ -256,9 +266,11 @@ function publish_event_cancel(ev) {
         <!--   value fields -->
         {#if !(editor_for_cancel) } 
         <span class="scheduler-label">Enter a topic:</span><input type="text" bind:value={maybe_event_topic} placeholder="Enter a topic label"><br>
-        <span class="scheduler-label">Enter your id:</span><input type="text"  bind:value={maybe_event_id}><br>
-        <span class="scheduler-label">Enter your email:</span><input type="text"  bind:value={maybe_event_email}><br>
-        <span class="scheduler-label">Enter your phone:</span><input type="text"  bind:value={maybe_event_contact_phone}><br>
+        {#if !model_general_class }
+            <span class="scheduler-label">Enter your id:</span><input type="text"  bind:value={maybe_event_id}><br>
+            <span class="scheduler-label">Enter your email:</span><input type="text"  bind:value={maybe_event_email}><br>
+            <span class="scheduler-label">Enter your phone:</span><input type="text"  bind:value={maybe_event_contact_phone}><br>
+        {/if}
         <span class="scheduler-label">by zoom: </span><input type="checkbox" bind:checked={maybe_event_zoom}>
         <span class="scheduler-label">in person: </span><input type="checkbox" bind:checked={maybe_event_in_person}><br>
         <span class="scheduler-label">for {maybe_event_how_long} minutes</span><input type="range" bind:value={maybe_event_how_long} min={maybe_event_lb} max={maybe_event_ub} step={maybe_event_step}><br>

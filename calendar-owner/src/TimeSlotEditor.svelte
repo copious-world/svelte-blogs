@@ -18,6 +18,8 @@
     export let end_at
     export let start_time
     export let end_time
+    export let allow_zoom
+    export let allow_in_person
 
     let day_event_count = 0
     let external_update = false
@@ -27,7 +29,9 @@
         "day" : 0,
         "monthstr"  : "",
         "all_day_list" : [],
-        "day_event_count" : 0
+        "day_event_count" : 0,
+        "model_how_long" : 0,
+        "model_general_class" : true
     }
 
     const ONE_HALF_HOUR = (3600*500)
@@ -36,6 +40,8 @@
     const USE_AS_BLOCK = "block"
     const USE_AS_MEETING = "meeting"
     const USE_AS_ACTIVITY = "activity"
+
+    const MIN_ACTIVITY_DURATON = 15
     
 
     let is_open = true
@@ -45,13 +51,15 @@
 		constructor(label,begin_at,end_at,info,d_date) {
 			super(label,begin_at,end_at)
 			this.index = info.index
-			this.label = ""
+			this.label = slot_name
 			this.time = d_date.toLocaleTimeString()
 			this.use = info.blocked
 			this.on_hour = USE_AS_OPEN
 			this.on_half_hour = info.on_half_hour
 			this.changed =  false
-			this.how_long =  15
+			this.how_long = (end_at > begin_at) ? ((end_at - begin_at)/60/1000) : MIN_ACTIVITY_DURATON
+            this.on_zoom = allow_zoom === undefined ? false : allow_zoom
+            this.in_person = allow_in_person === undefined ? false : allow_in_person
 		}
 		//
 	}
@@ -59,10 +67,15 @@
 
 
     function fill_model_day() {
-        let nn = new Date()
+        let nn = new Date(start_time)
         let d_date = new Date(nn.getFullYear(),nn.getMonth(),nn.getDate());  // these have been passed
         let mdd = model_day_data 
         let all_day_list = mdd.all_day_list
+        let how_long = MIN_ACTIVITY_DURATON
+
+        if ( (typeof begin_at === 'number') && (typeof end_at == 'number') ) {
+            how_long = (end_at - begin_at)/60/1000;
+        }
         //
         for ( let i = 0; i < 48; i++ ) {
             //
@@ -71,13 +84,15 @@
             let blocked = USE_AS_OPEN
             //
             let time = d_date.getTime()
+            let future = MIN_ACTIVITY_DURATON*60*100
             if ( ( (typeof begin_at === 'number') && (typeof end_at == 'number') ) && (begin_at <= time) && (time <= end_at) ) {
                 if ( ( activity !== USE_AS_OPEN ) && ( activity !== USE_AS_BLOCK ) ) {
                     blocked = ( activity !== USE_AS_MEETING ) ? USE_AS_ACTIVITY : activity
+                    future = end_at
                 }
-            } 
+            }
             //
-            all_day_list[i] = new TSSlot("",time,0,{
+            all_day_list[i] = new TSSlot("",time,future,{
                                                     "index" : i,
                                                     "blocked" : blocked,
                                                     "on_half_hour" : (minutes !== 0)
@@ -90,6 +105,7 @@
         mdd.event_count = 0
         mdd.has_events = false
         mdd.monthstr = "Time Slot"
+        mdd.model_how_long = how_long
         //mdd.key = key
         return all_day_list
     }
@@ -173,6 +189,9 @@
 	let answer_activity = '';
 
 
+    let slot_of_change = false
+
+
     function figure_activity(activity) {
         for ( let act of type_of_activity ) {
             if ( act.text === activity ) {
@@ -201,6 +220,12 @@
             name_changed = true
             name = `${slot_name}-${start_time}`
         }
+        let udate_zoom = allow_zoom
+        let update_in_person = allow_in_person
+        if ( slot_of_change ) {
+            udate_zoom = slot_of_change.on_zoom
+            update_in_person = slot_of_change.in_person
+        }
         //
         dispatch('message', {
 			"type": 'command',
@@ -215,7 +240,9 @@
                 "pattern" : pattern_update,
                 "start_time" : start_time,
                 "end_time" : end_time,
-                "activity" : selected_activity.text
+                "activity" : selected_activity.text,
+                "allow_zoom" : udate_zoom,
+                "allow_in_person" : update_in_person
             }
 		})
 
@@ -282,7 +309,7 @@
         </div>
         <!--    OTHER PANEL -->
         <div class="controls-column" style="padding:0px">
-            <DayEvents {...model_day_data} bind:day_event_count bind:external_update={external_update} />
+            <DayEvents {...model_day_data} bind:slot_of_change />
         </div>
     </div>
 </div>

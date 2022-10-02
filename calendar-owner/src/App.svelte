@@ -74,7 +74,9 @@
 			"friday" :false,
 			"staturday" :false
 		},
-		"activity" : USE_AS_OPEN
+		"activity" : USE_AS_OPEN,
+		"allow_in_person" : false,
+		"allow_zoom" : false
 	}
 
 	let panzoomOptions = {
@@ -1221,6 +1223,9 @@
 		current_time_slot.start_time = update_ts.start_time
 		current_time_slot.end_time = update_ts.end_time
 		current_time_slot.activity = update_ts.activity
+		current_time_slot.allow_zoom = update_ts.allow_zoom
+		current_time_slot.allow_in_person = update_ts.allow_in_person
+		//
 		await g_human_time_slot_storage.update_time_slot(current_time_slot)
 		let idx = g_all_time_slots.indexOf(edit_op_possibly_delete)
 		if ( idx >= 0 ) {
@@ -1231,6 +1236,8 @@
 			//
 			oo.pattern = update_ts.pattern
 			oo.activity = update_ts.activity
+			oo.allow_zoom = update_ts.allow_zoom
+			oo.allow_in_person = update_ts.allow_in_person
 		}
 	}
 
@@ -1281,6 +1288,8 @@
 			found_rect.description = ""
 			found_rect.begin_at = ""
 			found_rect.end_at = ""
+			found_rect.allow_in_person = false
+			found_rect.allow_zoom = false
 			found_rect.activity = USE_AS_OPEN
 			found_rect.pattern = {
 					"sunday" :false,
@@ -1329,6 +1338,10 @@
 		current_time_slot.end_at = found_rect.end_at
 		current_time_slot.activity = found_rect.activity
 		current_time_slot.pattern = found_rect.pattern
+		//
+		current_time_slot.allow_zoom = found_rect.allow_zoom
+		current_time_slot.allow_in_person = found_rect.allow_in_person
+
 		//
 		current_time_slot.unit_y = found_rect.unit_y
 		current_time_slot.unit_x = found_rect.unit_x
