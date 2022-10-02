@@ -1184,14 +1184,16 @@
 
 	let edit_op_possibly_delete = false
 
-	async function handle_delete() {
+	async function handle_delete(keep_svg) {
 		if ( edit_op_possibly_delete ) {
 			let idx = g_all_time_slots.indexOf(edit_op_possibly_delete)
 			if ( idx >= 0 ) {
 				g_all_time_slots.splice(idx,1)
-				let svg_el = edit_op_possibly_delete.el
-				if ( svg_el ) {
-					canvasElt.removeChild(svg_el)
+				if ( !keep_svg ) {
+					let svg_el = edit_op_possibly_delete.el
+					if ( svg_el ) {
+						canvasElt.removeChild(svg_el)
+					}
 				}
 				//
 				if ( g_human_time_slot_storage ) {
@@ -1205,9 +1207,31 @@
 		}
 	}
 
-	function save_time_slot() {
-		let keep_it  = edit_op_possibly_delete
-		g_human_time_slot_storage.update_time_slot(keep_it)
+	async function save_time_slot(status,update_ts) {
+		if ( status.name_change ) {
+			await handle_delete(true)
+			current_time_slot.name = update_ts.name
+			current_time_slot.slot_name = update_ts.slot_name
+		}
+		current_time_slot.description = update_ts.description
+		current_time_slot.begin_at = update_ts.begin_at
+		current_time_slot.end_at = update_ts.end_at
+		//
+		current_time_slot.pattern = update_ts.pattern
+		current_time_slot.start_time = update_ts.start_time
+		current_time_slot.end_time = update_ts.end_time
+		current_time_slot.activity = update_ts.activity
+		await g_human_time_slot_storage.update_time_slot(current_time_slot)
+		let idx = g_all_time_slots.indexOf(edit_op_possibly_delete)
+		if ( idx >= 0 ) {
+			let oo = edit_op_possibly_delete
+			oo.description = update_ts.description
+			oo.begin_at = update_ts.begin_at
+			oo.end_at = update_ts.end_at
+			//
+			oo.pattern = update_ts.pattern
+			oo.activity = update_ts.activity
+		}
 	}
 
 	function handle_time_slot_editor(event) {
@@ -1219,7 +1243,7 @@
 					break;
 				}
 				case 'save-time-slot' : { 
-					save_time_slot()
+					save_time_slot(cmd_dscr.status,cmd_dscr.time_slot_data)
 					break
 				}
 			}

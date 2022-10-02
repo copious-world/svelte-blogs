@@ -43,9 +43,12 @@ let editor_for_cancel = false
 let dropped_event = false
 let changed_event = false
 
+let all_day_display = all_day_list
+$: all_day_display = all_day_list
 
-$: if ( changed_event && (all_day_list !== undefined) ) {
+$: if ( (changed_event) && (all_day_list !== undefined) ) {
     changed_event = false
+    update_display = false
     let model_ev = all_day_list[maybe_event_index]
     model_ev.changed = true
     model_ev.how_long = maybe_event_how_long
@@ -286,8 +289,8 @@ function publish_event_cancel(ev) {
     {/if}
     <h3> events </h3>
     <div class="day-list-holder">
-        {#if (all_day_list !== undefined) }
-            {#each all_day_list as hour_data}
+        {#if (all_day_display !== undefined) }
+            {#each all_day_display as hour_data}
                 {#if hour_data.use === USE_AS_BLOCK }
                     {#if !(hour_data.on_half_hour) }
                         <div class="hour-display blocked-hour" >

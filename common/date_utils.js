@@ -1,4 +1,5 @@
 
+const PITCH_MATCH_EPSILON = 0.000005
 
 let local_clock_date = new Date()
 
@@ -96,10 +97,10 @@ export function rect_to_time_slot(found_rect,pitch) {
     let disp_offset = found_rect.unit_x
     let disp_end = found_rect.unit_width + disp_offset
     if ( disp_offset % pitch === 0 ) {
-        disp_offset += 0.000005
+        disp_offset += PITCH_MATCH_EPSILON
     }
     if ( disp_end % pitch === 0 ) {
-        disp_end += 0.000005
+        disp_end += PITCH_MATCH_EPSILON
     }
     //
     let mo_start = Math.trunc(disp_offset/pitch)
