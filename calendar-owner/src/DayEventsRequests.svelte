@@ -1,12 +1,15 @@
 <script>
+import {publish} from '../../common/ws-relay-app'
+import cnst from '../../calendar-common/constants'
+
+
 export let day
 export let monthstr
 export let all_day_list
 export let day_event_count = 0
-
-import {publish} from '../../common/ws-relay-app'
-import cnst from '../../calendar-common/constants'
-
+export let model_how_long
+export let model_general_class
+export let slot_of_change
 
 const ONE_HOUR = (3600*1000)
 const ONE_HALF_HOUR = (3600*500)
@@ -41,16 +44,17 @@ let editor_for_new = false
 let editor_for_update = false
 let editor_for_cancel = false
 
-
+$: if ( typeof model_how_long === 'number' ) {
+    maybe_event_how_long = model_how_long
+}
 
 let dropped_event = false
 let changed_event = false
 
-let topic_group = cnst.CALENDAR_TOPIC_GROUP
+let all_day_display = all_day_list
+$: all_day_display = all_day_list
 
-
-
-$: if ( changed_event && (all_day_list !== undefined) ) {
+$: if ( (changed_event) && (all_day_list !== undefined) ) {
     changed_event = false
     let model_ev = all_day_list[maybe_event_index]
     model_ev.changed = true
@@ -61,6 +65,10 @@ $: if ( changed_event && (all_day_list !== undefined) ) {
     model_ev.contact_phone = maybe_event_contact_phone
     model_ev.on_zoom = maybe_event_zoom
     model_ev.in_person = maybe_event_in_person
+
+    if ( model_general_class ) {
+        slot_of_change = model_ev
+    }
 
     let total_time = maybe_event_how_long
     let ch_i = maybe_event_index
@@ -149,11 +157,14 @@ function handle_change_request(hour_data) {
     //
     if ( real_start.use === USE_AS_OPEN ) {
         editor_for_new = true
-    } else if ( (real_start.use !== USE_AS_BLOCK) && (real_start.changed) ) {
+    } else if ( (real_start.use !== USE_AS_BLOCK) ) { //  && (real_start.changed)
         editor_for_update = true
-    } else if ( (real_start.use !== USE_AS_BLOCK) && !(real_start.changed) ) {
+    } 
+    /*
+    else if ( (real_start.use !== USE_AS_BLOCK) && !(real_start.changed) ) {
         editor_for_cancel = true
     }
+    */
     //
     maybe_event_how_long = real_start.how_long
     maybe_event_index = real_start.index
@@ -193,23 +204,20 @@ function handle_change_request(hour_data) {
 
 
 
-function publish_event_request(ev) {
-    let ev_data = all_day_list[maybe_event_index]
-    ev_data.use = USE_AS_MEET
+function publish_event_accept(ev) {
 
     hide_editor()
     changed_event = true
     day_event_count++
     //
-
-    publish(topic_group,consts.REQUEST_EVENT_TOPIC,consts.USER_CHAT_PATH,{
-            "type" : "request",
+    publish(cnst.CALENDAR_TOPIC_GROUP,cnst.ACCEPT_EVENT_TOPIC,cnst.USER_CHAT_PATH,{
+            "type" : "accept",
             "data" : all_day_list[maybe_event_index]
         })
 }
 
 
-function publish_event_update(ev) {
+function publish_event_revision(ev) {
     let model_ev = all_day_list[maybe_event_index]
     model_ev.use = USE_AS_MEET
     hide_editor()
@@ -231,26 +239,33 @@ function publish_event_update(ev) {
     model_ev.changed = true
     changed_event = true
 
-    publish(consts.REQUEST_EVENT_CHANGE_TOPIC,consts.USER_CHAT_PATH,{
-            "type" : "request-change",  // before accepted
-            "data" : model_ev
+    setTimeout(() => {      // after svelte changes
+        publish(cnst.CALENDAR_TOPIC_GROUP,consts.SUGGEST_CHANGE_EVENT_TOPIC,consts.USER_CHAT_PATH,{
+            "type" : "change",
+            "data" : all_day_list[maybe_event_index]
         })
+    },5)
 }
 
 
 function publish_event_cancel(ev) {
     //
     hide_editor()
+
+    let dropped_ev = Object.assign({},all_day_list[maybe_event_index])
     //
     changed_event = false
     dropped_event = true
     day_event_count--
     //
 
-    publish(consts.REQUEST_EVENT_DROP_TOPIC,consts.USER_CHAT_PATH,{
-            "type" : "request-change",  // before accepted
-            "data" : all_day_list[maybe_event_index]
+    setTimeout(() => {      // after svelte changes
+        publish(cnst.CALENDAR_TOPIC_GROUP,consts.REJECT_EVENT_TOPIC,consts.USER_CHAT_PATH,{
+            "type" : "change",
+            "data" : dropped_ev
         })
+    },5)
+    // 
 }
 
 
@@ -261,22 +276,16 @@ function publish_event_cancel(ev) {
 <div class="contain-controls">
     {#if show_editor }
     <div class="scheduler-box">
-        {#if editor_for_new }
-        <span class="scheduler-hn">Shedule an event at: </span>
-        {/if}
-        {#if editor_for_update }
-        <span class="scheduler-hn">Change an event at: </span>
-        {/if}
-        {#if editor_for_cancel }
-        <span class="scheduler-hn">Cancel an event at: </span>
-        {/if}
+        <span class="scheduler-hn">Respond to event at: </span>
         <span class="scheduler-label">{maybe_event_time}</span><br>
         <!--   value fields -->
         {#if !(editor_for_cancel) } 
         <span class="scheduler-label">Enter a topic:</span><input type="text" bind:value={maybe_event_topic} placeholder="Enter a topic label"><br>
-        <span class="scheduler-label">Enter your id:</span><input type="text"  bind:value={maybe_event_id}><br>
-        <span class="scheduler-label">Enter your email:</span><input type="text"  bind:value={maybe_event_email}><br>
-        <span class="scheduler-label">Enter your phone:</span><input type="text"  bind:value={maybe_event_contact_phone}><br>
+        {#if !model_general_class }
+            <span class="scheduler-label">Enter your id:</span><input type="text"  bind:value={maybe_event_id}><br>
+            <span class="scheduler-label">Enter your email:</span><input type="text"  bind:value={maybe_event_email}><br>
+            <span class="scheduler-label">Enter your phone:</span><input type="text"  bind:value={maybe_event_contact_phone}><br>
+        {/if}
         <span class="scheduler-label">by zoom: </span><input type="checkbox" bind:checked={maybe_event_zoom}>
         <span class="scheduler-label">in person: </span><input type="checkbox" bind:checked={maybe_event_in_person}><br>
         <span class="scheduler-label">for {maybe_event_how_long} minutes</span><input type="range" bind:value={maybe_event_how_long} min={maybe_event_lb} max={maybe_event_ub} step={maybe_event_step}><br>
@@ -291,24 +300,17 @@ function publish_event_cancel(ev) {
         <span class="scheduler-label">for {maybe_event_how_long} minutes</span>{maybe_event_how_long}<br>
         {/if}
 
-        {#if editor_for_new }
-        <button on:click={publish_event_request}>request</button>
-        {/if}
-        {#if editor_for_update }
-        <button on:click={publish_event_update}>update</button>
-        {/if}
-        {#if (editor_for_cancel || editor_for_update) }
+        <button on:click={publish_event_accept}>accept</button>
+        <button on:click={publish_event_revision}>update</button>
         <button on:click={publish_event_cancel}>drop</button>
-        {/if}
 
         <button on:click={hide_editor}>cancel</button>
-
     </div>
     {/if}
     <h3> events </h3>
     <div class="day-list-holder">
-        {#if (all_day_list !== undefined) }
-            {#each all_day_list as hour_data}
+        {#if (all_day_display !== undefined) }
+            {#each all_day_display as hour_data}
                 {#if hour_data.use === USE_AS_BLOCK }
                     {#if !(hour_data.on_half_hour) }
                         <div class="hour-display blocked-hour" >

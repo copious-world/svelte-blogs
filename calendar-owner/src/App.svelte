@@ -1,10 +1,16 @@
 <script>
 	export let name;
 
+	// owner is admin -- all events are editable in some way. 
+	// some event changes may be sent back...
+	// events may be canceled
+
 	import FullMonth from './MonthFull.svelte';
 	import Thing from './Thing.svelte'
-	import DayEvents from './DayEvents.svelte'
 	import TimeSlotEditor from './TimeSlotEditor.svelte';
+	import DayEventsRequests from './DayEventsRequests.svelte';
+	import RequestChangeAlerts from './RequestChangeAlerts.svelte'
+
 	//
 	import ThingGrid from 'grid-of-things';
 	import FloatWindow from 'svelte-float-window';
@@ -12,14 +18,22 @@
 	import { process_search_results, place_data, merge_data, clonify, make_empty_thing, link_server_fetch } from '../../common/data-utils.js'
 	import { popup_size } from '../../common/display-utils.js'
 	import { get_search } from "../../common/search_box.js"
-	import { first_day_of_relative_month, rect_to_time_slot, time_slot_to_rect } from "../../common/date_utils.js"
+	import { rect_to_time_slot, time_slot_to_rect } from "../../common/date_utils.js"
 
+	import {first_day_of_relative_month} from 'month-utils'
 
 	import { EventDays } from 'event-days'
 	import panzoom from 'panzoom';
 
+	import {add_ws_endpoint} from '../../common/ws-relay-app'
+	import tl_subr from '../../calendar-common/subcription_handlers'
+	import cnst from '../../calendar-common/constants'
+
 
 	import { onMount } from 'svelte';
+
+
+	const DEFAULT_WS_CALENDAR_ACCESS = "https://www.copious.training/calendars"
 
 
 	const ABRITRARY_MAX_CANVAS_HEIGHT = 450
@@ -105,6 +119,28 @@
 
 
 
+	// ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ----
+
+	//
+	function matching_slot(d_date,list_of_slots) {
+		let t = d_date.getTime()
+		for ( let a_slot of list_of_slots ) {
+			if (  (  a_slot.start_at < t ) && ( t < a_slot.end_at ) ) {
+				return a_slot.activity
+			}
+		}
+		return false
+	}
+
+	function update_calendars(a_time_slot) {
+		// go through the list of months (already filled) and change events....
+		//
+		// remove time slot (labeled) for the named slot ... then put the back...
+		//
+		// could fetch months not on display...
+		// merge months...
+	}
+
 	let session = ""
 	let going_session = ""
 
@@ -129,8 +165,6 @@
 
 	let info_delta = 3
 
-	let width_control_reference_x = false
-
 
 	for ( let i = 0; i < 1000; i++ ) {
 		line_points.push({ x : (i*division_width + left_shift), y : 0, index : (divider_starts + i)})
@@ -143,6 +177,55 @@
 	let original_info_points = info_points.map(p => {
 		return Object.assign({},p)
 	})
+
+
+
+	// get the slots that match this time slice
+	function update_active_slot_list(d_date,slot_defs) {
+		let slots = []
+		for ( let s_label in slot_defs ) {
+			let slot = slot_defs[s_label]
+			if ( slot ) {
+				let dt = d_date.getTime()
+				if ( (dt >= slot.start_time) && (dt <= slot.end_time) ) {
+					slots.push(slot)
+				}
+			}
+		}
+		return slots
+	}
+
+	function best_for_hour(slot_list,time,blocked) {
+		let slots_of_hour = []
+		for ( let slot of slot_list ) {
+			if ( slot.begin_at <= time && time <= slot.end_at ) {
+				slots_of_hour.push(slot)
+			}
+		}
+		//
+		if ( slots_of_hour.length === 0 ) {
+			return blocked
+		}
+		if ( slots_of_hour.length === 1 ) {
+			return slots_of_hour[0].use
+		}
+		// else
+		let priority = -1
+		let pindex = -1
+		for ( let i = 0; i < slots_of_hour.length; i++ ) {
+			let slot = slots_of_hour[i]
+			let tspan = slot.end_time - slot.start_time
+			let toffset = time - slot.start_time
+			let partial = toffset/tspan
+			let bias = slot.offset_bias(partial) ///  from the definition of a slot...
+			if ( bias > priority ) {
+				priority = bias
+				pindex = i
+			}
+		}
+		//
+		return slots_of_hour[pindex].use
+	}
 
 
 	class ReqSlot extends Slot {
@@ -182,13 +265,17 @@
 			let d_date = new Date(year,month,this.day);  // these have been passed
 			let all_day_list = this.all_day_list
 			//
+			let timely_slot_list = update_active_slot_list(d_date,g_slot_definitions)
 			//
 			for ( let i = 0; i < 48; i++ ) {
 				//
 				let hour = d_date.getHours()
 				let minutes = d_date.getMinutes()
 				let blocked = (hour < 10) || (hour >= 19) ? USE_AS_BLOCK : USE_AS_OPEN
-				//
+				if ( g_slot_definitions && g_active_slot_list.length ) {
+					blocked = best_for_hour(timely_slot_list,time,blocked)
+				}
+				// 
 				let time = d_date.getTime()
 				all_day_list[i] = new ReqSlot("",time,0,{
 														"index" : i,
@@ -203,12 +290,13 @@
 			this.event_count = 0
 			this.has_events = false
 			this.key = key
-
 		}
 	}
 
 	//
 
+	let g_request_alert_parameters = false
+	//
 	let g_mo_gen = new MonthContainer(current_date.getTime(),ManageableTSAgenda)
 
 
@@ -294,14 +382,13 @@
 			//
 			for ( let ky in c_dst.cal.map ) {
 				let agenda_dst = c_dst.cal.map[ky]
-				let agenda_src = c_dst.cal.map[ky]
+				let agenda_src = c_src.cal.map[ky]
 
 				if ( agenda_src && agenda_dst ) {
 					let n = agenda_src.all_day_list.length
 					for ( let i = 0; i < n; i++ ) {
 						let dst_d = agenda_dst.all_day_list[i]
-						let src_d = agenda_src.all_day_list[i]
-						if ( src_d.use !== USE_AS_OPEN ) {
+						if ( dst_d.use !== USE_AS_OPEN ) {
 							agenda_dst.all_day_list[i] = agenda_src.all_day_list[i]
 						}
 					}
@@ -343,14 +430,55 @@
 			window_scale.w = scale.w;
 			//
 		})
+		//
+		let topic_group = cnst.CALENDAR_TOPIC_GROUP
+		let api_path = "requests"
+		let subscriptions = {
+			// published by the user
+			"in-new-request" : {
+				"path" : cnst.USER_CHAT_PATH,
+				"topic" : cnst.REQUEST_EVENT_TOPIC,
+				"handler" :   async (message) => {
+					let status = message.status
+					if ( status === "OK" ) {
+						let req = messsage.data
+						tl_subr.injest_request(req,things)
+					}
+				}
+			},
+			"in-request-change" : {			// the server stores the change -- so fetch the months associated
+				"path" : cnst.USER_CHAT_PATH,
+				"topic" : cnst.REQUEST_EVENT_CHANGE_TOPIC,  //  user confirmation. user length change
+				"handler" :   async (message) => {
+					let status = message.status
+					if ( status === "OK" ) {
+						g_request_alert_parameters = message.data
+						start_floating_window(3)
+						data_fetcher() // retrieve the changes that this mesage is telling us about
+					}
+				}
+			},
+			"in-request-drop" : {		// the server stores the change -- so fetch the months associated
+				"path" : cnst.USER_CHAT_PATH,
+				"topic" : cnst.REQUEST_EVENT_DROP_TOPIC,		// cancel meeting, drop and create new (different time)
+				"handler" :   async (message) => {
+					let status = message.status
+					if ( status === "OK" ) {
+						g_request_alert_parameters = message.data
+						start_floating_window(3)
+						data_fetcher() // retrieve the changes that this mesage is telling us about
+					}
+				}
+			}
+		}
+		add_ws_endpoint(topic_group,DEFAULT_WS_CALENDAR_ACCESS,'',api_path,subscriptions)
 
-		//console.log(panzoom)
-		
-		// panzoom
+		// end of timeline subscriptions
+
+		// PANZOOM
 
 		panzoomInstance = panzoom(canvasElt,panzoomOptions);
 		// panzoomInstance.moveTo(centerX, centerY);
-
 
 		let final_timeout = false
 		panzoomInstance.on('zoom', (e) => {		/// left to right only
@@ -856,14 +984,12 @@
 	}
 
 	function show_width_control(info_rect) {
-		width_control_reference_x = (info_rect.x + info_rect.width - 5)
 		width_control.setAttribute('x',(info_rect.x + info_rect.width - 5))
 		width_control.style.visibility = 'visible'
 		deselect_all_selected_rects(info_rect)
 	}
 
 	function hide_width_control() {
-		width_control_reference_x = false
 		width_control.style.visibility = 'hidden'
 	}
 
@@ -1241,7 +1367,7 @@
 		}
 	}
 
-	function handle_time_slot_editor(event) {
+	async function handle_time_slot_editor(event) {
 		let cmd_dscr = event.detail
 		if ( cmd_dscr.type === "command" ) {
 			switch ( cmd_dscr.cmd ) {
@@ -1250,7 +1376,7 @@
 					break;
 				}
 				case 'save-time-slot' : { 
-					save_time_slot(cmd_dscr.status,cmd_dscr.time_slot_data)
+					await save_time_slot(cmd_dscr.status,cmd_dscr.time_slot_data)
 					break
 				}
 			}
@@ -1290,7 +1416,7 @@
 			found_rect.end_at = ""
 			found_rect.allow_in_person = false
 			found_rect.allow_zoom = false
-			found_rect.activity = USE_AS_OPEN
+			found_rect.activity = USE_AS_BLOCK
 			found_rect.pattern = {
 					"sunday" :false,
 					"monday" :false,
@@ -1341,7 +1467,6 @@
 		//
 		current_time_slot.allow_zoom = found_rect.allow_zoom
 		current_time_slot.allow_in_person = found_rect.allow_in_person
-
 		//
 		current_time_slot.unit_y = found_rect.unit_y
 		current_time_slot.unit_x = found_rect.unit_x
@@ -1353,6 +1478,8 @@
 		} else if ( changed ) {
 			await g_human_time_slot_storage.update_time_slot(current_time_slot)
 		}
+
+		update_calendars(current_time_slot)
 	}
 
 
@@ -1407,6 +1534,13 @@
 	}
 
 	//
+
+	async function handleClick_send_update(ev) {
+		let slot_list = await g_human_time_slot_storage.get_slot_entries()
+		await tl_subr.send_time_line(slot_list,things)
+	}
+
+
 
 </script>
 <div bind:this={app_view} >
@@ -1478,7 +1612,11 @@
 			<input type=number class="blg-ctl-number-field" bind:value={article_index} min=1 max={article_count} on:change={handle_index_changed} >
 			of {article_count}
 		</div>
-
+		<div class="blg-ctrl-panel" style="display:inline-block;vertical-align:top;background-color:#EFEFFE" >
+			<button on:click={handleClick_send_update}  style="font-size:smaller" >
+				Revise Timeline
+			</button>
+		</div>
 	</div>
 
   
@@ -1496,13 +1634,19 @@
 
 
 <FloatWindow title="Day Planner" index={1} scale_size_array={all_window_scales} >
-	<DayEvents {...current_day_data} bind:day_event_count/>
+	<DayEventsRequests {...current_day_data} bind:day_event_count />
 </FloatWindow>
 
 
 <FloatWindow title="Time Slot Editor" index={2} scale_size_array={all_window_scales} >
 	<TimeSlotEditor {...current_time_slot} on:message={handle_time_slot_editor} />
 </FloatWindow>
+
+{#if g_request_alert_parameters }
+<FloatWindow title="Day Planner" index={3} scale_size_array={all_window_scales} >
+	<RequestChangeAlerts {...g_request_alert_parameters}  />
+</FloatWindow>
+{/if}
 
 
 <style>

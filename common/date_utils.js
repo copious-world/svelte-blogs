@@ -1,94 +1,32 @@
+import {HOUR,MIN15,MIN30,ONE_MONTH,ONE_WEEK,TWENTY_FOUR,calc_days,day_is_after_clock_day,day_is_before_clock_day,day_is_clock_day,first_day_of_month,first_day_of_month_ts,first_day_of_next_month,first_day_of_next_month_ts,first_day_of_relative_month,first_day_of_relative_month_ts,hours_of,in_interval,lower_month_bounday,next_midnight,next_month_start,part_of_day,prev_midnight,same_day} from './month-utils'
+
 
 const PITCH_MATCH_EPSILON = 0.000005
 
 let local_clock_date = new Date()
+let when_is_midnight = (next_midnight(local_clock_date) - local_clock_date.getTime())
+
+
+
+setTimeout(() => {
+    local_clock_date = new Date()
+    when_is_midnight = (next_midnight(local_clock_date) - local_clock_date.getTime())
+}, when_is_midnight);
+
+
 
 export function day_is_today(a_day,year,month) {
-    let lc_year = local_clock_date.getFullYear()
-    let lc_month = local_clock_date.getMonth()
-    let lc_day = local_clock_date.getDate()
-    if ( lc_year !== year ) return false
-    if ( lc_month !== month ) return false
-    if ( lc_day !== a_day.day ) return false
-    return true
+    return day_is_clock_day(a_day,year,month,local_clock_date)
 }
 
 
 export function day_is_before_today(a_day,year,month) {
-    let lc_year = local_clock_date.getFullYear()
-    let lc_month = local_clock_date.getMonth()
-    let lc_day = local_clock_date.getDate()
-    //
-    let day_date = new Date(lc_year,lc_month,lc_day)
-    //
-    let c_time = day_date.getTime()
-
-    let b_date = new Date(year,month,a_day)
-    let b_time = b_date.getTime()
-
-    if ( b_time < c_time ) {
-        return true
-    }
-
-    return false
+    return day_is_before_clock_day(a_day,year,month,local_clock_date)
 }
 
-
-export function first_day_of_month(a_date) {
-    // a_date should be a Date object
-    let mo = a_date.getMonth()
-    let year = a_date.getFullYear()
-
-    let nd = new Date(year,mo)
-    let t = nd.getTime()
-    return t
+export function day_is_after_today(a_day,year,month) {
+    return day_is_after_clock_day(a_day,year,month,local_clock_date)
 }
-
-
-export function first_day_of_next_month(a_date) {
-    // a_date should be a Date object
-    let mo = a_date.getMonth()
-    let year = a_date.getFullYear()
-
-    mo = (mo + 1) % 12
-    if ( mo === 0 ) year++
-
-    let nd = new Date(year,mo)
-    let t = nd.getTime()
-    return t
-}
-
-export function first_day_of_relative_month(a_date,mo_offset) {
-    // a_date should be a Date object
-    let mo = a_date.getMonth()
-    let year = a_date.getFullYear()
-    //
-    if ( mo_offset !== 0 ) {
-        let mm = mo + mo_offset
-        if ( mo_offset > 0 ) {
-            if ( mm > 12 ) {
-                let yoffset = Math.trunc((mm - 12)/12) + 1
-                year += yoffset
-                mo = mm % 12
-            } else {
-                mo = mm
-            }
-        } else {
-            if ( mm < 0 ) {
-                mo = (mm % 12) + 12
-                let yoffset = Math.trunc((mo_offset - mo)/12)
-                year += yoffset
-            } else {
-                mo = mm
-            }
-        }
-    }
-    
-    let nd = new Date(year,mo)
-    let t = nd.getTime()
-    return t
-}
-
 
 // calculate endpoint
 
@@ -108,7 +46,7 @@ export function rect_to_time_slot(found_rect,pitch) {
     //
     let cday = new Date()
     let d1 = first_day_of_relative_month(cday,mo_start)
-    let d2 =  first_day_of_relative_month(cday,mo_end)
+    let d2 = first_day_of_relative_month(cday,mo_end)
     //
     let mo_of_d1 = new Date(d1)
     let mo_of_d2 = new Date(d2)

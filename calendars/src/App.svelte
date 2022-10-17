@@ -4,20 +4,27 @@
 	import FullMonth from './MonthFull.svelte';
 	import Thing from './Thing.svelte'
 	import DayEvents from './DayEvents.svelte'
+	import RequestChangeAlerts from './RequestChangeAlerts.svelte'
 	//
 	import ThingGrid from 'grid-of-things';
 	import FloatWindow from 'svelte-float-window';
+
 
 	import { process_search_results, place_data, merge_data, clonify, make_empty_thing, link_server_fetch } from '../../common/data-utils.js'
 	import { popup_size } from '../../common/display-utils.js'
 	import { get_search } from "../../common/search_box.js"
 
 	import { EventDays } from 'event-days'
+	import {add_ws_endpoint} from '../../common/ws-relay-app'
+	import tl_subr from '../../calendar-common/subcription_handlers'
+	import cnst from '../../calendar-common/constants'
+
 	import { onMount } from 'svelte';
 
 	let session = ""
 	let going_session = ""
 
+	let g_slot_definitions = false
 	let day_event_count = 0
 
 	//
@@ -38,6 +45,55 @@
 	const TimeSlotAgenda = EventDays.TimeSlotAgenda
 
 
+
+	let g_active_slot_list = []
+	function update_active_slot_list(d_date,slot_defs) {
+		let slots = []
+		for ( let s_label in slot_defs ) {
+			let slot = slot_defs[s_label]
+			if ( slot ) {
+				let dt = d_date.getTime()
+				if ( (dt >= slot.start_time) && (dt <= slot.end_time) ) {
+					slots.push(slot)
+				}
+			}
+		}
+		return slots
+	}
+
+	function best_for_hour(slot_list,time,blocked) {
+		let slots_of_hour = []
+		for ( let slot of slot_list ) {
+			if ( slot.begin_at <= time && time <= slot.end_at ) {
+				slots_of_hour.push(slot)
+			}
+		}
+		//
+		if ( slots_of_hour.length === 0 ) {
+			return blocked
+		}
+		if ( slots_of_hour.length === 1 ) {
+			return slots_of_hour[0].use
+		}
+		// else
+		let priority = -1
+		let pindex = -1
+		for ( let i = 0; i < slots_of_hour.length; i++ ) {
+			let slot = slots_of_hour[i]
+			let tspan = slot.end_time - slot.start_time
+			let toffset = time - slot.start_time
+			let partial = toffset/tspan
+			let bias = slot.offset_bias(partial) ///  from the definition of a slot...
+			if ( bias > priority ) {
+				priority = bias
+				pindex = i
+			}
+		}
+		//
+		return slots_of_hour[pindex].use
+	}
+
+	// --- ReqSlot --- --- --- --- --- --- --- --- --- ---
 	class ReqSlot extends Slot {
 		//
 		constructor(label,begin_at,end_at,info,d_date) {
@@ -75,14 +131,19 @@
 			let d_date = new Date(year,month,this.day);  // these have been passed
 			let all_day_list = this.all_day_list
 			//
+			g_active_slot_list = update_active_slot_list(d_date,g_slot_definitions)
 			//
 			for ( let i = 0; i < 48; i++ ) {
 				//
 				let hour = d_date.getHours()
 				let minutes = d_date.getMinutes()
-				let blocked = (hour < 10) || (hour >= 19) ? USE_AS_BLOCK : USE_AS_OPEN
-				//
 				let time = d_date.getTime()
+				//
+				let blocked = (hour < 10) || (hour >= 19) ? USE_AS_BLOCK : USE_AS_OPEN  // from SLOT
+				if ( g_slot_definitions && g_active_slot_list.length ) {
+					blocked = best_for_hour(g_active_slot_list,time,blocked)
+				}
+				//
 				all_day_list[i] = new ReqSlot("",time,0,{
 														"index" : i,
 														"blocked" : blocked,
@@ -99,6 +160,10 @@
 
 		}
 	}
+
+
+	let g_request_alert_parameters = false
+	let g_user_id = "smith"
 
 	//
 	let current_date = new Date()
@@ -256,8 +321,12 @@
 	all_window_scales = popup_size()
 
 	//
-	onMount(() => {
-		session = window.retrieve_session()
+	onMount(async () => {
+		//
+		session = await window.retrieve_session()
+		g_slot_definitions = await window.retrieve_slots()   // general publication
+		//
+
 		window.addEventListener("resize", (e) => {
 			//
 			let scale = popup_size()
@@ -266,6 +335,44 @@
 			window_scale.w = scale.w;
 			//
 		})
+
+		let topic_group = cnst.CALENDAR_TOPIC_GROUP
+		let api_path = "owner"
+		let subscriptions = { 			// provide updates for user displays even though the search DB updates
+			"in-request" : {			// showing new request as they are made everywhere
+				"path" : cnst.USER_CHAT_PATH,
+				"topic" : cnst.REQUEST_EVENT_TOPIC,
+				"handler" : async (message) => {
+					let status = message.status
+					if ( status === "OK" ) {
+						let req = messsage.data
+						injest_request(req)
+					}
+				}
+			},
+			"in-state-changes" : {		// the mantainer accepts the request 
+				"path" : cnst.USER_CHAT_PATH,
+				"topic" : g_user_id,
+				"handler" : async (message) => {
+					let status = message.status
+					if ( status === "OK" ) {
+						g_request_alert_parameters = message.data
+						start_floating_window(2)
+						data_fetcher() // retrieve the changes that this mesage is telling us about
+					}
+				}
+			},
+			"in-timeline" : {
+				"path" : cnst.USER_CHAT_PATH,
+				"topic" : cnst.TIMELINE_UPDATE_READY,
+				"handler" :   async (message) => {
+					// The user (public) will just fetch the slots of the existing months
+					data_fetcher()
+				}
+			}
+
+		}
+		add_ws_endpoint(topic_group,cnst.DEFAULT_WS_CALENDAR_ACCESS,'',api_path,subscriptions)
 	})
 
 
@@ -557,6 +664,17 @@
 		}
 	}
 
+
+
+	// ---- ---- ---- ---- ---- ---- ---- ----
+	//
+	function injest_request(req) {
+		tl_subr.injest_request(req,things)
+		data_fetcher()
+	}
+
+
+
 </script>
 
 
@@ -626,6 +744,12 @@
 	<DayEvents {...current_day_data} bind:day_event_count/>
 </FloatWindow>
 
+
+{#if g_request_alert_parameters }
+<FloatWindow title="Day Planner" index={2} scale_size_array={all_window_scales} >
+	<RequestChangeAlerts {...g_request_alert_parameters}  />
+</FloatWindow>
+{/if}
 
 
 <style>

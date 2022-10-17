@@ -151,16 +151,15 @@
 <style>
 
 	.blg-el-wrapper-full {
-		overflow-y: hidden;
-		height:auto;
+		overflow-y: scroll;
+		height: 90%;
 	}
 
 	.scroller-grid {
-		height: calc(100vh - 2%);
-		max-height: 120%;
+		height: calc(90%);
 		overflow-y: scroll;
+		padding: 0.9em;
 	}
-
 
 	header {
 		display: flex;

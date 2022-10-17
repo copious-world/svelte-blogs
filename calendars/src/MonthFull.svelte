@@ -77,7 +77,7 @@
 			"monthstr" : month_str
 		})
 		//
-		console.log(day_info)
+		//console.log(day_info)
 		//
 		dispatch('message', {
 			"type": 'event-click',
@@ -151,16 +151,15 @@
 <style>
 
 	.blg-el-wrapper-full {
-		overflow-y: hidden;
-		height:auto;
+		overflow-y: scroll;
+		height: 90%;
 	}
 
 	.scroller-grid {
-		height: calc(100vh - 2%);
-		max-height: 120%;
+		height: calc(90%);
 		overflow-y: scroll;
+		padding: 0.9em;
 	}
-
 
 	header {
 		display: flex;
@@ -184,7 +183,7 @@
 	ul, ol {
 		display: grid;
 		grid-template-columns: repeat(7, 1fr);
-		grid-gap: 1em;
+		grid-gap: 0.8em;
 		margin: 0 auto;
 		max-width: 64em;
 		padding: 0;
@@ -214,8 +213,8 @@
 	ol.day-grid li {
 		background-color: #fafef7;
 		border: 1px solid #4a0fc9;
-		height: 120%;
-		max-height: 125px;
+		height: 110%;
+		max-height: 120px;
 		border-right : solid 1px green;
 	}
 
@@ -249,7 +248,7 @@
 
 	@media all and (max-width: 800px) {
 		ul, ol {
-			grid-gap: .25em;
+			grid-gap: .20em;
 		}
 
 		ul.weekdays li {

@@ -9,8 +9,10 @@
   "devDependencies": {
     "@rollup/plugin-commonjs": "^16.0.0",
     "@rollup/plugin-node-resolve": "^10.0.0",
-    "event-days": "^0.1.6",
+    "event-days": "^0.1.7",
     "grid-of-things": "^1.0.0",
+    "message-relay-websocket": "^0.2.0",
+    "month-utils": "^0.8.1",
     "rollup": "^2.3.4",
     "rollup-plugin-css-only": "^3.1.0",
     "rollup-plugin-livereload": "^2.0.0",
