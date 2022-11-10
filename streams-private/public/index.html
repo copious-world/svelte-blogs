@@ -868,98 +868,1171 @@ html {
 <script>
 
 
-	//  fetchUrl
-	// //
-	// fetch with GET method
-	async function fetchUrl(endpoint) {
-		let myRequest = new Request(endpoint);
-		try {
-			const body = await fetch(myRequest, {
-										method: 'GET', // *GET, POST, PUT, DELETE, etc.
-										mode: 'cors', // no-cors, *cors, same-origin
-										cache: 'no-cache', // *default, no-cache, reload, force-cache, only-if-cached
-										credentials: 'omit', // include, *same-origin, omit
-										redirect: 'follow', // manual, *follow, error
-										referrerPolicy: 'no-referrer', // no-referrer, *client
-									});
-			//
-			let infoObj = await body.json();
-			return(infoObj)
-			//
-		} catch (e) {
-			console.log(e.message)
-			return(false)
-		}
+
+// MODULE: GLOBAL CRYPTO (windowized)
+
+//$>>	setup_window_crypto
+function setup_window_crypto() {
+  if ( window.g_crypto === undefined ) {
+    window.g_crypto = window.crypto ? window.crypto.subtle : null
+    if ( g_crypto === null  ) {
+      alert("No cryptography support in this browser. To claim ownership of assets, please use another browser.")
+    }
+  }
+}
+
+
+
+// MODULE: POST FETCH (windowized)
+
+//$>>	fetchEndPoint
+// //
+// fetch with GET method
+async function fetchEndPoint(endpoint,port) {
+	port = !(port) ? '' : ( port.length ? `:${port}`   : '')
+	let myRequest = new Request(`${location.protocol}//${g_siteURL}${port}/${endpoint}`);
+	try {
+		const body = await fetch(myRequest, {
+									method: 'GET', // *GET, POST, PUT, DELETE, etc.
+									mode: 'cors', // no-cors, *cors, same-origin
+									cache: 'no-cache', // *default, no-cache, reload, force-cache, only-if-cached
+									credentials: 'omit', // include, *same-origin, omit
+									redirect: 'follow', // manual, *follow, error
+									referrerPolicy: 'no-referrer', // no-referrer, *client
+								});
+		//
+		let infoObj = await body.json();
+		return(infoObj)
+		//
+	} catch (e) {
+		console.log(e.message)
+		return(false)
+	}
+}
+
+
+//$>>	fetchUrl
+// //
+// fetch with GET method
+async function fetchUrl(endpoint) {
+	let myRequest = new Request(endpoint);
+	try {
+		const body = await fetch(myRequest, {
+									method: 'GET', // *GET, POST, PUT, DELETE, etc.
+									mode: 'cors', // no-cors, *cors, same-origin
+									cache: 'no-cache', // *default, no-cache, reload, force-cache, only-if-cached
+									credentials: 'omit', // include, *same-origin, omit
+									redirect: 'follow', // manual, *follow, error
+									referrerPolicy: 'no-referrer', // no-referrer, *client
+								});
+		//
+		let infoObj = await body.json();
+		return(infoObj)
+		//
+	} catch (e) {
+		console.log(e.message)
+		return(false)
+	}
+}
+
+
+//$>>	postData
+// //
+//  call fetch with method POST tyr to help with parameters..  If data is FromData set do_stringify to false
+//  default content type 'application/json'
+//  User 'cors', Default cres = omit, If ctype == 'multipart/form-data' be sure to use FormData -- lets fetch set content type.
+//  RETURNS: parsed JSON object or an empty object. ... Check for fields
+//
+async function postData(url = '', data = {}, creds = 'omit', do_stringify = true, ctype) {
+	let content_type = 'application/json'
+	if ( ctype !== undefined ) {
+		content_type = ctype            // ctype is content type
+	}
+	let options = {
+		method: 'POST', // *GET, POST, PUT, DELETE, etc.
+		mode: 'cors', // no-cors, *cors, same-origin
+		cache: 'no-cache', // *default, no-cache, reload, force-cache, only-if-cached
+		credentials: creds, // include, *same-origin, omit
+		headers: {
+			'Content-Type': content_type
+		},
+		redirect: 'follow', // manual, *follow, error
+		referrerPolicy: 'no-referrer', // no-referrer, *client
+		body: (do_stringify ? JSON.stringify(data)  : data)	// body data type must match "Content-Type" header
 	}
 
-	async function postData(url = '', data = {}, creds = 'omit', do_stringify = true) {
-		// Default options are marked with *
-		const response = await fetch(url, {
-			method: 'POST', // *GET, POST, PUT, DELETE, etc.
-			mode: 'cors', // no-cors, *cors, same-origin
-			cache: 'no-cache', // *default, no-cache, reload, force-cache, only-if-cached
-			credentials: creds, // include, *same-origin, omit
-			headers: {
-				'Content-Type': 'application/json'
-			},
-			redirect: 'follow', // manual, *follow, error
-			referrerPolicy: 'no-referrer', // no-referrer, *client
-			body: (do_stringify ? JSON.stringify(data)  : data)	// body data type must match "Content-Type" header
-		});
-		if ( response.ok == false ) {
-			console.log(response.status + ': ' + response.statusText)
-		}
+	if ( ctype === 'multipart/form-data') {
+		delete options.headers['Content-Type']  // content type will be set automatically with a boundary
+	}
+
+	// Default options are marked with *
+	const response = await fetch(url, options);
+	if ( response.ok == false ) {
+		console.log(response.status + ': ' + response.statusText)
+		return {}
+	} else {
 		return await response.json(); // parses JSON response into native JavaScript objects
 	}
+}
 
-	function hide_interface_box() {
-		let display = document.getElementById('interface-box')
-		if ( display ) {
-			display.style.visibility = "hidden"
-			display.style.display = "none"
+
+//$>>	post_submit
+function hide_interface_box() {
+	let display = document.getElementById('interface-box')
+	if ( display ) {
+		display.style.visibility = "hidden"
+		display.style.display = "none"
+	}
+}
+
+function hide_box(bxname) {
+	let display = document.getElementById(bxname)
+	if ( display ) {
+		display.style.visibility = "hidden"
+		display.style.display = "none"
+	}
+}
+
+function show_box(bxname) {
+	let display = document.getElementById(bxname)
+	if ( display ) {
+		display.style.visibility = "visible"
+		display.style.display = "block"
+	}
+}
+
+hide_box('error-box')
+hide_box('success-box')
+
+async function post_submit(fields) {
+	let bdy = {}
+	fields.forEach(element => {
+		let fld = document.getElementById(element)
+		if ( fld ) {
+			bdy[element] = fld.value
+		}
+	});
+	let url = bdy.post_url
+	if ( url ) {
+		delete bdy.post_url
+		//
+		let resp = await postData(url, bdy)
+		//
+		if ( resp ) hide_interface_box()
+		if ( resp && (resp.OK === 'true') ) {
+			show_box('success-box')
+		} else {
+			show_box('error-box')
 		}
 	}
+}
 
-	function hide_box(bxname) {
-		let display = document.getElementById(bxname)
-		if ( display ) {
-			display.style.visibility = "hidden"
-			display.style.display = "none"
+//$$EXPORTABLE::
+/*
+fetchEndPoint
+fetchUrl
+postData
+post_submit
+*/
+
+
+// MODULE: UPLOAD MEDIA (windowized)
+
+
+const DEFINED_CHUNK_SIZE = 5000000
+const DEFINED_MAX_SIZE = 9000000
+
+
+
+
+// prep_upload_data
+// 	-- if needed prepare the blob...  in any case separate the blob from the com object to send it later.
+// 	-- return the com object and blob as a pair
+//
+async function prep_upload_data(obj,blob_already,protocol) {
+	//
+	let blob_data = ""
+	//
+	if ( !(blob_already) )  {
+		try {
+			let res = await fetch(obj.blob)
+			blob_data = await res.blob()
+		} catch(e) {
+			return
 		}
+	} else {
+		blob_data = blob_already
 	}
+	//
+	if ( obj.blob !== undefined )  {
+		delete obj.blob
+	}
+	obj.protocol = protocol ? protocol : 'p2p-default'
+	obj.preamble_size = blob_data.size
 
-	function show_box(bxname) {
-		let display = document.getElementById(bxname)
-		if ( display ) {
-			display.style.visibility = "visible"
-			display.style.display = "block"
+	return [obj,blob_data]
+}
+
+
+
+//$>>	finalize_small_media_storage
+async function finalize_small_media_storage(url,primary_response) {
+	if ( primary_response.transition && primary_response.transition.token ) {
+		let transaction_token = primary_response.transition.token
+		let protocol = primary_response.elements.protocol
+		let media_id = primary_response.elements.media_id
+		let body = {
+			"token" : transaction_token,
+			"match" : "handshake",
 		}
+		body.protocol = protocol
+		body.media_id = media_id   // maybe a checksum
+		let secondary_resp =  await postData(url,body)
+		return [protocol,media_id]
 	}
+	return [false,false]
+}
 
-	hide_box('error-box')
-	hide_box('success-box')
 
-	async function post_submit(fields) {
-		let bdy = {}
-		fields.forEach(element => {
-			let fld = document.getElementById(element)
-			if ( fld ) {
-				bdy[element] = fld.value
+//$>>	finalize_media_storage
+//                                                  <<depends>> postData
+//	There are likely faster ways of sending the data. But, this way requires some permission and safe guarding by the server sid.
+async function finalize_media_storage(url,primary_response,formdata,blob,obj) {
+	//
+	let secondary_resp = primary_response
+	//
+	if ( primary_response.transition && primary_response.transition.token ) {	// A token has to be associated with the transaction
+		//
+		if ( formdata === false ) {
+			formdata = new FormData()
+			for ( let ky in obj ) {
+				formdata.append(ky, obj[ky])
 			}
-		});
-		let url = bdy.post_url
-		if ( url ) {
-			delete bdy.post_url
+		}
+		let transaction_token = secondary_resp.transition.token		// call the transition token the transaction_token
+		let protocol = obj.protocol ? obj.protocol : 'p2p-default'				// These fields have no real value until the end, but are always checked in case they may be used for security.
+		let media_id = ""
+		//
+		formdata.set("protocol",protocol)				// Most likely ipfs ... 
+		formdata.set("media_id",media_id)				// not set until the storage system can identify 
+		formdata.set("token",transaction_token)
+		formdata.set("match","upload-next")				// tell the server that you are sending one chunk after another
+		formdata.set("next",true)  // NEXT
+		formdata.set("_t_match_field",obj.file_name)
+		//
+		let size_end = blob.size						// total length of the data in flight
+		let start = 0;
+		let span = DEFINED_CHUNK_SIZE					// application generation sets this (tuning upstream)
+		let num_sends = Math.floor(size_end/span) + 1	// size/chunk_size
+		//
+		for ( let i = 0; i < num_sends; i++ ) {			// the number of times this is called is determined by the client
 			//
-			let resp = await postData(url, bdy)
+			let start = i*span
+			let end = Math.min((i+1)*span,size_end)
+			let blob_part = blob.slice(start,end)  				// next part of the blob
+			formdata.set('media_file', new Blob([blob_part]),obj.file_name)
+			secondary_resp = await postData(url,formdata, 'omit',false,'multipart/form-data')  // send it as a separate file
 			//
-			if ( resp ) hide_interface_box()
-			if ( resp && (resp.OK === 'true') ) {
-				show_box('success-box')
-			} else {
-				show_box('error-box')
+			if ( (secondary_resp.OK !== "true") && (secondary_resp.OK !== true) ) {
+				break;			// This last send failed. Bailout  (If failed, the server will shutdown the communication)
 			}
 		}
+		//
+		if ( (secondary_resp.OK === "true") || (secondary_resp.OK === true) ) {						// The last send was good.
+			let body = {
+				"token" : transaction_token,
+				"match" : "complete",
+				"_t_match_field" : obj.file_name,
+				"file" : { "name" : obj.file_name },
+				"next"	: false		// NO NEXT
+			}
+			secondary_resp =  await postData(url,body)			// Tell the server that this transaction is done...
+			let elements = secondary_resp.state.elements			// The good stuff is returned in a state field 
+			protocol = elements.protocol  // final hash and provider returned in state (same as for the shor but in the state field)
+			media_id = elements.media_id
+		}
+		//
+		return [protocol,media_id]
 	}
+	return [false,false]
+}
+
+
+
+//$>>	finalize_media_array_storage
+//                                                  <<depends>> postData
+//	There are likely faster ways of sending the data. But, this way requires some permission and safe guarding by the server sid.
+async function finalize_media_array_storage(url,primary_response,formdata,blob_list,obj) {
+	//
+	let secondary_resp = primary_response
+	//
+	if ( primary_response.transition && primary_response.transition.token ) {	// A token has to be associated with the transaction
+		//
+		if ( formdata === false ) {
+			formdata = new FormData()
+			for ( let ky in obj ) {
+				formdata.append(ky, obj[ky])
+			}
+		}
+		let transaction_token = secondary_resp.transition.token		// call the transition token the transaction_token
+		let protocol = obj.protocol ? obj.protocol : 'p2p-default'				// These fields have no real value until the end, but are always checked in case they may be used for security.
+		let media_id = ""
+		//
+		formdata.set("protocol",protocol)				// Most likely ipfs ... 
+		formdata.set("media_id",media_id)				// not set until the storage system can identify 
+		formdata.set("token",transaction_token)
+		formdata.set("match","upload-next")				// tell the server that you are sending one chunk after another
+		formdata.set("next",true)  // NEXT
+		formdata.set("_t_match_field",obj.file_name)
+		//
+
+		let max_num_sends = 0
+		let blob_pars = blob_list.map( blob => {
+			let blob_url = blob.blob_url
+			let size_end = blob.size						// total length of the data in flight
+			let start = 0;
+			let span = DEFINED_CHUNK_SIZE					// application generation sets this (tuning upstream)
+			let num_sends = Math.floor(size_end/span) + 1	// size/chunk_size
+			max_num_sends = (num_sends > max_num_sends) ? max_num_sends : num_sends
+			return {
+				blob_str, size_end, start, span, num_sends
+			}
+		})
+		// 
+		let num_sends = Math.floor(size_end/span) + 1	// size/chunk_size
+		//
+		for ( let i = 0; i < max_num_sends; i++ ) {			// the number of times this is called is determined by the client
+			//
+			for ( let blob_dscr of blob_pars ) {
+				if ( blob_dscr.num_sends === 0 ) continue
+				let blob = blob_dscr.blob
+				let span = blob_dscr.span
+				let start = span*i
+				let size_end = blob_dscr.size_end
+				let end = Math.min((i+1)*span,size_end)
+
+				let blob_part = blob.slice(start,end)  				// next part of the blob
+				formdata.set('media_file', new Blob([blob_part]),blob_dscr.file_name)
+				blob_dscr.num_sends--
+			}
+			//
+			secondary_resp = await postData(url,formdata, 'omit',false,'multipart/form-data')  // send it as a separate file
+			//
+			if ( (secondary_resp.OK !== "true") && (secondary_resp.OK !== true) ) {
+				break;			// This last send failed. Bailout  (If failed, the server will shutdown the communication)
+			}
+		}
+		//
+		if ( (secondary_resp.OK === "true") || (secondary_resp.OK === true) ) {						// The last send was good.
+			let body = {
+				"token" : transaction_token,
+				"match" : "complete",
+				"_t_match_field" : obj.file_name,
+				"file" : { "name" : obj.file_name },
+				"next"	: false		// NO NEXT
+			}
+			// postData
+			secondary_resp =  await postData(url,body)			// Tell the server that this transaction is done...
+			let elements = secondary_resp.state.elements			// The good stuff is returned in a state field 
+			protocol = elements.protocol  // final hash and provider returned in state (same as for the shor but in the state field)
+			media_id = elements.media_id
+		}
+		//
+		return [protocol,media_id]
+	}
+	return [false,false]
+}
+
+
+
+
+//$>>	upload_small
+//                                                  <<depends>> postData,finalize_small_media_storage
+async function upload_small(url,obj,blob_already) {			// 	obj.media_type  // data:[<MIME-type>][;charset=<encoding>][;base64],<data>
+	//
+	let [com_obj,blob_data] = await prep_upload_data(obj,blob_already,'p2p-default')
+	//
+	let formdata = new FormData()
+	for ( let ky in com_obj ) {
+		formdata.append(ky, com_obj[ky])
+	}
+	formdata.append('media_file', new Blob([blob_data]), obj.file_name)
+	//
+	// in the small versions, the file is sent immediately. No preamble
+	//
+	let primary_response =  await postData(url,formdata,'omit',false,'multipart/form-data')
+	if ( primary_response.OK === "true" ) {
+		let media_store_characteristics = await finalize_small_media_storage(primary_response)
+		return media_store_characteristics
+	} else {
+		return [false, false]
+	}
+}
+
+//$>>	upload_big
+//                                                  <<depends>> postData,finalize_media_storage
+async function upload_big(url,obj,blob_already) {
+	//
+	let [com_obj,blob_data] = await prep_upload_data(obj,blob_already,'p2p-default')
+	//
+	let formdata = new FormData()
+	for ( let ky in com_obj ) {
+		formdata.append(ky, com_obj[ky])
+	}
+	//
+	// in the large versions, a preamble is sent with the size of the data. No data is sent in the first message
+	//
+	let primary_response = await postData(url,formdata,'omit',false,'multipart/form-data')
+	//
+	if ( primary_response.OK === "true" ) {		// If the system can handle the request, start a cycle of sends
+		let media_store_characteristics = await finalize_media_storage(primary_response,formdata,blob_data,obj)
+		return media_store_characteristics
+	} else {
+		return [false, false]
+	}
+}
+
+
+
+
+
+
+//$>>	upload_audio
+//                                                  <<depends>> upload_big,upload_small
+// ---- ---- ---- ---- ---- ---- ----
+async function upload_audio(obj) {
+	let blob_data
+	try {
+		let res = await fetch(obj.blob)
+		blob_data = await res.blob()
+	} catch(e) {
+		return
+	}
+	if ( blob_data.size > DEFINED_MAX_SIZE ) {
+		return await upload_big(obj,blob_data)
+	} else {
+		return await upload_small(obj,blob_data)
+	}
+}
+
+//$>>	upload_image
+// ---- ---- ---- ---- ---- ---- ----
+async function upload_image(obj) {
+	let blob_data
+	try {
+		let res = await fetch(obj.blob)
+		blob_data = await res.blob()
+	} catch(e) {
+		return
+	}
+	if ( blob_data.size > DEFINED_MAX_SIZE ) {
+		return await upload_big(obj,blob_data)
+	} else {
+		return await upload_small(obj,blob_data)
+	}
+}
+
+//$>>	upload_video
+//                                                  <<depends>> upload_big
+// ---- ---- ---- ---- ---- ---- ----
+async function upload_video(obj) {
+	return await upload_big(obj)
+}
+
+//$>>	prep_upload_for
+//
+// ---- ---- ---- ---- ---- ---- ----
+var g_uploader_cache = {}
+function prep_upload_for(obj,uploader_fun) {
+	//
+	g_uploader_cache[obj._dash_entry_id] = async () => {
+		return await uploader_fun(obj)
+	}
+	//
+}
+
+//$>>	do_media_upload
+//                                                  <<depends>> prep_upload_for
+//                                                  <<var-depends>> g_uploader_cache
+async function do_media_upload(obj) {		// earlier a link was made for the media, which will be uploaded if ever the user "save"s it.
+	let id = obj._dash_entry_id
+	let _uploader = g_uploader_cache[id]	// _uploader from map
+	if ( _uploader ) {
+		let [protocol,asset_id] = await _uploader()
+		return [protocol,asset_id]
+	}
+}
+
+
+//$$EXPORTABLE::
+/*
+finalize_small_media_storage
+finalize_media_storage
+upload_small
+upload_big
+upload_audio
+upload_image
+upload_video
+prep_upload_for
+do_media_upload
+*/
+
+
+	//
+	// ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ----
+	let g_punctuation = ".,;:\'\"~\~\`@#$%^&*()+=|\\][}{?/><"
+
+	function ispunct(c,add_dash) {
+		let is = (g_punctuation.indexOf(c) >= 0 )
+		if ( !(is) && add_dash ) {
+			is = (c == '-' || c == '_')
+		}
+		return is
+	}
+
+	function trim_punct(key,add_dash) {
+		while ( (key.length > 0) && ispunct(key[0],add_dash) ) {
+			key = key.substr(1)
+		}
+		while ( (key.length > 0) && ispunct(key[key.length - 1],add_dash) ) {
+			key = key.substr(0,(key.length - 1))
+		}
+		return(key)
+	}
+
+
+
+	class DataFromUi {
+
+		constructor() {
+			this._user_id = false
+			this._current_asset_history = false
+			this._current_asset_prev_text = ""
+			this._current_asset_text_ucwid_info = false
+		}
+
+		get_file(file_el) {
+			//
+			if ( file_el.files.length ) {
+				return new Promise((resolve,reject) => {
+					let file = file_el.files[0]
+					let fname =  file.name
+					let mtype = file.type
+					let reader = new FileReader();
+					let file_copy = Object.assign({},file)
+					for ( let ky in file ) { 
+						if ( ky === 'arrayBuffer' ) continue
+						if ( ky === 'slice' ) continue
+						if ( ky == 'stream' ) continue
+						if ( ky == 'text' ) continue
+						if ( ky == 'webkitRelativePath' ) continue
+						file_copy[ky] = file[ky]
+					}
+					reader.onload = (e) => {
+						//
+						let loaded = {
+							"blob_url" : e.target.result,
+							"name" : fname,
+							"mtype" : mtype,
+							"size" : file_copy.size,
+							"file" : file_copy
+						}
+						//
+						resolve(loaded)
+					};
+					reader.readAsDataURL(file)
+				})
+			}
+			//
+			return false
+		}
+
+		async gather_user_fields(field_vars) {
+			let upload_record = {}
+			try {
+				let tracking = ""
+				let t = field_vars['user-tracking']
+				if ( t.length ) { tracking = t }
+				//
+				let uid = field_vars['user-id']
+				if ( uid.length ) {
+					upload_record = {
+						"_id" : uid,
+						"_tracking" : tracking
+					}
+					this._user_id = uid
+					this._author_tracking = tracking
+					return upload_record
+				}
+
+			} catch (e) {
+				return false
+			}
+			return false
+		}
+
+		//  ----  ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ----
+		async gather_fields(field_vars) {
+			//
+			if ( this._user_id === false ) {
+				return false
+			}
+			//
+			let upload_record = {}
+			try {
+				let opt_fld = field_vars['rec-file-mtype']
+				let title_fld = field_vars['rec-title']
+				let subject_fld = field_vars['rec-subject']
+				let keys_fld = field_vars['rec-keys']
+				let abstract_fld = field_vars['rec-abstract']
+				let full_text_fld = field_vars['rec-full-text']
+				let file_name_fld = field_vars['rec-file-name']
+				let poster_name_fld = field_vars['rec-poster-name']
+				let paid_fld = field_vars['paid-checkbox']
+
+				if ( !(opt_fld && title_fld && keys_fld && abstract_fld && full_text_fld && file_name_fld && poster_name_fld) ) return false
+
+				let full_text = full_text_fld.value
+				//
+				let title = title_fld.value
+				if ( title.length === 0 ) return false
+				//
+				let subject = subject_fld.value
+				if ( subject.length === 0 ) return false
+				//
+				let abstract =  abstract_fld.value
+
+				let asset_pair = opt_fld.value
+				if ( asset_pair.length === 0 ) return false
+				//
+				let [asset_type,media_type] = asset_pair.split('/')
+				/*
+					stream/audio
+					stream/video
+					stream/image
+					blog/text
+					music_buzz/text
+				*/
+				let poster = await this.get_file(poster_name_fld)        // file names for stream type media
+				let media_data = await this.get_file(file_name_fld)
+
+				if ( (media_type !== 'text') && (media_data === false) && (poster === false) ) {
+					return false
+				}
+
+				if ( ( media_type === 'text' ) && ( full_text.length === 0 ) ) {
+					return false
+				} else if ( media_type !== 'text' ) {
+					full_text = file_name_fld.files[0].name
+				}
+
+				//
+				let modDate = media_data ? media_data.file.lastModified : ( poster ? poster.file.lastModified : Date.now())
+				//
+				let keys = keys_fld.value
+				keys = keys.split(' ').filter( key => {
+					let ok = (key !== undefined)
+					if ( ok ) ok = (key.length > 2)
+					return ok
+				})
+				keys = keys.map(key => {
+					key = trim_punct(key)
+					key = key.trim()
+					return(key)
+				})
+				keys = keys.filter( key => {
+					let ok = (key !== undefined)
+					if ( ok ) ok = (key.length > 2)
+					return ok
+				})
+				keys = keys.map(key => {
+					key = encodeURIComponent(key)
+					return(key)
+				})
+				//
+				let tracking = ""       // if it has been created
+				let tracker = field_vars["asset-id"]
+				if ( tracker ) {
+					let t = tracker.value
+					if ( t.length ) tracking = t
+				}
+
+
+				let paid = paid_fld ? paid_fld.checked : false
+
+				let exclusion_fields = [
+					"_history","_prev_text",
+					"_transition_path", "encode",
+					"media.poster.ucwid_info", "media.source.ucwid_info",
+					"media.poster.protocol", "media.source.protocol",
+					"media.poster.ipfs", "media.source.ipfs"
+				]
+				let repository_fields = [ "media.source", "media.poster" ]  // field that contain id's useful to pin object at the server
+				//
+				upload_record = {
+					"_tracking" : tracking,             // tracking of the asset
+					"_id" :  this._user_id,             // should be a UCWID
+					"_author_tracking" :  this._author_tracking,
+					"_paid" : paid,
+					"_transition_path" : "asset_path",
+					"asset_path" : `${tracking}+${asset_type}+${this._user_id}`,
+					"title" : encodeURIComponent(title),
+					"subject" : encodeURIComponent(subject),
+					"keys" : keys,
+					"asset_type" : asset_type,        // blog, stream, link-package, contact, ownership, etc...
+					"media_type" : media_type,        // text, audio, video, image
+					"abstract" : encodeURIComponent(abstract),
+					"media" : {
+						"poster" : poster,
+						"source" : media_data
+					},
+					"encode" : true,
+					"txt_full" : encodeURIComponent(full_text),
+					"dates" : {
+						"created" : Date.now(),
+						"updated" : modDate
+					},
+					"_history" : this._current_asset_history ? this._current_asset_history : [],
+					"_prev_text" : this._current_asset_prev_text,
+					"text_ucwid_info" : this._current_asset_text_ucwid_info,
+					"repository_fields" : repository_fields,
+					"exclusion_fields" : exclusion_fields
+				}
+				this._current_asset_history = false   // reset it when it is retrieved
+				//    
+			} catch (e) {
+				return false
+			}
+
+			return(upload_record)
+		}
+
+
+
+		//  ----  ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ----
+		async gather_identifying_fields(field_vars) {
+			//
+			if ( this._user_id === false ) {
+				return false
+			}
+			//
+			let upload_record = {}
+			try {
+				let tracker = field_vars["asset-id"]
+				let opt_fld = field_vars['rec-file-mtype']
+				if ( !(opt_fld && tracker) ) return false
+
+				let asset_pair = opt_fld.value
+				if ( asset_pair.length === 0 ) return false
+				//
+				let [asset_type,media_type] = asset_pair.split('/')
+				/*
+					stream/audio
+					stream/video
+					stream/image
+					blog/text
+					music_buzz/text
+				*/
+				//
+				//
+				let tracking = ""       // if it has been created
+				if ( tracker ) {
+					let t = tracker.value
+					if ( t.length ) tracking = t
+					else return false
+				}
+
+				let paid_fld = field_vars['paid-checkbox']
+				let paid = paid_fld ? paid_fld.checked : false
+
+				//
+				let exclusion_fields = [  // fields excluded from searching services.
+					"_history","_prev_text",
+					"_transition_path", "encode",
+					"media.poster.ucwid_info", "media.source.ucwid_info",
+					"media.poster.protocol", "media.source.protocol",
+					"media.poster.ipfs", "media.source.ipfs"
+				]
+
+				//
+				upload_record = {
+					"_tracking" : tracking,
+					"_id" :  this._user_id,
+					"_paid" : paid,
+					"_transition_path" : "asset_path",
+					"asset_path" : `${tracking}+${asset_type}+${this._user_id}`,
+					"asset_type" : asset_type,        // blog, stream, link-package, contact, ownership, etc...
+					"media_type" : media_type,
+					"exclusion_fields" : exclusion_fields
+				}
+				//
+			} catch (e) {
+				return false
+			}
+
+			return(upload_record)
+		}
+
+		// put_fields ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ----
+		put_fields(obj,field_vars) {
+			let opt_fld = field_vars['rec-file-mtype']
+			let title_fld = field_vars['rec-title']
+			let subject_fld = field_vars['rec-subject']
+			let keys_fld = field_vars['rec-keys']
+			let abstract_fld = field_vars['rec-abstract']
+			let full_text_fld = field_vars['rec-full-text']
+			let file_name_fld = field_vars['rec-file-name']
+			let poster_name_fld = field_vars['rec-poster-name']
+			let paid_fld = field_vars['paid-checkbox']
+			if ( !(opt_fld && title_fld && keys_fld && abstract_fld && full_text_fld && file_name_fld  && poster_name_fld) ) return false
+			
+			title_fld.value = decodeURIComponent(obj.title)
+			subject_fld.value = decodeURIComponent(obj.subject)
+			keys_fld.value = decodeURIComponent(obj.keys)
+			opt_fld.value = [obj.asset_type,obj.media_type].join('/')
+			abstract_fld.value = decodeURIComponent(obj.abstract)
+			full_text_fld.value = decodeURIComponent(obj.txt_full)
+
+			if ( paid_fld )  {
+				paid_fld.setAttribute("checked",obj._paid)
+			}
+
+			this._current_asset_history = obj._history
+			this._current_asset_prev_text = obj.txt_full
+			this._current_asset_text_ucwid_info = obj.text_ucwid_info ? obj.text_ucwid_info : false
+		}
+
+		async gather_asset_fields(field_vars) {
+			//
+			let upload_record = {}
+			try {
+				let asset_fld = field_vars['asset-id']
+				upload_record._id = asset_fld.value
+			} catch (e) {
+				return false
+			}
+			return upload_record
+		}
+
+	}
+
+
+
+
+	class Proxy {
+
+
+		constructor() {
+
+			//
+			this.new_entry_link = ""
+			this.get_entry_link = ""
+			this.update_entry_link = ""
+
+			this.delete_entry_link = ""
+			this.publish_entry_link = ""
+			this.unpublish_entry_link = ""
+			this.get_user_ready_link = ""
+
+		}
+
+
+		async new_entry(good_data) {
+			// to transitions 
+			let uploadable = {
+				"meta" : good_data		// good data already has urls for BLOBs representing the media to upload
+				// file entries, etc/	
+			}
+			let [result,pid] = await send_new_entry(uploadable,this.new_entry_link,good_data.asset_type)
+			if ( result.status === "OK" ) {
+				return status.tracker
+			}
+		}
+
+
+		async get_entry(good_data) {
+			let uploadable = {
+				"meta" : good_data
+				// file entries, etc/	
+			}
+			let result = await send_publication_command("get",uploadable,this.get_entry_link)
+			if ( result.status === "OK" ) {
+				return status.tracker
+			}
+		}
+
+		async update_entry(good_data) {
+			good_data.update = true   // something better?
+			let uploadable = {
+				"meta" : good_data
+				// file entries, etc/	
+			}
+			let [result,pid] = await send_new_entry(uploadable,this.update_entry_link,good_data.asset_type)
+			if ( result.status === "OK" ) {
+				return status.tracker
+			}
+		}
+
+		async delete_entry(good_data) {
+			let uploadable = {
+				"meta" : good_data
+				// file entries, etc/	
+			}
+			let result = await send_publication_command("get",uploadable,this.delete_entry_link)
+			if ( result.status === "OK" ) {
+				return status.tracker
+			}
+		}
+
+		async publish_entry(good_data) {
+			let uploadable = {
+				"meta" : good_data
+				// file entries, etc/	
+			}
+			let result = await send_publication_command("publish",uploadable,this.publish_entry_link)
+			if ( result.status === "OK" ) {
+				return status.tracker
+			}
+		}
+
+		async unpublish_entry(good_data) {
+			let uploadable = {
+				"meta" : good_data
+				// file entries, etc/	
+			}
+			let result = await send_publication_command("unpublish",uploadable,this.unpublish_entry_link)
+			if ( result.status === "OK" ) {
+				return status.tracker
+			}
+		}
+
+	}
+
+
+
+	let g_ui_data = new DataFromUi()
+	let g_proxy = new Proxy()
+
+	///
+
+	// field_data :: in the following, field_data is a map of fields ids to DOM element objects. 
+	// values will be read in from those fields
+	// calculation on values will be handled by gather_fields
+	// FILES: two fields will refer to the DOM element for file uploaders. 
+	//		-- rec-file-name	--- likely a media file e.g. mp3, mov, etc.
+	//		-- rec-poster-name   --- likely an image file that will be displayed
+
+	//
+	// ---- create_entry ---- ---- ---- ---- ---- ---- ----
+    async function create_entry(field_data) {
+        if ( field_data ) {
+			let good_data = g_ui_data.gather_fields(field_data)  // puts the upload file into the structure
+			let t_num = await g_proxy.new_entry(good_data)
+			return t_num /// for placement into display
+        }
+    }
+
+	// ---- get_entry ---- ---- ----
+	async function get_entry(field_data) {
+		let good_data = await g_ui_data.gather_identifying_fields(field_data)
+		if ( good_data ) {
+          let obj = await g_proxy.get_entry(good_data)
+          let t_num = obj._tracking
+          if ( t_num !== false ) {
+			field_data["asset-id"] = t_num
+          }
+          g_ui_data.put_fields(obj)
+        }
+    }
+  
+	// ---- update_entry ---- ---- ----
+    async function update_entry(field_data) {
+        let good_data = await g_ui_data.gather_fields(field_data)
+        if ( good_data ) {
+          let t_num = await g_proxy.update_entry(good_data)
+          if ( t_num !== false ) {
+			field_data["asset-id"] = t_num
+          }
+        }
+    }
+
+	// ---- delete_entry ---- ---- ----
+    async function delete_entry(field_data)  {
+      let good_data = await g_ui_data.gather_identifying_fields(field_data)
+        if ( good_data ) {
+          await g_proxy.delete_entry(good_data)
+        }
+    }
+
+	// ---- publish_entry ---- ---- ----
+    async function publish_entry(field_data) {
+        let good_data = await g_ui_data.gather_identifying_fields(field_data)
+        if ( good_data ) {
+          await g_proxy.publish_entry(good_data)
+        }
+    }
+
+	// ---- unpublish_entry ---- ---- ----
+    async function unpublish_entry(field_data) {
+        let good_data = await g_ui_data.gather_identifying_fields(field_data)
+        if ( good_data ) {
+          await g_proxy.unpublish_entry(good_data)
+        }
+    }
+
+	// ---- get_user_tracking ---- ---- ----
+    async function get_user_tracking(field_data) {
+		let good_data = await g_ui_data.gather_user_fields(field_data)
+		if ( good_data ) {
+			let t_num = await g_proxy.user_ready(good_data)
+			field_data["user-tracking"] = t_num
+		}
+    }
+
+
+
+
+
+
+	let g_app_path = "command-upload"
+
+
+	// g_app_path important to nginx configuration
+
+	function get_transition_endpoint(endpoint) {
+		let url = `${location.protocol}//${location.host}/${g_app_path}/transition/${endpoint}`
+		return url
+	}
+
+	function get_secondary_transition_endpoint(endpoint) {
+		let url = `${location.protocol}//${location.host}/${g_app_path}/transition/secondary/${endpoint}`
+		return url
+	}
+
+
+	// prep_send_new_entry
+	async function prep_send_new_entry(data_hash,send_obj) {
+		// send the fields this knows about. Expect the human frame to handle a hash and security
+		let postable = Object.assign(send_obj,{
+			"topic" : "command-upload",
+			"path" : "upload-media"
+		})
+		//
+		//
+		let message = {
+			"category": FRAME_ACTION_FROM_APP,
+			"action" : HOST_UP_REQ_UPLOAD,
+			"data" : {
+				"link" : get_transition_endpoint(link_meta.link),
+				"hash" : data_hash,
+				"postable" : postable
+			}
+		}
+		tell_frame_page(message)  // ask for the primary transition to be handled by the human frame...
+		//
+		let primary_response = await promise_handling("post-response")
+		return primary_response
+	}
+
+
+
+	async function send_new_entry(object_data_meta,link_meta,asset_type) {
+		//
+		/*
+		object_data_meta === { "meta" : good_data }
+		*/
+		if ( object_data_meta.meta.media && object_data_meta.meta.media.source ) {
+			let blob_data = object_data_meta.meta.media.source.blob_url
+			let blob_data_size = object_data_meta.meta.media.source.size
+			if ( object_data_meta.meta.media.poster ) {
+				blob_data_size += object_data_meta.meta.media.poster.size
+			}
+			//
+			let com_obj = {
+				protocol : 'p2p-default',
+				preamble_size : blob_data_size  // send total size
+			}
+			com_obj = Object.assign(object_data_meta,com_obj)
+			//
+			// +  obj.protocol,  + obj.preamble_size    // { "meta" : good_data, "protocol" : - ,  "preamble_size" : - }
+			let data_hash = do_hash(blob_data)  // the file data of the main type of media (e.g. movie, sound, which might also upload an image)
+			//   post data in here  (prep --- don't send the actual file... )
+
+			let backup_media = {
+				"source" : com_obj.meta.media.source,
+				"poster" : com_obj.meta.media.poster
+			}
+
+
+			// make copies of the media components
+			com_obj.meta.media.source = Object.assign({},com_obj.meta.media.source)
+			delete com_obj.meta.media.source.blob_url  // (prep --- don't send the actual file... )
+			//
+			if ( object_data_meta.meta.media.poster ) {
+				com_obj.meta.media.poster = Object.assign({},com_obj.meta.media.poster)
+				delete com_obj.meta.media.poster.blob_url   // (prep --- don't send the actual file... )
+			}
+
+			let primary_response = await prep_send_new_entry(data_hash,com_obj)
+			//
+			if ( primary_response.OK == true ) {
+				let upload_keys = primary_response.elements  // should be produced by publication handling
+				let postable = Object.assign(com_obj,{
+					"token" : primary_response.token,		// primary action token (key to secondary)
+					"asset_type" : asset_type,
+					"sign" : upload_keys.sign,
+					"hash" : data_hash
+				})
+				// --- backup_media
+				let blob_list = [backup_media.source,backup_media.poster]
+				let link = get_secondary_transition_endpoint(link_meta.secondary_link)
+				//  , primary_response -> original respone, false -> will make FromData, blob_data -> one file, 
+				let media_store_characteristics = await finalize_media_array_storage(link,primary_response,false,blob_list,postable)
+				
+				
+				
+				
+				//return media_store_characteristics
+			}
+		}
+
+		return [false,false]
+		//
+	}
+
+
+
+	async function send_publication_command(command,object_data_meta,link_meta) {
+		//
+		let postable = Object.assign(object_data_meta,{
+			"topic" : `command-${command}`,
+			"path" : "upload-media",
+			"file_name" : data_hash
+		})
+		//
+		let message = {
+			"category": FRAME_ACTION_FROM_APP,
+			"action" : HOST_UP_REQ_UPLOAD,
+			"data" : {
+				"link" : get_transition_endpoint(link_meta.link),
+				"hash" : data_hash,
+				"postable" : postable
+			}
+		}
+		tell_frame_page(message)  // ask for the primary transition to be handled by the human frame...
+		//
+		let primary_response = await promise_handling("post-response")
+		if ( primary_response.OK == true ) {
+			return true
+		} 
+		return false
+		//
+	}
+
+
+// /////////////////////////////////////////////////////
+
+
+setup_window_crypto()
 
 </script>

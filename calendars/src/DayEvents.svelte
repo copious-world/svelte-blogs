@@ -7,7 +7,7 @@ export let day_event_count = 0
 import {publish} from '../../common/ws-relay-app'
 import cnst from '../../calendar-common/constants'
 
-
+const ON_MINUTE = (60*1000)
 const ONE_HOUR = (3600*1000)
 const ONE_HALF_HOUR = (3600*500)
 const ONE_QUARTER_HOUR = (3600*250)
@@ -45,6 +45,7 @@ let editor_for_cancel = false
 
 let dropped_event = false
 let changed_event = false
+let updating_event = false
 
 let topic_group = cnst.CALENDAR_TOPIC_GROUP
 
@@ -55,6 +56,7 @@ $: if ( changed_event && (all_day_list !== undefined) ) {
     let model_ev = all_day_list[maybe_event_index]
     model_ev.changed = true
     model_ev.how_long = maybe_event_how_long
+    model_ev.end_at = model_ev.begin_at + maybe_event_how_long*ON_MINUTE
     model_ev.label = maybe_event_topic
     model_ev.person_id = maybe_event_id
     model_ev.email = maybe_event_email
@@ -84,6 +86,22 @@ $: if ( changed_event && (all_day_list !== undefined) ) {
         }
     }
     all_day_list[maybe_event_index] = model_ev
+    //
+    // ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ----
+    //
+    if ( updating_event ) {
+        publish(cnst.CALENDAR_TOPIC_GROUP,cnst.REQUEST_EVENT_CHANGE_TOPIC,cnst.USER_CHAT_PATH,{
+            "type" : "request-change",  // before accepted
+            "data" : model_ev
+        })
+    } else {
+        publish(cnst.CALENDAR_TOPIC_GROUP,cnst.REQUEST_EVENT_TOPIC,cnst.USER_CHAT_PATH,{
+            "type" : "request",
+            "data" : model_ev
+        })
+    }
+
+
 }
 
 
@@ -123,6 +141,11 @@ $: if ( dropped_event && (all_day_list !== undefined)) {
         }
     }
     all_day_list[maybe_event_index] = model_ev
+    //
+    publish(cnst.CALENDAR_TOPIC_GROUP,cnst.REQUEST_EVENT_DROP_TOPIC,cnst.USER_CHAT_PATH,{
+        "type" : "request-change",  // before accepted
+        "data" : model_ev
+    })
 }
 
 function hide_editor() {
@@ -202,10 +225,6 @@ function publish_event_request(ev) {
     day_event_count++
     //
 
-    publish(topic_group,consts.REQUEST_EVENT_TOPIC,consts.USER_CHAT_PATH,{
-            "type" : "request",
-            "data" : all_day_list[maybe_event_index]
-        })
 }
 
 
@@ -229,12 +248,9 @@ function publish_event_update(ev) {
     }
 
     model_ev.changed = true
+    updating_event = true
     changed_event = true
 
-    publish(consts.REQUEST_EVENT_CHANGE_TOPIC,consts.USER_CHAT_PATH,{
-            "type" : "request-change",  // before accepted
-            "data" : model_ev
-        })
 }
 
 
@@ -245,12 +261,6 @@ function publish_event_cancel(ev) {
     changed_event = false
     dropped_event = true
     day_event_count--
-    //
-
-    publish(consts.REQUEST_EVENT_DROP_TOPIC,consts.USER_CHAT_PATH,{
-            "type" : "request-change",  // before accepted
-            "data" : all_day_list[maybe_event_index]
-        })
 }
 
 

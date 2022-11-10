@@ -13,10 +13,14 @@ export const REQUEST_EVENT_TOPIC = 'user-request-event-calendar'
 export const REQUEST_EVENT_CHANGE_TOPIC = 'user-request-change-event-calendar'
 export const REQUEST_EVENT_DROP_TOPIC = 'user-request-drop-event-calendar'
 //
+export const APPRISE_NEW_MONTH_DATA = 'month-update-available'
 
 export const CALENDAR_TOPIC_GROUP = "calendar-activity"
 
+export const DEFAULT_WS_CALENDAR_ACCESS = "calendar"
+
 export default {
+    USER_CHAT_PATH,
     SUGGEST_CHANGE_EVENT_TOPIC,
     ACCEPT_EVENT_TOPIC,
     SCHEDULER_ACCEPTED_TOPIC,
@@ -26,5 +30,6 @@ export default {
     REQUEST_EVENT_TOPIC,
     REQUEST_EVENT_CHANGE_TOPIC,
     REQUEST_EVENT_DROP_TOPIC,
+    APPRISE_NEW_MONTH_DATA,
     CALENDAR_TOPIC_GROUP
 }

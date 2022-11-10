@@ -34,10 +34,13 @@ let thing_template = {
 }
 
 
-export function make_empty_thing(model_template) {
+export function make_empty_thing(model_template,no_clone) {
     if ( model_template !== undefined ) {
         thing_template = model_template
         app_empty_object = Object.assign({ "id" : 1, "entry" : -1 },thing_template)
+    }
+    if ( no_clone ) {
+        return Object.assign({},app_empty_object)
     }
     return clonify(model_template)
 }

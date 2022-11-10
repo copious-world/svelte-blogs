@@ -96,7 +96,7 @@
 	// --- ReqSlot --- --- --- --- --- --- --- --- --- ---
 	class ReqSlot extends Slot {
 		//
-		constructor(label,begin_at,end_at,info,d_date) {
+		constructor(label,begin_at,end_at,info,d_date,day_key) {
 			super(label,begin_at,end_at)
 			this.index = info.index
 			this.label = ""
@@ -111,6 +111,9 @@
 			this.on_half_hour = info.on_half_hour
 			this.changed =  false
 			this.how_long =  15
+			this.month = d_date.getMonth()
+			this.year = d_date.getFullYear()
+			this.mo_key = day_key
 		}
 		//
 	}
@@ -148,7 +151,7 @@
 														"index" : i,
 														"blocked" : blocked,
 														"on_half_hour" : (minutes !== 0)
-													},d_date)
+													},d_date,key)
 				time += ONE_HALF_HOUR
 				d_date = new Date(time)
 			}
@@ -364,7 +367,7 @@
 			},
 			"in-timeline" : {
 				"path" : cnst.USER_CHAT_PATH,
-				"topic" : cnst.TIMELINE_UPDATE_READY,
+				"topic" : cnst.APPRISE_NEW_MONTH_DATA,
 				"handler" :   async (message) => {
 					// The user (public) will just fetch the slots of the existing months
 					data_fetcher()
@@ -372,7 +375,7 @@
 			}
 
 		}
-		add_ws_endpoint(topic_group,cnst.DEFAULT_WS_CALENDAR_ACCESS,'',api_path,subscriptions)
+		add_ws_endpoint(topic_group,cnst.DEFAULT_WS_CALENDAR_ACCESS,9797,api_path,subscriptions)
 	})
 
 

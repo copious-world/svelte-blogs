@@ -10,10 +10,10 @@
 	import TimeSlotEditor from './TimeSlotEditor.svelte';
 	import DayEventsRequests from './DayEventsRequests.svelte';
 	import RequestChangeAlerts from './RequestChangeAlerts.svelte'
-
 	//
 	import ThingGrid from 'grid-of-things';
 	import FloatWindow from 'svelte-float-window';
+	//
 
 	import { process_search_results, place_data, merge_data, clonify, make_empty_thing, link_server_fetch } from '../../common/data-utils.js'
 	import { popup_size } from '../../common/display-utils.js'
@@ -166,6 +166,10 @@
 	let info_delta = 3
 
 
+	let g_slot_definitions = {}
+	let g_active_slot_list = []
+
+
 	for ( let i = 0; i < 1000; i++ ) {
 		line_points.push({ x : (i*division_width + left_shift), y : 0, index : (divider_starts + i)})
 		let mo_time = first_day_of_relative_month(current_date,(divider_starts + i))
@@ -249,6 +253,7 @@
 		//
 	}
 
+	let force_day_event_update = false
 	// ---- ---- ---- ManageableTSAgenda
 	class ManageableTSAgenda extends TimeSlotAgenda {
 		//
@@ -260,6 +265,41 @@
 			this.key = ""
 		}
 		//
+
+
+		add_slot(a_slot) {
+			super.add_slot(a_slot)
+
+			let a_list = this.all_day_list
+			for ( let sl of a_list ) {
+				if ( sl.begin_at === a_slot.begin_at ) {
+					sl.use = a_slot.use
+				}
+				if ( sl.begin_at <= a_slot.end_at ) {
+					sl.use = a_slot.use
+				}
+			}
+
+			this.event_count++
+			this.has_events = true
+			force_day_event_update = true
+		}
+
+		remove_slot(a_slot) {
+			super.remove_slot(a_slot)
+			if ( this.event_count > 0 ) { this.event_count-- }
+			if ( this.event_count === 0 ) {
+				this.has_events = false
+			}
+			let d_date = new Date(a_slot.begin_at)
+			let replacer = new ReqSlot("",a_slot.begin_at,0,{
+														"index" : a_slot.index,
+														"blocked" : USE_AS_OPEN,
+														"on_half_hour" : a_slot.on_half_hour,
+													},d_date)
+			super.add_slot(replacer)
+		}
+
 
 		fill_day(year,month,key) {
 			let d_date = new Date(year,month,this.day);  // these have been passed
@@ -296,6 +336,8 @@
 	//
 
 	let g_request_alert_parameters = false
+	let parameter_setup = false
+	$: g_request_alert_parameters = parameter_setup
 	//
 	let g_mo_gen = new MonthContainer(current_date.getTime(),ManageableTSAgenda)
 
@@ -322,6 +364,11 @@
 		things = things
 	}
 
+	$: if ( force_day_event_update ) {
+		let mo = things[0]
+		things = things
+		force_day_event_update = false
+	}
 
 	let data_stem = "contactsearch"
 
@@ -362,10 +409,9 @@
 		"total_events" : 0
 	}
 
-	let thing_template = make_empty_thing(model_month_entry)
+	let thing_template = make_empty_thing(model_month_entry,true)
 
 	function fill_cal(mentry) {
-		//
 		let cmap = mentry.cal.map
 		for ( let ky in cmap ) {
 			// 
@@ -411,6 +457,15 @@
 	//fill_cal(app_empty_object)
 	//
 	//
+	let cal_update = false
+
+	$: if ( cal_update ) {
+		current_thing = cal_update
+	}
+
+	function update_calendar() {
+		cal_update = current_thing
+	}
 	
 	let window_scale = { "w" : 0.4, "h" : 0.6 }
 	//
@@ -439,10 +494,11 @@
 				"path" : cnst.USER_CHAT_PATH,
 				"topic" : cnst.REQUEST_EVENT_TOPIC,
 				"handler" :   async (message) => {
-					let status = message.status
-					if ( status === "OK" ) {
-						let req = messsage.data
+					let status = (message.data !== undefined)
+					if ( status ) {
+						let req = message.data
 						tl_subr.injest_request(req,things)
+						update_calendar()
 					}
 				}
 			},
@@ -450,9 +506,9 @@
 				"path" : cnst.USER_CHAT_PATH,
 				"topic" : cnst.REQUEST_EVENT_CHANGE_TOPIC,  //  user confirmation. user length change
 				"handler" :   async (message) => {
-					let status = message.status
-					if ( status === "OK" ) {
-						g_request_alert_parameters = message.data
+					let status = (message.data !== undefined)
+					if ( status ) {
+						parameter_setup = message.data
 						start_floating_window(3)
 						data_fetcher() // retrieve the changes that this mesage is telling us about
 					}
@@ -462,17 +518,19 @@
 				"path" : cnst.USER_CHAT_PATH,
 				"topic" : cnst.REQUEST_EVENT_DROP_TOPIC,		// cancel meeting, drop and create new (different time)
 				"handler" :   async (message) => {
-					let status = message.status
-					if ( status === "OK" ) {
-						g_request_alert_parameters = message.data
+					let status = (message.data !== undefined)
+					if ( status ) {
+						parameter_setup = message.data
+						tl_subr.drop_request(parameter_setup,things)
 						start_floating_window(3)
 						data_fetcher() // retrieve the changes that this mesage is telling us about
 					}
 				}
 			}
 		}
-		add_ws_endpoint(topic_group,DEFAULT_WS_CALENDAR_ACCESS,'',api_path,subscriptions)
-
+		//
+		add_ws_endpoint(topic_group,cnst.DEFAULT_WS_CALENDAR_ACCESS,9797,api_path,subscriptions)
+		//
 		// end of timeline subscriptions
 
 		// PANZOOM
@@ -1537,7 +1595,7 @@
 
 	async function handleClick_send_update(ev) {
 		let slot_list = await g_human_time_slot_storage.get_slot_entries()
-		await tl_subr.send_time_line(slot_list,things)
+		await tl_subr.send_time_line('publication-commands','uploader-commands',slot_list,things)
 	}
 
 
