@@ -275,7 +275,7 @@
 				if ( sl.begin_at === a_slot.begin_at ) {
 					sl.use = a_slot.use
 				}
-				if ( sl.begin_at <= a_slot.end_at ) {
+				if ( ( sl.begin_at >= a_slot.begin_at ) &&  (sl.begin_at <= a_slot.end_at) ) {
 					sl.use = a_slot.use
 				}
 			}
