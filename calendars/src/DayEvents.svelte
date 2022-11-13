@@ -3,11 +3,17 @@ export let day
 export let monthstr
 export let all_day_list
 export let day_event_count = 0
+export let month
+export let year
+
+
+export let user_id
+
 
 import {publish} from '../../common/ws-relay-app'
 import cnst from '../../calendar-common/constants'
 
-const ON_MINUTE = (60*1000)
+const ONE_MINUTE = (60*1000)
 const ONE_HOUR = (3600*1000)
 const ONE_HALF_HOUR = (3600*500)
 const ONE_QUARTER_HOUR = (3600*250)
@@ -56,13 +62,17 @@ $: if ( changed_event && (all_day_list !== undefined) ) {
     let model_ev = all_day_list[maybe_event_index]
     model_ev.changed = true
     model_ev.how_long = maybe_event_how_long
-    model_ev.end_at = model_ev.begin_at + maybe_event_how_long*ON_MINUTE
+    model_ev.end_at = model_ev.begin_at + maybe_event_how_long*ONE_MINUTE
     model_ev.label = maybe_event_topic
     model_ev.person_id = maybe_event_id
     model_ev.email = maybe_event_email
     model_ev.contact_phone = maybe_event_contact_phone
     model_ev.on_zoom = maybe_event_zoom
     model_ev.in_person = maybe_event_in_person
+    model_ev.user_id = user_id
+    model_ev.accepted = false
+    model_ev.month = month
+    model_ev.year = year
 
     let total_time = maybe_event_how_long
     let ch_i = maybe_event_index
@@ -81,6 +91,7 @@ $: if ( changed_event && (all_day_list !== undefined) ) {
             ntxt_slot.contact_phone = model_ev.contact_phone
             ntxt_slot.on_zoom = model_ev.on_zoom
             ntxt_slot.in_person = model_ev.in_person
+            ntxt_slot.accepted = model_ev.accepted
             //
             all_day_list[ch_i] = ntxt_slot
         }
@@ -116,6 +127,7 @@ $: if ( dropped_event && (all_day_list !== undefined)) {
     model_ev.on_zoom = false
     model_ev.in_person = false
     model_ev.use = USE_AS_OPEN
+    model_ev.accepted = false
 
     let total_time = maybe_event_how_long
     let ch_i = maybe_event_index
@@ -134,6 +146,7 @@ $: if ( dropped_event && (all_day_list !== undefined)) {
             ntxt_slot.contact_phone = model_ev.contact_phone
             ntxt_slot.on_zoom = model_ev.on_zoom
             ntxt_slot.in_person = model_ev.in_person
+            ntxt_slot.accepted = model_ev.accepted
             //
             ntxt_slot.use = USE_AS_OPEN
             //
@@ -332,12 +345,18 @@ function publish_event_cancel(ev) {
                             {#if hour_data.label.length > 0}
                                 <span>{hour_data.label}</span>
                             {/if}
+                            {#if hour_data.accepted > 0}
+                                <span>✔️</span>
+                            {/if}
                         </div>
                     {:else}
                         <div class="half-hour-display {hour_data.use}" on:click={(ev) => { handle_change_request(hour_data) }}>
                             +30:
                             {#if hour_data.label.length > 0}
                                 <span>{hour_data.label}</span>
+                            {/if}
+                            {#if hour_data.accepted > 0}
+                                <span>✔️</span>
                             {/if}
                         </div>
                     {/if}

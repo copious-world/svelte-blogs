@@ -11,6 +11,7 @@ export let model_how_long
 export let model_general_class
 export let slot_of_change
 
+const ONE_MINUTE = (60*1000)
 const ONE_HOUR = (3600*1000)
 const ONE_HALF_HOUR = (3600*500)
 const ONE_QUARTER_HOUR = (3600*250)
@@ -59,6 +60,7 @@ $: if ( (changed_event) && (all_day_list !== undefined) ) {
     let model_ev = all_day_list[maybe_event_index]
     model_ev.changed = true
     model_ev.how_long = maybe_event_how_long
+    model_ev.end_at = model_ev.begin_at + maybe_event_how_long*ONE_MINUTE
     model_ev.label = maybe_event_topic
     model_ev.person_id = maybe_event_id
     model_ev.email = maybe_event_email
@@ -98,6 +100,7 @@ $: if ( (changed_event) && (all_day_list !== undefined) ) {
 $: if ( dropped_event && (all_day_list !== undefined)) {
     dropped_event = false
     let model_ev = all_day_list[maybe_event_index]
+    model_ev.end_at = model_ev.begin_at + maybe_event_how_long*ONE_MINUTE
     model_ev.how_long = 15
     model_ev.label = ""
     model_ev.person_id = ""
@@ -210,10 +213,20 @@ function publish_event_accept(ev) {
     changed_event = true
     day_event_count++
     //
-    publish(cnst.CALENDAR_TOPIC_GROUP,cnst.ACCEPT_EVENT_TOPIC,cnst.USER_CHAT_PATH,{
+    let req = all_day_list[maybe_event_index]
+    let uid_topic = req.user_id
+    req.accepted = true
+    //
+    publish(cnst.CALENDAR_TOPIC_GROUP,uid_topic,cnst.USER_CHAT_PATH,{  // cnst.ACCEPT_EVENT_TOPIC
             "type" : "accept",
             "data" : all_day_list[maybe_event_index]
         })
+    setTimeout(() => {      // after svelte changes
+        publish(cnst.CALENDAR_TOPIC_GROUP,cnst.ACCEPT_EVENT_TOPIC,cnst.USER_CHAT_PATH,{
+            "type" : "change",
+            "data" : req
+        })
+    },5)
 }
 
 
@@ -251,17 +264,25 @@ function publish_event_revision(ev) {
 function publish_event_cancel(ev) {
     //
     hide_editor()
-
+    //
     let dropped_ev = Object.assign({},all_day_list[maybe_event_index])
     //
     changed_event = false
     dropped_event = true
     day_event_count--
     //
-
+    dropped_ev.accepted = false
+    dropped_ev.end_at = dropped_ev.begin_at + dropped_ev.how_long*ONE_MINUTE
+    let uid_topic = `${dropped_ev.user_id}-${cnst.REQUEST_EVENT_DROP_TOPIC}`
+    //
+    publish(cnst.CALENDAR_TOPIC_GROUP,uid_topic,cnst.USER_CHAT_PATH,{  // cnst.ACCEPT_EVENT_TOPIC
+            "type" : "drop",
+            "data" : dropped_ev
+        })
+    //
     setTimeout(() => {      // after svelte changes
-        publish(cnst.CALENDAR_TOPIC_GROUP,consts.REJECT_EVENT_TOPIC,consts.USER_CHAT_PATH,{
-            "type" : "change",
+        publish(cnst.CALENDAR_TOPIC_GROUP,cnst.REJECT_EVENT_TOPIC,cnst.USER_CHAT_PATH,{
+            "type" : "drop",
             "data" : dropped_ev
         })
     },5)

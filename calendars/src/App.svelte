@@ -10,7 +10,7 @@
 	import FloatWindow from 'svelte-float-window';
 
 
-	import { process_search_results, place_data, merge_data, clonify, make_empty_thing, link_server_fetch } from '../../common/data-utils.js'
+	import { process_search_results, place_data, merge_data, make_empty_thing, link_server_fetch } from '../../common/data-utils.js'
 	import { popup_size } from '../../common/display-utils.js'
 	import { get_search } from "../../common/search_box.js"
 
@@ -44,6 +44,7 @@
 	const Slot = EventDays.Slot
 	const TimeSlotAgenda = EventDays.TimeSlotAgenda
 
+	let force_day_event_update = false
 
 
 	let g_active_slot_list = []
@@ -114,6 +115,7 @@
 			this.month = d_date.getMonth()
 			this.year = d_date.getFullYear()
 			this.mo_key = day_key
+			this.accepted = false
 		}
 		//
 	}
@@ -127,6 +129,65 @@
 			this.event_count = 0
 			this.has_events = false
 			this.key = ""
+		}
+		//
+
+		copy_relevant_fields(sl,a_slot) {
+			sl.label = a_slot.label
+			sl.person_id = a_slot.person_id
+			sl.email = a_slot.email
+			sl.contact_phone = a_slot.contact_phone
+			sl.on_zoom = a_slot.on_zoom
+			sl.in_person = a_slot.in_person
+			sl.user_id = a_slot.user_id
+			sl.how_long = a_slot.how_long
+			sl.month = a_slot.month
+			sl.year = a_slot.year
+			sl.mo_key = a_slot.mo_key
+		}
+
+
+		add_slot(a_slot) {
+			super.add_slot(a_slot)
+
+			let a_list = this.all_day_list
+			for ( let sl of a_list ) {
+
+				if ( ( sl.begin_at >= a_slot.begin_at ) &&  (sl.begin_at < a_slot.end_at) ) {
+					sl.use = a_slot.use
+				}
+				this.copy_relevant_fields(sl,a_slot)
+			}
+
+			this.event_count++
+			this.has_events = true
+			force_day_event_update = true
+		}
+
+		remove_slot(a_slot) {
+			super.remove_slot(a_slot)
+			if ( this.event_count > 0 ) { this.event_count-- }
+			if ( this.event_count === 0 ) {
+				this.has_events = false
+			}
+			let d_date = new Date(a_slot.begin_at)
+			let replacer = new ReqSlot("",a_slot.begin_at,0,{
+														"index" : a_slot.index,
+														"blocked" : USE_AS_OPEN,
+														"on_half_hour" : a_slot.on_half_hour,
+													},d_date)
+			super.add_slot(replacer)
+
+			let all_day_list = this.all_day_list
+			for ( let i = 0; i < 48; i++ ) {
+				let sl = all_day_list[i]
+				if ( ( sl.begin_at >= a_slot.begin_at ) &&  (sl.begin_at <= a_slot.end_at) ) {
+					sl.use = USE_AS_OPEN
+					this.copy_relevant_fields(sl,replacer)
+				}
+			}
+			//
+			force_day_event_update = true
 		}
 		//
 
@@ -160,12 +221,15 @@
 			this.event_count = 0
 			this.has_events = false
 			this.key = key
-
 		}
+
 	}
 
 
 	let g_request_alert_parameters = false
+	let parameter_setup = false
+	$: g_request_alert_parameters = parameter_setup
+
 	let g_user_id = "smith"
 
 	//
@@ -193,6 +257,12 @@
 		agenda.has_events = current_day_data.has_events
 		agenda.event_count = current_day_data.event_count
 		things = things
+	}
+
+	$: if ( force_day_event_update ) {
+		let mo = things[0]
+		things = things
+		force_day_event_update = false
 	}
 
 
@@ -238,7 +308,7 @@
 		"total_events" : 0
 	}
 
-	let thing_template = make_empty_thing(model_month_entry)
+	let thing_template = make_empty_thing(model_month_entry,true)
 
 	function fill_cal(mentry) {
 		//
@@ -342,25 +412,38 @@
 		let topic_group = cnst.CALENDAR_TOPIC_GROUP
 		let api_path = "owner"
 		let subscriptions = { 			// provide updates for user displays even though the search DB updates
-			"in-request" : {			// showing new request as they are made everywhere
+			"in-request" : {			// showing new request as they are made everywhere  (these are for everyone)
 				"path" : cnst.USER_CHAT_PATH,
 				"topic" : cnst.REQUEST_EVENT_TOPIC,
 				"handler" : async (message) => {
-					let status = message.status
-					if ( status === "OK" ) {
+					let status = (message.data !== undefined)
+					if ( status ) {
 						let req = messsage.data
 						injest_request(req)
 					}
 				}
 			},
-			"in-state-changes" : {		// the mantainer accepts the request 
+			"in-state-changes" : {		// the mantainer accepts the request for this user
 				"path" : cnst.USER_CHAT_PATH,
 				"topic" : g_user_id,
 				"handler" : async (message) => {
-					let status = message.status
-					if ( status === "OK" ) {
-						g_request_alert_parameters = message.data
-						start_floating_window(2)
+					let status = (message.data !== undefined)
+					if ( status ) {
+						parameter_setup = message.data
+						setTimeout(() => { start_floating_window(2) },5)
+						data_fetcher() // retrieve the changes that this mesage is telling us about
+					}
+				}
+			},
+			"in-request-drop" : {		// from the owner -- this event is dropped by the owner
+				"path" : cnst.USER_CHAT_PATH,
+				"topic" : `${g_user_id}-${cnst.REQUEST_EVENT_DROP_TOPIC}`,		// cancel meeting, drop and create new (different time)
+				"handler" :   async (message) => {
+					let status = (message.data !== undefined)
+					if ( status ) {
+						parameter_setup = message.data
+						tl_subr.drop_request(parameter_setup,things)
+						setTimeout(() => { start_floating_window(2) },5)
 						data_fetcher() // retrieve the changes that this mesage is telling us about
 					}
 				}
@@ -744,7 +827,7 @@
 
 
 <FloatWindow title="Day Planner" index={1} scale_size_array={all_window_scales} >
-	<DayEvents {...current_day_data} bind:day_event_count/>
+	<DayEvents {...current_day_data} user_id={g_user_id}   bind:day_event_count/>
 </FloatWindow>
 
 
