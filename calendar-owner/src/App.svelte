@@ -14,7 +14,10 @@
 	import ThingGrid from 'grid-of-things';
 	import FloatWindow from 'svelte-float-window';
 	//
+	import Clock from 'svelte-clock'
 
+
+	
 	import { process_search_results, place_data, merge_data, clonify, make_empty_thing, link_server_fetch } from '../../common/data-utils.js'
 	import { popup_size } from '../../common/display-utils.js'
 	import { get_search } from "../../common/search_box.js"
@@ -28,6 +31,7 @@
 	import {add_ws_endpoint} from '../../common/ws-relay-app'
 	import tl_subr from '../../calendar-common/subcription_handlers'
 	import cnst from '../../calendar-common/constants'
+
 
 
 	import { onMount } from 'svelte';
@@ -383,8 +387,10 @@
 		current_day_data.has_events = (current_day_data.event_count > 0)
 		current_thing.total_events = current_thing.total_events + 1
 		let agenda = current_thing.cal.map[current_day_data.key]
-		agenda.has_events = current_day_data.has_events
-		agenda.event_count = current_day_data.event_count
+		if ( agenda ) {
+			agenda.has_events = current_day_data.has_events
+			agenda.event_count = current_day_data.event_count
+		}
 		things = things
 	}
 
@@ -1688,6 +1694,7 @@
 			</div>
 		</div>
 		<div class="blg-ctrl-panel" style="display:inline-block;background-color:#FFFFFA" >
+			<Clock />
 			<button class="blg-ctl-button" on:click={handleClick_first}>&le;</button>
 			<input class="blg-ctl-slider" type=range bind:value={article_index} min=1 max={article_count} on:change={handle_index_changed} >
 			<button class="blg-ctl-button" on:click={handleClick_last}>&ge;</button>

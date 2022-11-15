@@ -9,6 +9,8 @@
 	import ThingGrid from 'grid-of-things';
 	import FloatWindow from 'svelte-float-window';
 
+	import Clock from 'svelte-clock'
+
 
 	import { process_search_results, place_data, merge_data, make_empty_thing, link_server_fetch } from '../../common/data-utils.js'
 	import { popup_size } from '../../common/display-utils.js'
@@ -254,8 +256,10 @@
 		current_day_data.has_events = (current_day_data.event_count > 0)
 		current_thing.total_events = current_thing.total_events + 1
 		let agenda = current_thing.cal.map[current_day_data.key]
-		agenda.has_events = current_day_data.has_events
-		agenda.event_count = current_day_data.event_count
+		if ( agenda ) {
+			agenda.has_events = current_day_data.has_events
+			agenda.event_count = current_day_data.event_count
+		}
 		things = things
 	}
 
@@ -760,6 +764,28 @@
 	}
 
 
+	// 
+	let g_timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+	let tz_city = g_timezone.split('/')[1]
+
+	let all_tz = Intl.supportedValuesOf('timeZone')
+
+	let all_clocks = [
+		{ "label" : tz_city, "timezone" : "+6"}
+	]
+
+	for ( let tz of all_tz ) {
+		let also_tz_city = tz.split('/')[1]
+		if ( also_tz_city ) {
+			all_clocks.push({"label" : also_tz_city, "timezone" : "+6", "tz_info" : tz })
+		}
+	}
+
+
+	function select_time_zone(zone_pair) {
+		tz_city = zone_pair.label
+		g_timezone = zone_pair.tz_info
+	}
 
 </script>
 
@@ -767,52 +793,37 @@
 
 <div>
 
-	<div style="border: solid 2px navy;padding: 4px;background-color:#EFEFEF;">
-		<div class="blg-ctrl-panel" style="display:inline-block;vertical-align:bottom;background-color:#EFFFFE" >
+	<div style="border: solid 2px navy;padding: 4px;background-color:#EFEFEF;height:fit-content;width:99%">
+		<div class="blg-ctrl-panel" style="display:inline-block;white-space: nowrap;text-align:center;vertical-align:top;background-color:#EFFFFE;height:inherit;width:fit-content;" >
 			<span style="color:navy;font-weight:bold">Boxes</span>
 			<input type=number class="blg-ctl-number-field" bind:value={box_delta} min=1 max=4>
-
 			<button class="blg-ctl-button" on:click={handleClick_remove}>
 				-
 			</button>
-
 			<button class="blg-ctl-button"  on:click={handleClick_add}>
 				+
-			</button>
+			</button>	
 		</div>
-		<div class="blg-ctrl-panel" style="display:inline-block;vertical-align:bottom;background-color:#EFEFFE" >
-			<button on:click={handleClick_fetch}>
-				search
-			</button>
-			<div style="display:inline-block;">
-			&nbsp;<input type=text bind:value={search_topic} on:keypress={handle_keyDown} >
+		<div class="blg-ctrl-panel" style="display:inline-block;vertical-align:top;background-color:#EFEFFE;width:calc(76vw - 8px);white-space: nowrap;" >
+			<div style="height:60px;display:inline-block;cursor:pointer;vertical-align:top;">
+				<Clock timezone={g_timezone} />
+				<div style="text-align:center;font-size:60%;font-weight:bolder">
+					{tz_city}
+				</div>
+			</div>
+			<div style="display:inline-block;height:fit-content;width:calc(100% - 4px);overflow-x:scroll;padding:0px;white-space: nowrap;">
+				{#each all_clocks as zone_pair}
+				<div style="height:60px;display:inline-block;margin-right:4px;cursor:pointer;" on:click={() => {select_time_zone(zone_pair)} }>
+					<Clock  timezone={zone_pair.tz_info} />
+					<div style="text-align:center;font-size:60%;font-weight:bolder">
+						{zone_pair.label}
+					</div>
+				</div>	
+				{/each}
 			</div>
 		</div>
-		<div class="blg-ctrl-panel" style="display:inline-block;background-color:#FFFFFA" >
-			
-			<button class="blg-ctl-button" on:click={handleClick_first}>&le;</button>
-			<input class="blg-ctl-slider" type=range bind:value={article_index} min=1 max={article_count} on:change={handle_index_changed} >
-			<button class="blg-ctl-button" on:click={handleClick_last}>&ge;</button>
-			<input type=number class="blg-ctl-number-field" bind:value={article_index} min=1 max={article_count} on:change={handle_index_changed} >
-			of {article_count}
-		</div>
-		<div class="blg-ctrl-panel" style="display:inline-block;background-color:#FFFFFA" >
-			<select bind:value={search_ordering} on:change="{handle_order_change}">
-				{#each qlist_ordering as ordering}
-					<option value={ordering}>
-						{ordering.text}
-					</option>
-				{/each}
-			</select>
-		</div>
 	</div>
-	<div style="border: solid 1px grey;padding: 4px;background-color:#F5F6EF;">
-		{#if going_session }
-		<div class="sel-titles blg-ctl-button" ><button on:click={present_assest_editing}>add entry</button></div>
-		{/if}
-		<div class="sel-titles" >Title: {current_roller_title}</div>
-	</div>
-  
+
 	<div class="blg-grid-container">
 		<ThingGrid things={things} thing_component={Thing} on:message={handleMessage} />
 	</div>
