@@ -27,6 +27,7 @@
     "forever-monitor": "^3.0.3",
     "middie": "^7.1.0",
     "month-utils": "^0.8.1",
-    "sirv-cli": "^2.0.2"
+    "sirv-cli": "^2.0.2",
+    "svelte-clock": "^1.0.0"
   }
 }
