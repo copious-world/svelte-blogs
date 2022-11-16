@@ -5,9 +5,11 @@
 	import Thing from './Thing.svelte'
 	import DayEvents from './DayEvents.svelte'
 	import RequestChangeAlerts from './RequestChangeAlerts.svelte'
+	import ClockSelections from './ClockSelections.svelte'
 	//
 	import ThingGrid from 'grid-of-things';
 	import FloatWindow from 'svelte-float-window';
+
 
 	import Clock from 'svelte-clock'
 
@@ -764,27 +766,83 @@
 	}
 
 
+	function handleTimezoneUpdateMessage(event) {
+		let tz_data = event.detail
+		if ( tz_data ) {
+			let clock_changes = tz_data.clocks
+			if ( clock_changes ) {
+				let reclocked = g_all_clocks.map((a_clock) => {
+					let clock_ky = a_clock.tz_info
+					let clck_change = clock_changes[clock_ky]
+					if ( clck_change !== undefined ) {
+						if ( clck_change ) {
+							delete clock_changes[clock_ky]
+							return a_clock
+						} else {
+							return false
+						}
+					}
+					return a_clock
+				})
+				reclocked = reclocked.filter((el) => {
+					return el
+				})
+				let add_on = Object.keys(clock_changes)
+				for ( let clock_ky of add_on ) {
+					let city = clock_ky.split('/')
+					city = city[city.length-1]
+					reclocked.push({ "label" : city, "timezone" : "+6", "tz_info" : clock_ky })
+				}
+				g_all_clocks = reclocked
+
+
+				console.log(g_all_clocks)
+			}
+		}
+	}
+
+	
 	// 
 	let g_timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 	let tz_city = g_timezone.split('/')[1]
 
-	let all_tz = Intl.supportedValuesOf('timeZone')
 
-	let all_clocks = [
-		{ "label" : tz_city, "timezone" : "+6"}
+	let g_all_clocks = [
+		{ "label" : "New York", "timezone" : "+6", "tz_info" : "America/New_York"},
+		{ "label" : "Boise", "timezone" : "+6", "tz_info" : "America/Boise"},
+		{ "label" : "Dublin", "timezone" : "+6", "tz_info" : "Europe/Dublin"},
+		{ "label" : "Gibraltar", "timezone" : "+6", "tz_info" : "Europe/Gibraltar"},
+
+		{ "label" : "London", "timezone" : "+6", "tz_info" : "Europe/London"},
+		{ "label" : "Berlin", "timezone" : "+6", "tz_info" : "Europe/Berlin"},
+		{ "label" : "Los Angeles", "timezone" : "+6", "tz_info" : "America/Los_Angeles"},
+		{ "label" : "Denver", "timezone" : "+6", "tz_info" : "America/Denver"},
+		{ "label" : "Chicago", "timezone" : "+6", "tz_info" : "America/Chicago"},
+		{ "label" : "Paris", "timezone" : "+6", "tz_info" : "Europe/Paris"},
+		{ "label" : "Vienna", "timezone" : "+6", "tz_info" : "Europe/Vienna"},
+		{ "label" : "Warsaw", "timezone" : "+6", "tz_info" : "Europe/Warsaw"},
+		{ "label" : "Auckland", "timezone" : "+6", "tz_info" : "Pacific/Auckland"},
+		{ "label" : "Tokyo", "timezone" : "+6", "tz_info" : "Asia/Tokyo"},
+		{ "label" : "Sydney", "timezone" : "+6", "tz_info" : "Australia/Sydney"},
+		{ "label" : "Singapore", "timezone" : "+6", "tz_info" : "Asia/Singapore"},
+		{ "label" : "Perth", "timezone" : "+6", "tz_info" : "Australia/Perth"}
+		// 
 	]
 
-	for ( let tz of all_tz ) {
-		let also_tz_city = tz.split('/')[1]
-		if ( also_tz_city ) {
-			all_clocks.push({"label" : also_tz_city, "timezone" : "+6", "tz_info" : tz })
-		}
+	const g_time_zone_clocks = []
+
+	for ( let tz of g_all_clocks ) {
+		g_time_zone_clocks.push(tz.tz_info)
 	}
 
 
 	function select_time_zone(zone_pair) {
 		tz_city = zone_pair.label
 		g_timezone = zone_pair.tz_info
+	}
+
+	function launch_custom_clocks(ev) {
+		start_floating_window(3);
 	}
 
 </script>
@@ -794,25 +852,28 @@
 <div>
 
 	<div style="border: solid 2px navy;padding: 4px;background-color:#EFEFEF;height:fit-content;width:99%">
-		<div class="blg-ctrl-panel" style="display:inline-block;white-space: nowrap;text-align:center;vertical-align:top;background-color:#EFFFFE;height:inherit;width:fit-content;" >
-			<span style="color:navy;font-weight:bold">Boxes</span>
-			<input type=number class="blg-ctl-number-field" bind:value={box_delta} min=1 max=4>
-			<button class="blg-ctl-button" on:click={handleClick_remove}>
-				-
-			</button>
-			<button class="blg-ctl-button"  on:click={handleClick_add}>
-				+
-			</button>	
+		<div class="blg-ctrl-panel" style="display:inline-block;text-align:center;vertical-align:top;background-color:#EFFFFE;height:inherit;width:fit-content;" >
+			<div  style="height:inherit;width:fit-content;white-space:nowrap;text-align:center;">
+				<span style="color:navy;font-weight:bold">Boxes</span>
+				<input type=number class="blg-ctl-number-field" bind:value={box_delta} min=1 max=4>
+				<button class="blg-ctl-button" on:click={handleClick_remove}>
+					-
+				</button>
+				<button class="blg-ctl-button"  on:click={handleClick_add}>
+					+
+				</button>
+			</div>
+			<button style="font-size:x-small;white-space:nowrap;"  on:click={launch_custom_clocks} >choose clocks</button>
 		</div>
 		<div class="blg-ctrl-panel" style="display:inline-block;vertical-align:top;background-color:#EFEFFE;width:calc(76vw - 8px);white-space: nowrap;" >
-			<div style="height:60px;display:inline-block;cursor:pointer;vertical-align:top;">
+			<div style="height:60px;display:inline-block;cursor:pointer;vertical-align:top;" on:click={launch_custom_clocks}>
 				<Clock timezone={g_timezone} />
 				<div style="text-align:center;font-size:60%;font-weight:bolder">
 					{tz_city}
 				</div>
 			</div>
 			<div style="display:inline-block;height:fit-content;width:calc(100% - 4px);overflow-x:scroll;padding:0px;white-space: nowrap;">
-				{#each all_clocks as zone_pair}
+				{#each g_all_clocks as zone_pair}
 				<div style="height:60px;display:inline-block;margin-right:4px;cursor:pointer;" on:click={() => {select_time_zone(zone_pair)} }>
 					<Clock  timezone={zone_pair.tz_info} />
 					<div style="text-align:center;font-size:60%;font-weight:bolder">
@@ -848,6 +909,9 @@
 </FloatWindow>
 {/if}
 
+<FloatWindow title="Timezone Clocks" index={3} scale_size_array={all_window_scales} >
+	<ClockSelections time_zone_clocks={g_time_zone_clocks} on:message={handleTimezoneUpdateMessage} />
+</FloatWindow>
 
 <style>
 
@@ -865,11 +929,6 @@
 		border-radius: 6px;
 	}
 
-	.blg-ctl-slider {
-		height: 35px;
-		vertical-align: bottom;
-	}
-
 	.blg-ctl-number-field {
 		max-width: 60px
 	}
@@ -880,15 +939,6 @@
 		padding-right:4px;
 		margin:0px;
 		border: none;
-	}
-
-	.sel-titles {
-		display:inline-block;
-		width:35%;
-		font-weight:bold;
-		color:black;
-		font-size:0.75em;
-		margin: 6px;
 	}
 
 
