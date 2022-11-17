@@ -49,6 +49,7 @@
 	const TimeSlotAgenda = EventDays.TimeSlotAgenda
 
 	let force_day_event_update = false
+	let g_timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
 
 	let g_active_slot_list = []
@@ -311,7 +312,8 @@
 		"keys" : [  ],
 		"comments" : [],
 		"score" : 1.0,
-		"total_events" : 0
+		"total_events" : 0,
+		"time_zone" : g_timezone
 	}
 
 	let thing_template = make_empty_thing(model_month_entry,true)
@@ -795,19 +797,33 @@
 				}
 				g_all_clocks = reclocked
 
-
-				console.log(g_all_clocks)
 			}
 		}
 	}
 
 	
 	// 
-	let g_timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 	let tz_city = g_timezone.split('/')[1]
 
+	// ----
+	let home_time = new Date()
+	let g_home_timezone = g_timezone
+	let home_tz_str = home_time.toLocaleTimeString("en-US", { timeZone: g_home_timezone })
+	let home_tparts = home_tz_str.split(':')
+	let home_hr_update = parseInt(home_tparts[0])
 
+	let h_rest = home_tparts[2].split(' ')
+	let h_night_n_day = h_rest[1].trim()
+
+	if ( (h_night_n_day === "PM") && (home_hr_update !== 12) ) {
+		home_hr_update += 12
+	}
+	let h_tz_date_str = home_time.toLocaleDateString("en-US", { timeZone: g_timezone })
+	let home_extract_day = h_tz_date_str.split('/')[1]
+
+	// ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ----
 	let g_all_clocks = [
+		//
 		{ "label" : "New York", "timezone" : "+6", "tz_info" : "America/New_York"},
 		{ "label" : "Boise", "timezone" : "+6", "tz_info" : "America/Boise"},
 		{ "label" : "Dublin", "timezone" : "+6", "tz_info" : "Europe/Dublin"},
@@ -839,6 +855,40 @@
 	function select_time_zone(zone_pair) {
 		tz_city = zone_pair.label
 		g_timezone = zone_pair.tz_info
+
+
+		let time = new Date()
+		let tz_str = time.toLocaleTimeString("en-US", { timeZone: g_timezone })
+		let tparts = tz_str.split(':')
+		let hr_update = parseInt(tparts[0])
+
+		let rest = tparts[2].split(' ')
+		let night_n_day = rest[1].trim()
+
+		if ( (night_n_day === "PM") && (hr_update !== 12) ) {
+			hr_update += 12
+		}
+		//
+
+		let tz_date_str = time.toLocaleDateString("en-US", { timeZone: g_timezone })
+		let extract_day = tz_date_str.split('/')[1]
+
+		for ( let a_thing of things ) {
+			a_thing.time_zone = g_timezone
+		}
+		things = things
+		
+		console.log(home_hr_update,h_night_n_day, h_tz_date_str, home_extract_day, "::", hr_update, night_n_day, tz_date_str, extract_day, "::> ", (home_hr_update - hr_update))
+	}
+
+
+	function return_local_clock() {
+		let timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+		//
+		let tz_parts = timezone.split('/')
+		let city = tz_parts[tz_parts.length - 1]
+		let original_tz = { "label" : city, "timezone" : "+6", "tz_info" : timezone}
+		select_time_zone(original_tz)
 	}
 
 	function launch_custom_clocks(ev) {
@@ -866,7 +916,7 @@
 			<button style="font-size:x-small;white-space:nowrap;"  on:click={launch_custom_clocks} >choose clocks</button>
 		</div>
 		<div class="blg-ctrl-panel" style="display:inline-block;vertical-align:top;background-color:#EFEFFE;width:calc(76vw - 8px);white-space: nowrap;" >
-			<div style="height:60px;display:inline-block;cursor:pointer;vertical-align:top;" on:click={launch_custom_clocks}>
+			<div style="height:60px;display:inline-block;cursor:pointer;vertical-align:top;" on:click={return_local_clock}>
 				<Clock timezone={g_timezone} />
 				<div style="text-align:center;font-size:60%;font-weight:bolder">
 					{tz_city}

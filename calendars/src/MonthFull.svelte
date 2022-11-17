@@ -15,6 +15,7 @@
 	export let year;
 	export let cal			// the calendar object 
 	export let total_events
+	export let time_zone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
 
 	const ONE_HOUR = (3600*1000)
@@ -39,6 +40,19 @@
 			return (dformatted)
 		}
 	}
+
+	let today = new Date()
+	let date_string = today.toUTCString()
+	let local_date_string =  today.toLocaleDateString("en-US", { timeZone: time_zone })
+	let local_time_string = today.toLocaleTimeString("en-US", { timeZone: time_zone })
+	let local_dt_string = `${local_date_string} ${local_time_string}`
+
+
+	$: date_string = today.toUTCString()
+	$: local_date_string = today.toLocaleDateString("en-US", { timeZone: time_zone })
+	$: local_time_string = today.toLocaleTimeString("en-US", { timeZone: time_zone })
+	$: local_dt_string = `${local_date_string} ${local_time_string}`
+
 
 	let calc_day = new Date()
 	let current_month = calc_day.getMonth()
@@ -89,6 +103,21 @@
 
 	// current_day == a_day.day
 
+
+	function tz_day_is_today(a_day,year,month) {
+
+		let tz_date_parts = local_date_string.split('/')
+		let tz_day = parseInt(tz_date_parts[1])
+		let dday = a_day.day
+
+		if ( tz_day === dday ) {
+			return true
+		}
+
+		//return day_is_today(a_day,year,month)
+	}
+
+
 </script>
  
 <div class="blg-el-wrapper-full">
@@ -128,9 +157,9 @@
 							{#if a_day_key !== false }
 								{#each [cal.map[a_day_key]] as a_day}
 									{#if a_day.has_events }
-									<li class="event-access-plus" style="{ day_is_today(a_day,year,month) ? 'border:solid 2px lime' : '' }" on:click={(ev) => {event_management(ev,a_day_key)}}>{a_day.day}</li>
+									<li class="event-access-plus" style="{ tz_day_is_today(a_day,year,month) ? 'border:solid 2px lime' : '' }" on:click={(ev) => {event_management(ev,a_day_key)}}>{a_day.day}</li>
 									{:else}
-									<li class="event-access" style="{ day_is_today(a_day,year,month) ? 'border:solid 2px lime' : '' }" on:click={(ev) => {event_management(ev,a_day_key)}}>{a_day.day}</li>
+									<li class="event-access" style="{ tz_day_is_today(a_day,year,month) ? 'border:solid 2px lime' : '' }" on:click={(ev) => {event_management(ev,a_day_key)}}>{a_day.day}</li>
 									{/if}
 								{/each}
 							{:else}
