@@ -197,7 +197,7 @@
 		//
 
 		fill_day(year,month,key) {
-			let d_date = new Date(year,month,this.day);  // these have been passed
+			let d_date = new Date(year,month,this.day,0,0,0);  // these have been passed
 			let all_day_list = this.all_day_list
 			//
 			g_active_slot_list = update_active_slot_list(d_date,g_slot_definitions)
@@ -501,13 +501,28 @@
 	}
 
 
+	// ---- ---- ---- ---- ---- ---- ---- ---- ---- ----
+	//
+	let g_event_window_tstarts = {}
+	let g_timezone_shift = 0
+
 	function handleEventPlanningMessage(event) {
 		let data = event.detail
 		day_data = data.day_info
 		day_event_count = day_data.event_count
+
+		// get events prev day, current, next
+		// ----
+		//  g_timezone_shift
+
+
+		console.log(g_timezone_shift)
+
 		start_floating_window(1,1.0,0.5);
 		fix_z_topper(1);
 	}
+	// ---- ---- ---- ---- ---- ---- ---- ---- ---- ----
+
 
 	function clickEmptyElement(thing_counter) {
 		//
@@ -870,6 +885,9 @@
 		}
 		//
 
+		g_timezone_shift = hr_update - home_hr_update
+		
+
 		let tz_date_str = time.toLocaleDateString("en-US", { timeZone: g_timezone })
 		let extract_day = tz_date_str.split('/')[1]
 
@@ -949,7 +967,7 @@
 
 
 <FloatWindow title="Day Planner" index={1} scale_size_array={all_window_scales} >
-	<DayEvents {...current_day_data} user_id={g_user_id}   bind:day_event_count/>
+	<DayEvents {...current_day_data} tz_hour_shift={g_timezone_shift} event_starts={g_event_window_tstarts} user_id={g_user_id}   bind:day_event_count/>
 </FloatWindow>
 
 

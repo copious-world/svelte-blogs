@@ -1,7 +1,10 @@
 <script>
 	//
 	import {link_picker,picker} from "../../common/link-pick.js"
-	import {day_is_today} from '../../common/date_utils'
+	import {tz_day_is_today} from '../../common/date_utils'
+	//
+
+	import {timestamp_db} from '../../common/timestamp_db'
 	//
 	import { onMount } from 'svelte';
 
@@ -18,6 +21,13 @@
 	export let year;
 	export let cal			// the calendar object 
 	export let time_zone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
+
+	const ONE_HOUR = (3600*1000)
+	const USE_AS_BLOCK = "block"
+	const USE_AS_MEET = "meeting"
+	const USE_AS_ACTIVITY = "activity"
+	const USE_AS_OPEN = "open"
 
 	let today = new Date()
 	let date_string = today.toUTCString()
@@ -42,6 +52,50 @@
 		show_clock = true
 	} else {
 		show_clock = false	
+	}
+
+
+	function getTimezoneOffset(tz,st){
+		let date = new Date(st)
+		date = new Date(date.getFullYear(),date.getMonth(),date.getDate(),date.getHours(),0,0)
+		//
+		let dstr = date.toLocaleString('en-us',{hour12 : false})
+		let dt_dat = dstr.split(',')
+		let [mo,day,year] = dt_dat[0].trim().split('/').map(istr => parseInt(istr))  //en-us
+		let [hr,min,secs] = dt_dat[1].trim().split(':').map(istr => parseInt(istr))
+
+		let offset = 0
+
+		let tz_dstr = date.toLocaleString('en-us',{timeZone : tz, hour12 : false})
+//console.log(tz_dstr)
+		let tz_dt_dat = tz_dstr.split(',')
+		let [tz_mo,tz_day,tz_year] = tz_dt_dat[0].trim().split('/').map(istr => parseInt(istr))  //en-us
+		let [tz_hr,tz_min,tz_secs] = tz_dt_dat[1].trim().split(':').map(istr => parseInt(istr)) 
+
+		//console.log(tz_mo,tz_day,tz_year,tz_hr,tz)
+		if ( (year > tz_year) || (mo > tz_mo)|| (day > tz_day) ) {
+			offset = (tz_hr - hr) - 24
+		} else {
+			offset = (tz_hr + (( hr === 23 ) ? 1 : 0)) % 24
+		}
+		//
+		//console.log("timezone offset", offset, '-', tz_hr, hr)
+
+		// return UTC offset in millis
+		return offset;
+	}
+
+	function day_includes_events(a_day) {
+		let st = a_day.start_time
+		let et = a_day.end_time
+		//
+		let tzoff = getTimezoneOffset(time_zone,st)
+		//console.log(tzoff)
+
+		st += ONE_HOUR*tzoff
+		et += ONE_HOUR*tzoff
+		return timestamp_db.range_has_events(st,et,(evnt) => {  return evnt.use !== USE_AS_BLOCK })
+
 	}
 
 	onMount(() => {
@@ -97,21 +151,6 @@
 	});
 
 
-
-	function tz_day_is_today(a_day,year,month) {
-
-	
-		let tz_date_parts = local_date_string.split('/')
-		let tz_day = parseInt(tz_date_parts[1])
-		let dday = a_day.day
-
-		if ( tz_day === dday ) {
-			return true
-		}
-
-		//return day_is_today(a_day,year,month)
-	}
-
 </script>
 
 {#if dates && (dates.created != 'never') }
@@ -129,7 +168,6 @@
 <div class="blg-el-wrapper">
 	{#if show_clock }
 		<span class="blg-item-title" >Today Is</span>
-		<span style="color:navy;font-weight:bolder;font-size:66%">{date_string}</span><br>
 		<span style="color:navy;font-weight:bolder;font-size:66%">{local_dt_string} {time_zone}</span>
 	{:else}
 		<span class="blg-item-title" >{month_str} is </span>
@@ -148,10 +186,10 @@
 					{#each a_week as a_day_key}
 						{#if a_day_key !== false }
 							{#each [cal.map[a_day_key]] as a_day}
-								{#if a_day.has_events }
-								<li class="event-access-plus" style="{ tz_day_is_today(a_day,year,month) ? 'border:solid 2px lime' : '' }" >{a_day.day}</li>
+								{#if day_includes_events(a_day) }
+								<li class="event-access-plus" style="{ tz_day_is_today(a_day,year,month,local_date_string,time_zone) ? 'border:solid 2px lime' : '' }" >{a_day.day}</li>
 								{:else}
-								<li class="event-access" style="{ tz_day_is_today(a_day,year,month) ? 'border:solid 2px lime' : '' }" >{a_day.day}</li>
+								<li class="event-access" style="{ tz_day_is_today(a_day,year,month,local_date_string,time_zone) ? 'border:solid 2px lime' : '' }" >{a_day.day}</li>
 								{/if}
 							{/each}
 						{:else}

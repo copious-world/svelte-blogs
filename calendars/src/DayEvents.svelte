@@ -1,4 +1,5 @@
 <script>
+
 export let day
 export let monthstr
 export let all_day_list
@@ -6,12 +7,14 @@ export let day_event_count = 0
 export let month
 export let year
 
-
+export let event_starts
+export let tz_hour_shift
 export let user_id
 
 
 import {publish} from '../../common/ws-relay-app'
 import cnst from '../../calendar-common/constants'
+import {timestamp_db} from '../../common/timestamp_db'
 
 const ONE_MINUTE = (60*1000)
 const ONE_HOUR = (3600*1000)
@@ -55,6 +58,33 @@ let updating_event = false
 
 let topic_group = cnst.CALENDAR_TOPIC_GROUP
 
+let revized_all_day_list = []
+
+$: if ( all_day_list !== undefined ) {
+    if ( tz_hour_shift !== 0 ) {
+        //
+        let d_date = new Date(year,month,day);  // these have been passed
+        let time = d_date.getTime()
+        //
+        revized_all_day_list = [].fill(0,48)
+        for ( let i = 0; i < 48; i++ ) {
+            //
+            let j = i - tz_hour_shift*2
+            if ( j < 0 ) {
+                j = 48 + j
+            } else {
+                j = j % 48
+            }
+            revized_all_day_list[i] = Object.assign({},all_day_list[j])
+            revized_all_day_list[i].time = d_date.toLocaleTimeString() 
+            //
+            time += ONE_HALF_HOUR
+            d_date = new Date(time)
+        }
+    } else {
+        revized_all_day_list = all_day_list
+    }
+}
 
 
 $: if ( changed_event && (all_day_list !== undefined) ) {
@@ -112,6 +142,8 @@ $: if ( changed_event && (all_day_list !== undefined) ) {
         })
     }
 
+    timestamp_db.add(model_ev)
+
 
 }
 
@@ -159,6 +191,8 @@ $: if ( dropped_event && (all_day_list !== undefined)) {
         "type" : "request-change",  // before accepted
         "data" : model_ev
     })
+
+    timestamp_db.remove(model_ev)
 }
 
 function hide_editor() {
@@ -234,7 +268,7 @@ function publish_event_request(ev) {
     ev_data.use = USE_AS_MEET
 
     hide_editor()
-    changed_event = true
+    changed_event = true    /// REACTIVE
     day_event_count++
     //
 
@@ -262,7 +296,7 @@ function publish_event_update(ev) {
 
     model_ev.changed = true
     updating_event = true
-    changed_event = true
+    changed_event = true    /// REACTIVE
 
 }
 
@@ -272,7 +306,7 @@ function publish_event_cancel(ev) {
     hide_editor()
     //
     changed_event = false
-    dropped_event = true
+    dropped_event = true        /// REACTIVE
     day_event_count--
 }
 
@@ -331,7 +365,7 @@ function publish_event_cancel(ev) {
     <h3> events </h3>
     <div class="day-list-holder">
         {#if (all_day_list !== undefined) }
-            {#each all_day_list as hour_data}
+            {#each revized_all_day_list as hour_data}
                 {#if hour_data.use === USE_AS_BLOCK }
                     {#if !(hour_data.on_half_hour) }
                         <div class="hour-display blocked-hour" >

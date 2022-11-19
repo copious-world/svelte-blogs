@@ -1,6 +1,6 @@
 <script>
 	import { createEventDispatcher } from 'svelte';
-	import {day_is_today,day_is_before_today} from '../../common/date_utils'
+	import {tz_day_is_today,day_is_before_today} from '../../common/date_utils'
 
 	const dispatch = createEventDispatcher();
 
@@ -101,25 +101,9 @@
 		//
 	}
 
-	// current_day == a_day.day
-
-
-	function tz_day_is_today(a_day,year,month) {
-
-		let tz_date_parts = local_date_string.split('/')
-		let tz_day = parseInt(tz_date_parts[1])
-		let dday = a_day.day
-
-		if ( tz_day === dday ) {
-			return true
-		}
-
-		//return day_is_today(a_day,year,month)
-	}
-
 
 </script>
- 
+
 <div class="blg-el-wrapper-full">
 	<div style="padding:6px;" >
 		<div class="calendar">
@@ -157,9 +141,9 @@
 							{#if a_day_key !== false }
 								{#each [cal.map[a_day_key]] as a_day}
 									{#if a_day.has_events }
-									<li class="event-access-plus" style="{ tz_day_is_today(a_day,year,month) ? 'border:solid 2px lime' : '' }" on:click={(ev) => {event_management(ev,a_day_key)}}>{a_day.day}</li>
+									<li class="event-access-plus" style="{ tz_day_is_today(a_day,year,month,local_date_string,time_zone) ? 'border:solid 2px lime' : '' }" on:click={(ev) => {event_management(ev,a_day_key)}}>{a_day.day}</li>
 									{:else}
-									<li class="event-access" style="{ tz_day_is_today(a_day,year,month) ? 'border:solid 2px lime' : '' }" on:click={(ev) => {event_management(ev,a_day_key)}}>{a_day.day}</li>
+									<li class="event-access" style="{ tz_day_is_today(a_day,year,month,local_date_string,time_zone) ? 'border:solid 2px lime' : '' }" on:click={(ev) => {event_management(ev,a_day_key)}}>{a_day.day}</li>
 									{/if}
 								{/each}
 							{:else}

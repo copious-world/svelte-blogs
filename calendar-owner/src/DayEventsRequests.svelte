@@ -11,6 +11,7 @@ export let model_how_long
 export let model_general_class
 export let slot_of_change
 
+
 const ONE_MINUTE = (60*1000)
 const ONE_HOUR = (3600*1000)
 const ONE_HALF_HOUR = (3600*500)

@@ -3,7 +3,7 @@ import {HOUR,MIN15,MIN30,ONE_MONTH,ONE_WEEK,TWENTY_FOUR,calc_days,day_is_after_c
 
 const PITCH_MATCH_EPSILON = 0.000005
 
-let local_clock_date = new Date()
+let local_clock_date = new Date()   // UTC time
 let when_is_midnight = (next_midnight(local_clock_date) - local_clock_date.getTime())
 
 
@@ -18,6 +18,33 @@ setTimeout(() => {
 export function day_is_today(a_day,year,month) {
     return day_is_clock_day(a_day,year,month,local_clock_date)
 }
+
+export function day_is_today_timezone(a_day,year,month,timezone) {
+    let str = local_clock_date.toLocaleDateString('en-US', {
+        timeZone: timezone,
+      })
+    let pmn_date = new Date(str)
+    return day_is_clock_day(a_day,year,month,pmn_date)
+}
+
+
+// current_day == a_day.day
+export function tz_day_is_today(a_day,year,month,local_date_string,time_zone) {
+    //
+    let tz_date_parts = local_date_string.split('/')
+    let tz_day = parseInt(tz_date_parts[1])
+    let dday = a_day.day
+
+    if ( tz_day === dday ) {
+        if ( day_is_today(a_day,year,month) ) {
+            return true
+        } else {
+            return day_is_today_timezone(a_day,year,month,time_zone)
+        }
+    }
+    return false
+}
+
 
 
 export function day_is_before_today(a_day,year,month) {
