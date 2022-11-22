@@ -12,6 +12,7 @@ export let event_starts
 export let tz_hour_shift
 export let user_id
 export let time_zone
+export let ui_user_id
 
 
 import {publish} from '../../common/ws-relay-app'
@@ -125,6 +126,7 @@ $: if ( all_day_list !== undefined ) {
                     model_ev.in_person = ev.in_person
                     model_ev.user_id = ev.user_id
                     model_ev.accepted = ev.accepted
+                    model_ev.revision_state = ev.revision_state
                     //
                 }
             }
@@ -154,6 +156,9 @@ $: if ( changed_event && (all_day_list !== undefined) ) {
     model_ev.accepted = false
     model_ev.month = month
     model_ev.year = year
+    if ( !updating_event ) {
+        model_ev.revision_state = cnst.EVENT_IN_NEGOTIATION
+    }
 
     let total_time = maybe_event_how_long
     let ch_i = maybe_event_index
@@ -173,6 +178,7 @@ $: if ( changed_event && (all_day_list !== undefined) ) {
             ntxt_slot.on_zoom = model_ev.on_zoom
             ntxt_slot.in_person = model_ev.in_person
             ntxt_slot.accepted = model_ev.accepted
+            ntxt_slot.revision_state = model_ev.revision_state
             //
             revized_all_day_list[ch_i] = ntxt_slot
         }
@@ -180,22 +186,25 @@ $: if ( changed_event && (all_day_list !== undefined) ) {
     revized_all_day_list[maybe_event_index] = model_ev
     //
     //all_day_list = [].concat(revized_all_day_list)
+    let ev_utc = Object.assign({},model_ev)   // tzoof_ts
+    ev_utc.begin_at -= tzoof_ts
+    ev_utc.end_at -= tzoof_ts
     //
     // ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ----
     //
     if ( updating_event ) {
         publish(cnst.CALENDAR_TOPIC_GROUP,cnst.REQUEST_EVENT_CHANGE_TOPIC,cnst.USER_CHAT_PATH,{
             "type" : "request-change",  // before accepted
-            "data" : model_ev
+            "data" : ev_utc
         })
     } else {
         publish(cnst.CALENDAR_TOPIC_GROUP,cnst.REQUEST_EVENT_TOPIC,cnst.USER_CHAT_PATH,{
             "type" : "request",
-            "data" : model_ev
+            "data" : ev_utc
         })
     }
 
-    timestamp_db.add(model_ev)
+    timestamp_db.add(ev_utc)
 
 
 }
@@ -240,13 +249,17 @@ $: if ( dropped_event && (all_day_list !== undefined)) {
     }
     revized_all_day_list[maybe_event_index] = model_ev
     //all_day_list = [].concat(revized_all_day_list)
+    let ev_utc = Object.assign({},model_ev)   // tzoof_ts
+    ev_utc.begin_at -= tzoof_ts
+    ev_utc.end_at -= tzoof_ts
+
     //
     publish(cnst.CALENDAR_TOPIC_GROUP,cnst.REQUEST_EVENT_DROP_TOPIC,cnst.USER_CHAT_PATH,{
         "type" : "request-change",  // before accepted
-        "data" : model_ev
+        "data" : ev_utc
     })
 
-    timestamp_db.remove(model_ev)
+    timestamp_db.remove(ev_utc)
 }
 
 function hide_editor() {
@@ -270,17 +283,17 @@ function handle_change_request(hour_data) {
             } else break
         }
     }
-    //
-    if ( real_start.use === USE_AS_OPEN ) {
-        editor_for_new = true
-    } else if ( (real_start.use !== USE_AS_BLOCK) && (real_start.changed) ) {
-        editor_for_update = true
-    } else if ( (real_start.use !== USE_AS_BLOCK) && !(real_start.changed) ) {
-        editor_for_cancel = true
-    }
+    //  WHO OWNS
     //
     let src_ev = events_in_play[real_start.begin_at - tzoof_ts]
     if ( src_ev === undefined ) {
+        if ( real_start.use === USE_AS_OPEN ) {
+            editor_for_new = true
+        } else if ( (real_start.use !== USE_AS_BLOCK) && (real_start.changed) ) {  // or this is the owner....
+            editor_for_update = true
+        } else if ( (real_start.use !== USE_AS_BLOCK) && !(real_start.changed) ) {
+            editor_for_cancel = true     // 
+        }
         maybe_event_how_long = real_start.how_long
         maybe_event_index = real_start.index
         maybe_event_time = real_start.time
@@ -293,6 +306,12 @@ function handle_change_request(hour_data) {
         maybe_event_zoom = real_start.on_zoom
         maybe_event_in_person = real_start.in_person
     } else {
+        if ( (src_ev.revision_state === cnst.EVENT_IN_NEGOTIATION) && (src_ev.user_id === ui_user_id) ) {  // or this is the owner....
+            editor_for_update = true
+        } else {
+            editor_for_cancel = true     // 
+        }
+
         maybe_event_how_long = src_ev.how_long
         maybe_event_index = src_ev.index
         maybe_event_time = src_ev.time

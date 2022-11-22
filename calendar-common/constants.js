@@ -19,6 +19,9 @@ export const CALENDAR_TOPIC_GROUP = "calendar-activity"
 
 export const DEFAULT_WS_CALENDAR_ACCESS = "calendar"
 
+export const EVENT_IN_NEGOTIATION = "cal-event-no-closure"
+export const EVENT_STATE_FROZEN = "cal-event-freeze"
+
 export default {
     USER_CHAT_PATH,
     SUGGEST_CHANGE_EVENT_TOPIC,
@@ -31,5 +34,7 @@ export default {
     REQUEST_EVENT_CHANGE_TOPIC,
     REQUEST_EVENT_DROP_TOPIC,
     APPRISE_NEW_MONTH_DATA,
+    EVENT_IN_NEGOTIATION,
+    EVENT_STATE_FROZEN,
     CALENDAR_TOPIC_GROUP
 }

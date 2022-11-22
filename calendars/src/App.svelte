@@ -124,6 +124,7 @@
 			this.year = d_date.getFullYear()
 			this.mo_key = day_key
 			this.accepted = false
+			this.revision_state = cnst.EVENT_IN_NEGOTIATION
 		}
 		//
 	}
@@ -1040,7 +1041,7 @@
 
 
 <FloatWindow title="Day Planner" index={1} scale_size_array={all_window_scales} >
-	<DayEvents {...current_day_data} tz_hour_shift={g_timezone_shift} time_zone={g_timezone} event_starts={g_event_window_tstarts} user_id={g_user_id}   bind:day_event_count/>
+	<DayEvents {...current_day_data} tz_hour_shift={g_timezone_shift} time_zone={g_timezone} event_starts={g_event_window_tstarts} ui_user_id={g_user_id}   bind:day_event_count/>
 </FloatWindow>
 
 
