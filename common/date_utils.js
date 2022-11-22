@@ -55,6 +55,40 @@ export function day_is_after_today(a_day,year,month) {
     return day_is_after_clock_day(a_day,year,month,local_clock_date)
 }
 
+
+// getTimezoneOffset
+
+export function getTimezoneOffset(tz,st){
+    let date = new Date(st)
+    date = new Date(date.getFullYear(),date.getMonth(),date.getDate(),date.getHours(),0,0)
+    //
+    let dstr = date.toLocaleString('en-us',{hour12 : false})
+    let dt_dat = dstr.split(',')
+    let [mo,day,year] = dt_dat[0].trim().split('/').map(istr => parseInt(istr))  //en-us
+    let [hr,min,secs] = dt_dat[1].trim().split(':').map(istr => parseInt(istr))
+
+    let offset = 0
+
+    let tz_dstr = date.toLocaleString('en-us',{timeZone : tz, hour12 : false})
+//console.log(tz_dstr)
+    let tz_dt_dat = tz_dstr.split(',')
+    let [tz_mo,tz_day,tz_year] = tz_dt_dat[0].trim().split('/').map(istr => parseInt(istr))  //en-us
+    let [tz_hr,tz_min,tz_secs] = tz_dt_dat[1].trim().split(':').map(istr => parseInt(istr)) 
+
+    //console.log(tz_mo,tz_day,tz_year,tz_hr,tz)
+    if ( (year > tz_year) || (mo > tz_mo)|| (day > tz_day) ) {
+        offset = (tz_hr - hr) - 24
+    } else {
+        offset = (tz_hr + (( hr === 23 ) ? 1 : 0)) % 24
+    }
+    //
+    //console.log("timezone offset", offset, '-', tz_hr, hr)
+
+    // return UTC offset in millis
+    return offset;
+}
+
+
 // calculate endpoint
 
 export function rect_to_time_slot(found_rect,pitch) {

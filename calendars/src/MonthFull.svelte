@@ -1,6 +1,8 @@
 <script>
 	import { createEventDispatcher } from 'svelte';
-	import {tz_day_is_today,day_is_before_today} from '../../common/date_utils'
+	import {tz_day_is_today,getTimezoneOffset,day_is_before_today} from '../../common/date_utils'
+	//
+	import {timestamp_db} from '../../common/timestamp_db'
 
 	const dispatch = createEventDispatcher();
 
@@ -72,14 +74,27 @@
 	//$: created_when = convert_date(when)
 
 
+
+	function day_includes_events(a_day) {
+		let st = a_day.start_time
+		let et = a_day.end_time
+		//
+		let tzoff = getTimezoneOffset(time_zone,st)
+		//console.log(tzoff)
+
+		st -= ONE_HOUR*tzoff
+		et -= ONE_HOUR*tzoff
+		return timestamp_db.range_has_events(st,et,(evnt) => {  return evnt.use !== USE_AS_BLOCK })
+	}
+
+
 	let going_session = false
 
 	function event_management(event,day_key) {
 		//
 		let tid = event.currentTarget.innerHTML
-		//
 		let day_info = cal.map[day_key]
-
+		//
 		if ( day_is_before_today(day_info.day,year,month) ) {
 			alert("This day has gone by")
 			return
@@ -140,7 +155,7 @@
 						{#each a_week as a_day_key}
 							{#if a_day_key !== false }
 								{#each [cal.map[a_day_key]] as a_day}
-									{#if a_day.has_events }
+									{#if day_includes_events(a_day) }
 									<li class="event-access-plus" style="{ tz_day_is_today(a_day,year,month,local_date_string,time_zone) ? 'border:solid 2px lime' : '' }" on:click={(ev) => {event_management(ev,a_day_key)}}>{a_day.day}</li>
 									{:else}
 									<li class="event-access" style="{ tz_day_is_today(a_day,year,month,local_date_string,time_zone) ? 'border:solid 2px lime' : '' }" on:click={(ev) => {event_management(ev,a_day_key)}}>{a_day.day}</li>

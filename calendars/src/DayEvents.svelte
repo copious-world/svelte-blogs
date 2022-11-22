@@ -10,10 +10,12 @@ export let year
 export let event_starts
 export let tz_hour_shift
 export let user_id
+export let time_zone
 
 
 import {publish} from '../../common/ws-relay-app'
 import cnst from '../../calendar-common/constants'
+import {getTimezoneOffset} from '../../common/date_utils'
 import {timestamp_db} from '../../common/timestamp_db'
 
 const ONE_MINUTE = (60*1000)
@@ -61,29 +63,48 @@ let topic_group = cnst.CALENDAR_TOPIC_GROUP
 let revized_all_day_list = []
 
 $: if ( all_day_list !== undefined ) {
-    if ( tz_hour_shift !== 0 ) {
+    let d_date = new Date(year,month,day);  // these have been passed
+    let time = d_date.getTime()
+    //
+    //
+    let tzoff = getTimezoneOffset(time_zone,time)
+    console.log(tzoff)
+    let tzoof_ts = tzoff*ONE_HOUR
+    //
+    revized_all_day_list = [].fill(0,48)
+    for ( let i = 0; i < 48; i++ ) {
         //
-        let d_date = new Date(year,month,day);  // these have been passed
         let time = d_date.getTime()
         //
-        revized_all_day_list = [].fill(0,48)
-        for ( let i = 0; i < 48; i++ ) {
-            //
-            let j = i - tz_hour_shift*2
-            if ( j < 0 ) {
-                j = 48 + j
-            } else {
-                j = j % 48
+        revized_all_day_list[i] = Object.assign({},all_day_list[i])
+        //
+        let ev = timestamp_db.find_event(time - tzoof_ts)
+        if ( ev !== false ) {
+            revized_all_day_list[i].use = ev.use
+            revized_all_day_list[i].end_at = ev.end_at
+            revized_all_day_list[i].how_long = ev.how_long
+            if ( ev.how_long > 30 ) {
+                let time_left = (ev.how_long - 30)
+                while ( (time_left > 0) && (i < 48) ) {
+                    i++;
+                    time_left -= 30
+                    time += ONE_HALF_HOUR
+                    d_date = new Date(time)
+                    //
+                    revized_all_day_list[i] = Object.assign({},all_day_list[i])
+                    revized_all_day_list[i].use = ev.use
+                    //
+                    revized_all_day_list[i].begin_at = time
+                    revized_all_day_list[i].how_long = (revized_all_day_list[i-1].how_long - 30)
+                }
             }
-            revized_all_day_list[i] = Object.assign({},all_day_list[j])
-            revized_all_day_list[i].time = d_date.toLocaleTimeString() 
-            //
-            time += ONE_HALF_HOUR
-            d_date = new Date(time)
+        } else {
+            revized_all_day_list[i].use = USE_AS_OPEN
         }
-    } else {
-        revized_all_day_list = all_day_list
-    }
+        //
+        time += ONE_HALF_HOUR
+        d_date = new Date(time)
+	}
 }
 
 

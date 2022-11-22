@@ -1,4 +1,31 @@
 
+const QUARTER_HOUR = (60*1000*15);
+
+
+function bin_search_nearest(v,list) {
+    let n = list.length
+    let i = 0;
+    let j = n-1;
+    while ( i < j ) {
+        let lb = list[i]
+        let ub = list[j]
+        if ( v === lb ) return [v,v]
+        if ( v === ub ) return [v,v]
+        let k = i + Math.trunc((j-i)/2)
+        if ( k === i ) return[lb,ub]
+        let tst = list[k]
+        if ( tst === v ) return [v,v]
+        if ( v > tst ) {
+            i = k
+        } else {
+            j = k
+        }
+    }
+
+    let lb = list[i]
+    let ub = list[j]
+    return[lb,ub]
+}
 
 
 class tsDB {
@@ -10,8 +37,10 @@ class tsDB {
     // ---- ev_obj
     add(ev_obj) {
         if ( ev_obj.begin_at ) {
-            this._all_events[ev_obj.begin_at] = ev_obj
+            let beg = parseInt(ev_obj.begin_at)
+            this._all_events[beg] = ev_obj
             this._time_stamp_keys = Object.keys(this._all_events)
+            this._time_stamp_keys = this._time_stamp_keys.map(k => parseInt(k))
             this._time_stamp_keys.sort()  
         }
     }
@@ -20,8 +49,28 @@ class tsDB {
         if ( ev_obj.start_time ) {
             delete this._all_events[ev_obj.begin_at]
             this._time_stamp_keys = Object.keys(this._all_events)
+            this._time_stamp_keys = this._time_stamp_keys.map(k => parseInt(k))
             this._time_stamp_keys.sort()  
         }
+    }
+
+    find_event(time_stamp) {
+        let ev = this._all_events[time_stamp]
+        if ( ev ) return(ev)
+        //
+        let [l,u] = bin_search_nearest(time_stamp,this._time_stamp_keys)
+        ev = this._all_events[l]
+        if ( !(ev) ) {
+            ev = this._all_events[u]
+        }
+        //
+        if ( ev ) {
+            if ( Math.abs(time_stamp - ev.begin_at) < QUARTER_HOUR ) {
+                return ev
+            }
+        }
+        //
+        return false
     }
 
     event_in_bucket(start_time,end_time,ev_obj) {

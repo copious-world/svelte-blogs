@@ -22,6 +22,9 @@
 	import {add_ws_endpoint} from '../../common/ws-relay-app'
 	import tl_subr from '../../calendar-common/subcription_handlers'
 	import cnst from '../../calendar-common/constants'
+	import local_presets from '../../calendar-common/schedule-preset'
+	import {timestamp_db} from '../../common/timestamp_db'
+
 
 	import { onMount } from 'svelte';
 
@@ -198,26 +201,95 @@
 
 		fill_day(year,month,key) {
 			let d_date = new Date(year,month,this.day,0,0,0);  // these have been passed
+
+			let dkey = d_date.toLocaleDateString('en-US',local_presets.time_zone)
+
+			let mnight = local_presets.saturdays[dkey]
+			if ( mnight !== undefined ) {
+
+//console.log("SATURDAY",dkey)
+				let day_defs = local_presets.presets.saturday
+				for ( let def of day_defs ) {
+					let ev = Object.assign({},def)
+					ev.begin_at = mnight + def.begin_at*ONE_HOUR
+					ev.end_at = mnight + def.end_at*ONE_HOUR
+					ev.how_long = (def.end_at - def.begin_at)*60
+					timestamp_db.add(ev)
+				}
+			} else {
+				mnight = local_presets.sundays[dkey]
+				if ( mnight !== undefined ) {
+//console.log("SUNDAY",dkey)
+					let day_defs = local_presets.presets.sunday
+					for ( let def of day_defs ) {
+						let ev = Object.assign({},def)
+						ev.begin_at = mnight + def.begin_at*ONE_HOUR
+						ev.end_at = mnight + def.end_at*ONE_HOUR
+						ev.how_long = (def.end_at - def.begin_at)*60
+						timestamp_db.add(ev)
+					}
+				} else {
+					let day_def = local_presets.holidays[dkey]
+					if ( day_def !== undefined ) {
+//console.log("HOLIDAY",dkey)
+						let ev = Object.assign({},day_def)
+						ev.how_long = 24*60
+						timestamp_db.add(ev)
+					} else {
+						let day_defs = local_presets.presets.daily
+						let a_day = new Date(dkey)
+						mnight = a_day.getTime()
+//console.log("DAILY",dkey)
+						for ( let def of day_defs ) {
+							let ev = Object.assign({},def)
+							ev.begin_at = mnight + def.begin_at*ONE_HOUR
+							ev.end_at = mnight + def.end_at*ONE_HOUR
+							ev.how_long = (def.end_at - def.begin_at)*60
+							timestamp_db.add(ev)
+						}
+					}
+				}
+			}
+
 			let all_day_list = this.all_day_list
 			//
-			g_active_slot_list = update_active_slot_list(d_date,g_slot_definitions)
 			//
 			for ( let i = 0; i < 48; i++ ) {
 				//
-				let hour = d_date.getHours()
 				let minutes = d_date.getMinutes()
 				let time = d_date.getTime()
 				//
-				let blocked = (hour < 10) || (hour >= 19) ? USE_AS_BLOCK : USE_AS_OPEN  // from SLOT
-				if ( g_slot_definitions && g_active_slot_list.length ) {
-					blocked = best_for_hour(g_active_slot_list,time,blocked)
-				}
-				//
+				let blocked = USE_AS_OPEN
 				all_day_list[i] = new ReqSlot("",time,0,{
 														"index" : i,
 														"blocked" : blocked,
 														"on_half_hour" : (minutes !== 0)
 													},d_date,key)
+				//
+				let ev = timestamp_db.find_event(time)
+				if ( ev !== false ) {
+					all_day_list[i].use = ev.use
+					all_day_list[i].end_at = ev.end_at
+					all_day_list[i].how_long = ev.how_long
+					if ( ev.how_long > 30 ) {
+						let time_left = (ev.how_long - 30)
+						while ( (time_left > 0) && (i < 48) ) {
+							i++;
+							time_left -= 30
+							time += ONE_HALF_HOUR
+							d_date = new Date(time)
+							//
+							all_day_list[i] = new ReqSlot("",time,0,{
+														"index" : i,
+														"blocked" : ev.use,
+														"on_half_hour" : (minutes !== 0)
+													},d_date,key)
+							all_day_list[i].begin_at = time
+							all_day_list[i].how_long = (all_day_list[i-1].how_long - 30)
+						}
+					}
+				}
+				//
 				time += ONE_HALF_HOUR
 				d_date = new Date(time)
 			}
@@ -967,7 +1039,7 @@
 
 
 <FloatWindow title="Day Planner" index={1} scale_size_array={all_window_scales} >
-	<DayEvents {...current_day_data} tz_hour_shift={g_timezone_shift} event_starts={g_event_window_tstarts} user_id={g_user_id}   bind:day_event_count/>
+	<DayEvents {...current_day_data} tz_hour_shift={g_timezone_shift} time_zone={g_timezone} event_starts={g_event_window_tstarts} user_id={g_user_id}   bind:day_event_count/>
 </FloatWindow>
 
 
