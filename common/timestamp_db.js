@@ -1,6 +1,6 @@
 
 const QUARTER_HOUR = (60*1000*15);
-
+const ONE_MINUTE = (60*1000)
 
 function bin_search_nearest(v,list) {
     let n = list.length
@@ -65,7 +65,7 @@ class tsDB {
         }
         //
         if ( ev ) {
-            if ( Math.abs(time_stamp - ev.begin_at) < QUARTER_HOUR ) {
+            if (  (time_stamp >= ev.begin_at) && (time_stamp < (ev.begin_at + ev.how_long*ONE_MINUTE)) ) {
                 return ev
             }
         }

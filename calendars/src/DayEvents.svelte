@@ -79,16 +79,24 @@ $: if ( all_day_list !== undefined ) {
         revized_all_day_list[i] = Object.assign({},all_day_list[i])
         //
         let ev = timestamp_db.find_event(time - tzoof_ts)
+    
         if ( ev !== false ) {
+            let how_long = (ev.end_at - time + tzoof_ts)/ONE_MINUTE
+
+            let t = time - tzoof_ts
+//
             revized_all_day_list[i].use = ev.use
             revized_all_day_list[i].end_at = ev.end_at
-            revized_all_day_list[i].how_long = ev.how_long
+            revized_all_day_list[i].how_long = how_long
             if ( ev.how_long > 30 ) {
+                t += ONE_HALF_HOUR
                 let time_left = (ev.how_long - 30)
-                while ( (time_left > 0) && (i < 48) ) {
+                while ( (t < ev.end_at) && (i < 48) ) {
                     i++;
+                    if ( i === 48 ) break;
                     time_left -= 30
                     time += ONE_HALF_HOUR
+                    t += ONE_HALF_HOUR
                     d_date = new Date(time)
                     //
                     revized_all_day_list[i] = Object.assign({},all_day_list[i])

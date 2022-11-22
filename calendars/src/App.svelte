@@ -267,7 +267,7 @@
 													},d_date,key)
 				//
 				let ev = timestamp_db.find_event(time)
-				if ( ev !== false ) {
+				if ( !!(ev) ) {
 					all_day_list[i].use = ev.use
 					all_day_list[i].end_at = ev.end_at
 					all_day_list[i].how_long = ev.how_long
@@ -278,6 +278,7 @@
 							time_left -= 30
 							time += ONE_HALF_HOUR
 							d_date = new Date(time)
+							minutes = d_date.getMinutes()
 							//
 							all_day_list[i] = new ReqSlot("",time,0,{
 														"index" : i,
