@@ -38,7 +38,7 @@ class tsDB {
     add(ev_obj) {
         if ( ev_obj.begin_at ) {
             let beg = parseInt(ev_obj.begin_at)
-            this._all_events[beg] = ev_obj
+            this._all_events[beg] = Object.assign({},ev_obj)
             this._time_stamp_keys = Object.keys(this._all_events)
             this._time_stamp_keys = this._time_stamp_keys.map(k => parseInt(k))
             this._time_stamp_keys.sort()  
