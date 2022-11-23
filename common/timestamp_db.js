@@ -46,7 +46,7 @@ class tsDB {
     }
 
     remove(ev_obj) {
-        if ( ev_obj.start_time ) {
+        if ( ev_obj.begin_at ) {
             delete this._all_events[ev_obj.begin_at]
             this._time_stamp_keys = Object.keys(this._all_events)
             this._time_stamp_keys = this._time_stamp_keys.map(k => parseInt(k))

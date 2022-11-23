@@ -69,6 +69,30 @@ let tzoff = 0
 let tzoof_ts = 0
 let src_date = new Date(year,month,day)
 
+
+function  set_ev_values(time,model_ev,ev,how_long) {
+    if ( ev === undefined ) {
+        return
+    }
+    model_ev.use = ev.use
+    model_ev.end_at = ev.end_at
+    model_ev.how_long = (how_long !== undefined) ? how_long : ev.how_long
+    //
+    model_ev.use = ev.use
+    //
+    model_ev.begin_at = time
+    model_ev.label = ev.label
+    model_ev.person_id = ev.person_id
+    model_ev.email = ev.email
+    model_ev.contact_phone = ev.contact_phone
+    model_ev.on_zoom = ev.on_zoom
+    model_ev.in_person = ev.in_person
+    model_ev.user_id = ev.user_id
+    model_ev.accepted = ev.accepted
+    model_ev.revision_state = ev.revision_state
+}
+
+
 $: {
     src_date = new Date(year,month,day);  // these have been passed
     let time = src_date.getTime()
@@ -98,9 +122,10 @@ $: if ( all_day_list !== undefined ) {
                 events_in_play[t] = ev
             }
             //
-            revized_all_day_list[i].use = ev.use
-            revized_all_day_list[i].end_at = ev.end_at
-            revized_all_day_list[i].how_long = how_long
+            revized_all_day_list[i] = Object.assign({},all_day_list[i])
+            let model_ev = revized_all_day_list[i]
+            set_ev_values(time,model_ev,ev)
+            //
             if ( ev.how_long > 30 ) {
                 t += ONE_HALF_HOUR
                 let time_left = (ev.how_long - 30)
@@ -114,19 +139,7 @@ $: if ( all_day_list !== undefined ) {
                     //
                     revized_all_day_list[i] = Object.assign({},all_day_list[i])
                     let model_ev = revized_all_day_list[i]
-                    model_ev.use = ev.use
-                    //
-                    model_ev.begin_at = time
-                    model_ev.how_long = (revized_all_day_list[i-1].how_long - 30)
-                    model_ev.label = maybe_event_topic
-                    model_ev.person_id = ev.person_id
-                    model_ev.email = ev.email
-                    model_ev.contact_phone = ev.contact_phone
-                    model_ev.on_zoom = ev.on_zoom
-                    model_ev.in_person = ev.in_person
-                    model_ev.user_id = ev.user_id
-                    model_ev.accepted = ev.accepted
-                    model_ev.revision_state = ev.revision_state
+                    set_ev_values(time,model_ev,ev,(revized_all_day_list[i-1].how_long - 30))
                     //
                 }
             }
@@ -152,7 +165,7 @@ $: if ( changed_event && (all_day_list !== undefined) ) {
     model_ev.contact_phone = maybe_event_contact_phone
     model_ev.on_zoom = maybe_event_zoom
     model_ev.in_person = maybe_event_in_person
-    model_ev.user_id = user_id
+    model_ev.user_id = ui_user_id
     model_ev.accepted = false
     model_ev.month = month
     model_ev.year = year
