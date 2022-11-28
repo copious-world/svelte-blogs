@@ -14,6 +14,7 @@ export let user_id
 export let time_zone
 export let ui_user_id
 
+// ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ----
 
 import {publish} from '../../common/ws-relay-app'
 import cnst from '../../calendar-common/constants'
@@ -165,6 +166,7 @@ $: if ( changed_event && (all_day_list !== undefined) ) {
     model_ev.contact_phone = maybe_event_contact_phone
     model_ev.on_zoom = maybe_event_zoom
     model_ev.in_person = maybe_event_in_person
+    //
     model_ev.user_id = ui_user_id
     model_ev.accepted = false
     model_ev.month = month
@@ -218,8 +220,6 @@ $: if ( changed_event && (all_day_list !== undefined) ) {
     }
 
     timestamp_db.add(ev_utc)
-
-
 }
 
 
@@ -281,6 +281,7 @@ function hide_editor() {
     editor_for_update = false
     editor_for_cancel = false
 }
+
 
 function handle_change_request(hour_data) {
     //
@@ -371,6 +372,7 @@ function publish_event_request(ev) {
 
     hide_editor()
     changed_event = true    /// REACTIVE
+    updating_event = false
     day_event_count++
     //
 
@@ -408,6 +410,7 @@ function publish_event_cancel(ev) {
     hide_editor()
     //
     changed_event = false
+    updating_event = false
     dropped_event = true        /// REACTIVE
     day_event_count--
 }

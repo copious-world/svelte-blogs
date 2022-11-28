@@ -1,6 +1,8 @@
 <script>
 	import { createEventDispatcher } from 'svelte';
-	import {day_is_today,day_is_before_today} from '../../common/date_utils'
+	import {tz_day_is_today,getTimezoneOffset,day_is_before_today,day_is_today} from '../../common/date_utils'
+	//
+	import {timestamp_db} from '../../common/timestamp_db'
 
 	const dispatch = createEventDispatcher();
 
@@ -15,6 +17,8 @@
 	export let year;
 	export let cal			// the calendar object 
 	export let total_events
+	export let time_zone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
 
 
 	const ONE_HOUR = (3600*1000)
@@ -29,6 +33,20 @@
 	const USE_AS_OPEN = "open"
 
 	// ---- ---- ---- ---- ---- ---- ---- ---- ----
+
+
+	let today = new Date()
+	let date_string = today.toUTCString()
+	let local_date_string =  today.toLocaleDateString("en-US", { timeZone: time_zone })
+	let local_time_string = today.toLocaleTimeString("en-US", { timeZone: time_zone })
+	let local_dt_string = `${local_date_string} ${local_time_string}`
+
+
+	$: date_string = today.toUTCString()
+	$: local_date_string = today.toLocaleDateString("en-US", { timeZone: time_zone })
+	$: local_time_string = today.toLocaleTimeString("en-US", { timeZone: time_zone })
+	$: local_dt_string = `${local_date_string} ${local_time_string}`
+
 
 	function convert_date(secsdate) {
 		if ( secsdate === 'never' ) {
@@ -52,10 +70,18 @@
 		current_year = calc_day.getFullYear()
 	}
 
-	//let updated_when
-	//let created_when
-	//$: updated_when = convert_date(dates.updated)
-	//$: created_when = convert_date(when)
+
+	function day_includes_events(a_day) {
+		let st = a_day.start_time
+		let et = a_day.end_time
+		//
+		let tzoff = getTimezoneOffset(time_zone,st)
+		//console.log(tzoff)
+
+		st -= ONE_HOUR*tzoff
+		et -= ONE_HOUR*tzoff
+		return timestamp_db.range_has_events(st,et,(evnt) => {  return evnt.use !== USE_AS_BLOCK })
+	}
 
 
 	let going_session = false
@@ -127,10 +153,10 @@
 						{#each a_week as a_day_key}
 							{#if a_day_key !== false }
 								{#each [cal.map[a_day_key]] as a_day}
-									{#if a_day.has_events }
-									<li class="event-access-plus" style="{ day_is_today(a_day,year,month) ? 'border:solid 2px lime' : '' }" on:click={(ev) => {event_management(ev,a_day_key)}}>{a_day.day}</li>
+									{#if day_includes_events(a_day) }
+									<li class="event-access-plus" style="{ tz_day_is_today(a_day,year,month,local_date_string,time_zone) ? 'border:solid 2px lime' : '' }" on:click={(ev) => {event_management(ev,a_day_key)}}>{a_day.day}</li>
 									{:else}
-									<li class="event-access" style="{ day_is_today(a_day,year,month) ? 'border:solid 2px lime' : '' }" on:click={(ev) => {event_management(ev,a_day_key)}}>{a_day.day}</li>
+									<li class="event-access" style="{ tz_day_is_today(a_day,year,month,local_date_string,time_zone) ? 'border:solid 2px lime' : '' }" on:click={(ev) => {event_management(ev,a_day_key)}}>{a_day.day}</li>
 									{/if}
 								{/each}
 							{:else}

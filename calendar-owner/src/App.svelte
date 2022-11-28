@@ -11,13 +11,13 @@
 	import DayEventsRequests from './DayEventsRequests.svelte';
 	import RequestChangeAlerts from './RequestChangeAlerts.svelte'
 	//
+	import ClockSelections from './ClockSelections.svelte'
+	//
 	import ThingGrid from 'grid-of-things';
 	import FloatWindow from 'svelte-float-window';
 	//
 	import Clock from 'svelte-clock'
 
-
-	
 	import { process_search_results, place_data, merge_data, clonify, make_empty_thing, link_server_fetch } from '../../common/data-utils.js'
 	import { popup_size } from '../../common/display-utils.js'
 	import { get_search } from "../../common/search_box.js"
@@ -32,9 +32,14 @@
 	import tl_subr from '../../calendar-common/subcription_handlers'
 	import cnst from '../../calendar-common/constants'
 
+	import local_presets from '../../calendar-common/schedule-preset'
+	import {timestamp_db} from '../../common/timestamp_db'
 
+	// -----
 
 	import { onMount } from 'svelte';
+
+	let g_user_id = "moi"
 
 
 	const DEFAULT_WS_CALENDAR_ACCESS = "https://www.copious.training/calendars"
@@ -157,6 +162,10 @@
 	const TimeSlotAgenda = EventDays.TimeSlotAgenda
 
 
+	let force_day_event_update = false
+	let g_timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
+
 	let g_all_time_slots = []
 
 
@@ -236,9 +245,10 @@
 	}
 
 
+	// --- ReqSlot --- --- --- --- --- --- --- --- --- ---
 	class ReqSlot extends Slot {
 		//
-		constructor(label,begin_at,end_at,info,d_date) {
+		constructor(label,begin_at,end_at,info,d_date,day_key) {
 			super(label,begin_at,end_at)
 			this.index = info.index
 			this.label = ""
@@ -253,11 +263,16 @@
 			this.on_half_hour = info.on_half_hour
 			this.changed =  false
 			this.how_long =  15
+			this.month = d_date.getMonth()
+			this.year = d_date.getFullYear()
+			this.mo_key = day_key
+			this.accepted = false
+			this.revision_state = cnst.EVENT_IN_NEGOTIATION
 		}
 		//
 	}
 
-	let force_day_event_update = false
+
 	// ---- ---- ---- ManageableTSAgenda
 	class ManageableTSAgenda extends TimeSlotAgenda {
 		//
@@ -270,6 +285,19 @@
 		}
 		//
 
+		copy_relevant_fields(sl,a_slot) {
+			sl.label = a_slot.label
+			sl.person_id = a_slot.person_id
+			sl.email = a_slot.email
+			sl.contact_phone = a_slot.contact_phone
+			sl.on_zoom = a_slot.on_zoom
+			sl.in_person = a_slot.in_person
+			sl.user_id = a_slot.user_id
+			sl.how_long = a_slot.how_long
+			sl.month = a_slot.month
+			sl.year = a_slot.year
+			sl.mo_key = a_slot.mo_key
+		}
 
 		add_slot(a_slot) {
 			super.add_slot(a_slot)
@@ -309,47 +337,106 @@
 					sl.use = USE_AS_OPEN
 					this.copy_relevant_fields(sl,replacer)
 				}
-
 			}
-
+			//
+			force_day_event_update = true
 		}
-
-
-		copy_relevant_fields(sl,a_slot) {
-			sl.label = a_slot.label
-			sl.person_id = a_slot.person_id
-			sl.email = a_slot.email
-			sl.contact_phone = a_slot.contact_phone
-			sl.on_zoom = a_slot.on_zoom
-			sl.in_person = a_slot.in_person
-			sl.user_id = a_slot.user_id
-			sl.how_long = a_slot.how_long
-			sl.month = a_slot.month
-			sl.year = a_slot.year
-			sl.mo_key = a_slot.mo_key
-		}
+		//
 
 		fill_day(year,month,key) {
-			let d_date = new Date(year,month,this.day);  // these have been passed
+			let d_date = new Date(year,month,this.day,0,0,0);  // these have been passed
+			// --------
+
+			let dkey = d_date.toLocaleDateString('en-US',local_presets.time_zone)
+
+			let mnight = local_presets.saturdays[dkey]
+			if ( mnight !== undefined ) {
+
+//console.log("SATURDAY",dkey)
+				let day_defs = local_presets.presets.saturday
+				for ( let def of day_defs ) {
+					let ev = Object.assign({},def)
+					ev.begin_at = mnight + def.begin_at*ONE_HOUR
+					ev.end_at = mnight + def.end_at*ONE_HOUR
+					ev.how_long = (def.end_at - def.begin_at)*60
+					timestamp_db.add(ev)
+				}
+			} else {
+				mnight = local_presets.sundays[dkey]
+				if ( mnight !== undefined ) {
+//console.log("SUNDAY",dkey)
+					let day_defs = local_presets.presets.sunday
+					for ( let def of day_defs ) {
+						let ev = Object.assign({},def)
+						ev.begin_at = mnight + def.begin_at*ONE_HOUR
+						ev.end_at = mnight + def.end_at*ONE_HOUR
+						ev.how_long = (def.end_at - def.begin_at)*60
+						timestamp_db.add(ev)
+					}
+				} else {
+					let day_def = local_presets.holidays[dkey]
+					if ( day_def !== undefined ) {
+//console.log("HOLIDAY",dkey)
+						let ev = Object.assign({},day_def)
+						ev.how_long = 24*60
+						timestamp_db.add(ev)
+					} else {
+						let day_defs = local_presets.presets.daily
+						let a_day = new Date(dkey)
+						mnight = a_day.getTime()
+//console.log("DAILY",dkey)
+						for ( let def of day_defs ) {
+							let ev = Object.assign({},def)
+							ev.begin_at = mnight + def.begin_at*ONE_HOUR
+							ev.end_at = mnight + def.end_at*ONE_HOUR
+							ev.how_long = (def.end_at - def.begin_at)*60
+							timestamp_db.add(ev)
+						}
+					}
+				}
+			}
+
+			// --------
 			let all_day_list = this.all_day_list
 			//
-			let timely_slot_list = update_active_slot_list(d_date,g_slot_definitions)
 			//
 			for ( let i = 0; i < 48; i++ ) {
 				//
-				let hour = d_date.getHours()
 				let minutes = d_date.getMinutes()
-				let blocked = (hour < 10) || (hour >= 19) ? USE_AS_BLOCK : USE_AS_OPEN
-				if ( g_slot_definitions && g_active_slot_list.length ) {
-					blocked = best_for_hour(timely_slot_list,time,blocked)
-				}
-				// 
 				let time = d_date.getTime()
+				//
+				let blocked = USE_AS_OPEN
 				all_day_list[i] = new ReqSlot("",time,0,{
 														"index" : i,
 														"blocked" : blocked,
 														"on_half_hour" : (minutes !== 0)
-													},d_date)
+													},d_date,key)
+				//
+				let ev = timestamp_db.find_event(time)
+				if ( !!(ev) ) {
+					all_day_list[i].use = ev.use
+					all_day_list[i].end_at = ev.end_at
+					all_day_list[i].how_long = ev.how_long
+					if ( ev.how_long > 30 ) {
+						let time_left = (ev.how_long - 30)
+						while ( (time_left > 0) && (i < 48) ) {
+							i++;
+							time_left -= 30
+							time += ONE_HALF_HOUR
+							d_date = new Date(time)
+							minutes = d_date.getMinutes()
+							//
+							all_day_list[i] = new ReqSlot("",time,0,{
+														"index" : i,
+														"blocked" : ev.use,
+														"on_half_hour" : (minutes !== 0)
+													},d_date,key)
+							all_day_list[i].begin_at = time
+							all_day_list[i].how_long = (all_day_list[i-1].how_long - 30)
+						}
+					}
+				}
+				//
 				time += ONE_HALF_HOUR
 				d_date = new Date(time)
 			}
@@ -416,7 +503,6 @@
 	//
 	let current_roller_title = ""
 
-
 	let model_month_entry = {
 		"_tracking" : false,
 		"color": 'grey',
@@ -436,8 +522,10 @@
 		"keys" : [  ],
 		"comments" : [],
 		"score" : 1.0,
-		"total_events" : 0
+		"total_events" : 0,
+		"time_zone" : g_timezone
 	}
+
 
 	let thing_template = make_empty_thing(model_month_entry,true)
 
@@ -1630,6 +1718,142 @@
 
 
 
+	// ---- TIMEZONE
+
+	let g_event_window_tstarts = {}
+	let g_timezone_shift = 0
+
+
+	function handleTimezoneUpdateMessage(event) {
+		let tz_data = event.detail
+		if ( tz_data ) {
+			let clock_changes = tz_data.clocks
+			if ( clock_changes ) {
+				let reclocked = g_all_clocks.map((a_clock) => {
+					let clock_ky = a_clock.tz_info
+					let clck_change = clock_changes[clock_ky]
+					if ( clck_change !== undefined ) {
+						if ( clck_change ) {
+							delete clock_changes[clock_ky]
+							return a_clock
+						} else {
+							return false
+						}
+					}
+					return a_clock
+				})
+				reclocked = reclocked.filter((el) => {
+					return el
+				})
+				let add_on = Object.keys(clock_changes)
+				for ( let clock_ky of add_on ) {
+					let city = clock_ky.split('/')
+					city = city[city.length-1]
+					reclocked.push({ "label" : city, "timezone" : "+6", "tz_info" : clock_ky })
+				}
+				g_all_clocks = reclocked
+
+			}
+		}
+	}
+
+
+	// 
+	let tz_city = g_timezone.split('/')[1]
+
+	// ----
+	let home_time = new Date()
+	let g_home_timezone = g_timezone
+	let home_tz_str = home_time.toLocaleTimeString("en-US", { timeZone: g_home_timezone })
+	let home_tparts = home_tz_str.split(':')
+	let home_hr_update = parseInt(home_tparts[0])
+
+	let h_rest = home_tparts[2].split(' ')
+	let h_night_n_day = h_rest[1].trim()
+
+	if ( (h_night_n_day === "PM") && (home_hr_update !== 12) ) {
+		home_hr_update += 12
+	}
+	let h_tz_date_str = home_time.toLocaleDateString("en-US", { timeZone: g_timezone })
+	let home_extract_day = h_tz_date_str.split('/')[1]
+
+	// ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ----
+	let g_all_clocks = [
+		//
+		{ "label" : "New York", "timezone" : "+6", "tz_info" : "America/New_York"},
+		{ "label" : "Boise", "timezone" : "+6", "tz_info" : "America/Boise"},
+		{ "label" : "Dublin", "timezone" : "+6", "tz_info" : "Europe/Dublin"},
+		{ "label" : "Gibraltar", "timezone" : "+6", "tz_info" : "Europe/Gibraltar"},
+
+		{ "label" : "London", "timezone" : "+6", "tz_info" : "Europe/London"},
+		{ "label" : "Berlin", "timezone" : "+6", "tz_info" : "Europe/Berlin"},
+		{ "label" : "Los Angeles", "timezone" : "+6", "tz_info" : "America/Los_Angeles"},
+		{ "label" : "Denver", "timezone" : "+6", "tz_info" : "America/Denver"},
+		{ "label" : "Chicago", "timezone" : "+6", "tz_info" : "America/Chicago"},
+		{ "label" : "Paris", "timezone" : "+6", "tz_info" : "Europe/Paris"},
+		{ "label" : "Vienna", "timezone" : "+6", "tz_info" : "Europe/Vienna"},
+		{ "label" : "Warsaw", "timezone" : "+6", "tz_info" : "Europe/Warsaw"},
+		{ "label" : "Auckland", "timezone" : "+6", "tz_info" : "Pacific/Auckland"},
+		{ "label" : "Tokyo", "timezone" : "+6", "tz_info" : "Asia/Tokyo"},
+		{ "label" : "Sydney", "timezone" : "+6", "tz_info" : "Australia/Sydney"},
+		{ "label" : "Singapore", "timezone" : "+6", "tz_info" : "Asia/Singapore"},
+		{ "label" : "Perth", "timezone" : "+6", "tz_info" : "Australia/Perth"}
+		// 
+	]
+
+	const g_time_zone_clocks = []
+
+	for ( let tz of g_all_clocks ) {
+		g_time_zone_clocks.push(tz.tz_info)
+	}
+
+
+	function select_time_zone(zone_pair) {
+		tz_city = zone_pair.label
+		g_timezone = zone_pair.tz_info
+
+
+		let time = new Date()
+		let tz_str = time.toLocaleTimeString("en-US", { timeZone: g_timezone })
+		let tparts = tz_str.split(':')
+		let hr_update = parseInt(tparts[0])
+
+		let rest = tparts[2].split(' ')
+		let night_n_day = rest[1].trim()
+
+		if ( (night_n_day === "PM") && (hr_update !== 12) ) {
+			hr_update += 12
+		}
+		//
+
+		g_timezone_shift = hr_update - home_hr_update
+		
+
+		let tz_date_str = time.toLocaleDateString("en-US", { timeZone: g_timezone })
+		let extract_day = tz_date_str.split('/')[1]
+
+		for ( let a_thing of things ) {
+			a_thing.time_zone = g_timezone
+		}
+		things = things
+		
+		console.log(home_hr_update,h_night_n_day, h_tz_date_str, home_extract_day, "::", hr_update, night_n_day, tz_date_str, extract_day, "::> ", (home_hr_update - hr_update))
+	}
+
+
+	function return_local_clock() {
+		let timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+		//
+		let tz_parts = timezone.split('/')
+		let city = tz_parts[tz_parts.length - 1]
+		let original_tz = { "label" : city, "timezone" : "+6", "tz_info" : timezone}
+		select_time_zone(original_tz)
+	}
+
+	function launch_custom_clocks(ev) {
+		start_floating_window(4);
+	}
+
 </script>
 <div bind:this={app_view} >
 	<div bind:this={time_line_display} class="calendar-admin-slider" style="height:{timeline_slider_height}px">
@@ -1665,19 +1889,23 @@
 		<polygon points="5 0, 0 6, 10 6"/>
 		<polygon points="15 6, 10 0, 20 0"/>
 	</svg>
+
+
 	<div style="border: solid 2px navy;padding: 4px;background-color:#EFEFEF;">
-		<div class="blg-ctrl-panel" style="display:inline-block;vertical-align:bottom;background-color:#EFFFFE" >
-			<span style="color:navy;font-weight:bold">Boxes</span>
-			<input type=number class="blg-ctl-number-field" bind:value={box_delta} min=1 max=4>
-
-			<button class="blg-ctl-button" on:click={handleClick_remove}>
-				-
-			</button>
-
-			<button class="blg-ctl-button"  on:click={handleClick_add}>
-				+
-			</button>
+		<div class="blg-ctrl-panel" style="display:inline-block;text-align:center;vertical-align:top;background-color:#EFFFFE;height:inherit;width:fit-content;" >
+			<div  style="height:inherit;width:fit-content;white-space:nowrap;text-align:center;">
+				<span style="color:navy;font-weight:bold">Boxes</span>
+				<input type=number class="blg-ctl-number-field" bind:value={box_delta} min=1 max=4>
+				<button class="blg-ctl-button" on:click={handleClick_remove}>
+					-
+				</button>
+				<button class="blg-ctl-button"  on:click={handleClick_add}>
+					+
+				</button>
+			</div>
+			<button style="font-size:x-small;white-space:nowrap;"  on:click={launch_custom_clocks} >choose clocks</button>
 		</div>
+
 		{#if g_selected_ts }
 		<div class="blg-ctrl-panel" style="display:inline-block;vertical-align:top;background-color:#DEEEDE" >
 			<button on:click={open_editor} style="color:mediumvioletred;font-weight:bold;font-size:smaller">
@@ -1685,22 +1913,25 @@
 			</button>
 		</div>
 		{/if}
-		<div class="blg-ctrl-panel" style="display:inline-block;vertical-align:top;background-color:#EFEFFE" >
-			<button on:click={handleClick_fetch}  style="font-size:smaller" >
-				Update
-			</button>
-			<div style="display:inline-block;">
-			&nbsp;<input type=text bind:value={search_topic} on:keypress={handle_keyDown} style="font-size:smaller">
+		<div class="blg-ctrl-panel" style="display:inline-block;vertical-align:top;background-color:#EFEFFE;width:calc(76vw - 8px);white-space: nowrap;" >
+			<div style="height:60px;display:inline-block;cursor:pointer;vertical-align:top;" on:click={return_local_clock}>
+				<Clock timezone={g_timezone} />
+				<div style="text-align:center;font-size:60%;font-weight:bolder">
+					{tz_city}
+				</div>
+			</div>
+			<div style="display:inline-block;height:fit-content;width:calc(100% - 4px);overflow-x:scroll;padding:0px;white-space: nowrap;">
+				{#each g_all_clocks as zone_pair}
+				<div style="height:60px;display:inline-block;margin-right:4px;cursor:pointer;" on:click={() => {select_time_zone(zone_pair)} }>
+					<Clock  timezone={zone_pair.tz_info} />
+					<div style="text-align:center;font-size:60%;font-weight:bolder">
+						{zone_pair.label}
+					</div>
+				</div>	
+				{/each}
 			</div>
 		</div>
-		<div class="blg-ctrl-panel" style="display:inline-block;background-color:#FFFFFA" >
-			<Clock />
-			<button class="blg-ctl-button" on:click={handleClick_first}>&le;</button>
-			<input class="blg-ctl-slider" type=range bind:value={article_index} min=1 max={article_count} on:change={handle_index_changed} >
-			<button class="blg-ctl-button" on:click={handleClick_last}>&ge;</button>
-			<input type=number class="blg-ctl-number-field" bind:value={article_index} min=1 max={article_count} on:change={handle_index_changed} >
-			of {article_count}
-		</div>
+
 		<div class="blg-ctrl-panel" style="display:inline-block;vertical-align:top;background-color:#EFEFFE" >
 			<button on:click={handleClick_send_update}  style="font-size:smaller" >
 				Revise Timeline
@@ -1723,7 +1954,7 @@
 
 
 <FloatWindow title="Day Planner" index={1} scale_size_array={all_window_scales} >
-	<DayEventsRequests {...current_day_data} bind:day_event_count />
+	<DayEventsRequests {...current_day_data} tz_hour_shift={g_timezone_shift} time_zone={g_timezone}  ui_user_id={g_user_id}   bind:day_event_count />
 </FloatWindow>
 
 
@@ -1736,6 +1967,11 @@
 	<RequestChangeAlerts {...g_request_alert_parameters}  />
 </FloatWindow>
 {/if}
+
+
+<FloatWindow title="Timezone Clocks" index={4} scale_size_array={all_window_scales} >
+	<ClockSelections time_zone_clocks={g_time_zone_clocks} on:message={handleTimezoneUpdateMessage} />
+</FloatWindow>
 
 
 <style>

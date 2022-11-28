@@ -17,12 +17,26 @@
 	export let month_str;
 	export let year;
 	export let cal			// the calendar object 
+	export let time_zone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
+
+	const ONE_HOUR = (3600*1000)
+	const USE_AS_BLOCK = "block"
+	const USE_AS_MEET = "meeting"
+	const USE_AS_ACTIVITY = "activity"
+	const USE_AS_OPEN = "open"
 
 	let today = new Date()
 	let date_string = today.toUTCString()
+	let local_date_string =  today.toLocaleDateString("en-US", { timeZone: time_zone })
+	let local_time_string = today.toLocaleTimeString("en-US", { timeZone: time_zone })
+	let local_dt_string = `${local_date_string} ${local_time_string}`
+
 
 	$: date_string = today.toUTCString()
+	$: local_date_string = today.toLocaleDateString("en-US", { timeZone: time_zone })
+	$: local_time_string = today.toLocaleTimeString("en-US", { timeZone: time_zone })
+	$: local_dt_string = `${local_date_string} ${local_time_string}`
 
 	let months_away = (year === today.getFullYear()) ? (month - today.getMonth()) : -1
 	if ( (months_away < 0) && (year > today.getFullYear()) ) {
@@ -36,6 +50,7 @@
 	} else {
 		show_clock = false	
 	}
+
 
 	onMount(() => {
 		const interval = setInterval(() => {
@@ -106,7 +121,7 @@
 <div class="blg-el-wrapper">
 	{#if show_clock }
 		<span class="blg-item-title" >Today Is</span>
-		<span style="color:navy;font-weight:bolder;font-size:70%">{date_string}</span>
+		<span style="color:navy;font-weight:bolder;font-size:66%">{local_dt_string} {time_zone}</span>
 	{:else}
 		<span class="blg-item-title" >{month_str} is </span>
 		<span style="color:navy;font-weight:bolder">{months_away}</span>

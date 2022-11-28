@@ -1,0 +1,1943 @@
+<!doctype html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+	<meta name="author" content="Richard Leddy" />
+	<meta name="viewport" content="width=device-width, minimum-scale=1.0, initial-scale=1.0, user-scalable=yes">
+	<meta id="theme-color" name="theme-color" content="#452770">
+
+	<title>Pop Song Blog</title>
+
+	<link rel='icon' type='image/png' href='./favicon.png'>
+	<link rel='stylesheet' href='./global.css'>
+	<link rel='stylesheet' href='./build/bundle.css'>
+
+<script>
+	//
+	// ---- ---- ---- ---- ---- ---- ---- ---- ---- ----
+
+	async function media_startup(tracking,protocol,media,counter_link,session) { // _x_link_counter > counter_link
+		if ( tracking === undefined ) return false
+		if ( protocol === 'ipfs' ) {
+			let links = await crypto_ready_counted(counter_link,tracking,session,media)  // src is for checking...
+			return links
+		} else if ( protocol === 'local' ) {
+			let links = await clear_counted(counter_link,tracking,session,media)  // src is for checking...
+			return links
+		} else {		// default
+			counter_link = "localhost:7777"
+			let links = await clear_counted(counter_link,tracking,session,media)
+			return links
+		}
+	}
+
+	// ---- ---- ---- ---- ---- ---- ---- ---- ---- ----
+
+	// the counter link is complete, stored in the _x_link_counter field of the meta object
+
+	async function crypto_ready_counted(counter_link,tracking,session,src) {
+		//
+		let prot = "http:"  // https
+		let sp = "//"
+		let url = `${prot}${sp}${counter_link}/key-media/${tracking}`
+		if ( (typeof session === 'string') && (session.length > 0) ) {
+			url += `/${session}`
+		}
+		//
+		try {
+			let result = await fetchUrl(url)
+			if ( result.status === "OK" ) {
+				return result.links
+			}
+		} catch(e) {
+		}
+		return false
+	}
+
+
+	async function clear_counted(counter_link,tracking,session,src) {
+		//
+		let prot = location.protocol
+		let sp = "//"
+		let url = `${prot}${sp}${counter_link}/clear-media/${tracking}`
+		if ( (typeof session === 'string') && session.length > 0 ) {
+			url += `/${session}`
+		}
+		//
+		try {
+			let result = await fetchUrl(url)
+			if ( result.status === "OK" ) {
+				return result.links
+			}
+		} catch(e) {
+		}
+		return false
+	}
+
+	// ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ----
+	function retrieve_session() {			// should be stored in some kind of local storage....
+		return "a0d9uqkrjsifh"     // test value
+	}
+
+	// ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ----
+</script>
+
+	<script defer src='./build/bundle.js'></script>	
+	<link rel="canonical" href="http://www.popsongnow.com">
+
+	<meta name="description" content="Make you songs safe as soon as you think of them.">
+
+</head>
+<script>
+		var g_siteURL = window.location.host;
+		var g_finalizers = []
+		var g_loginStateViewHolders = {}
+</script>
+<body>
+	<nav id="mainNav">
+	</nav>
+	<main id='app-main'>
+	
+	</main>
+<footer>
+</footer>
+
+
+</body>
+</html>
+<script>
+
+
+
+// MODULE: GLOBAL CRYPTO (windowized)
+
+//$>>	setup_window_crypto
+function setup_window_crypto() {
+  if ( window.g_crypto === undefined ) {
+    window.g_crypto = window.crypto ? window.crypto.subtle : null
+    if ( g_crypto === null  ) {
+      alert("No cryptography support in this browser. To claim ownership of assets, please use another browser.")
+    }
+  }
+}
+
+
+
+
+// MODULE: base64 (windowized)
+/*
+MIT License
+
+Copyright (c) 2020 Egor Nepomnyaschih
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+*/
+
+//$>>	getBase64Code
+/*
+// This constant can also be computed with the following algorithm:
+const base64abc = [],
+	A = "A".charCodeAt(0),
+	a = "a".charCodeAt(0),
+	n = "0".charCodeAt(0);
+for (let i = 0; i < 26; ++i) {
+	base64abc.push(String.fromCharCode(A + i));
+}
+for (let i = 0; i < 26; ++i) {
+	base64abc.push(String.fromCharCode(a + i));
+}
+for (let i = 0; i < 10; ++i) {
+	base64abc.push(String.fromCharCode(n + i));
+}
+base64abc.push("+");
+base64abc.push("/");
+*/
+const base64abc = [
+	"A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M",
+	"N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z",
+	"a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m",
+	"n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z",
+	"0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "+", "/"
+];
+
+const base64abc_url = [
+	"A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M",
+	"N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z",
+	"a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m",
+	"n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z",
+	"0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "-", "_"
+]
+
+/*
+// This constant can also be computed with the following algorithm:
+const l = 256, base64codes = new Uint8Array(l);
+for (let i = 0; i < l; ++i) {
+	base64codes[i] = 255; // invalid character
+}
+base64abc.forEach((char, index) => {
+	base64codes[char.charCodeAt(0)] = index;
+});
+base64codes["=".charCodeAt(0)] = 0; // ignored anyway, so we just need to prevent an error
+*/
+const base64codes = [
+	255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
+	255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
+	255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 62, 255, 255, 255, 63,
+	52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 255, 255, 255, 0, 255, 255,
+	255, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14,
+	15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 255, 255, 255, 255, 255,
+	255, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40,
+	41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51
+];
+
+const url_alternates = "-_"
+const plus_alt = url_alternates.charCodeAt(0)
+const slash_alt = url_alternates.charCodeAt(1)
+
+function getBase64Code(charCode) {
+	if ( plus_alt === charCode ) {
+		return 62
+	}
+	if ( slash_alt === charCode ) {
+		return 63
+	}
+	if (charCode >= base64codes.length) {
+		throw new Error("Unable to parse base64 string.");
+	}
+	const code = base64codes[charCode];
+	if (code === 255) {
+		throw new Error("Unable to parse base64 string.");
+	}
+	return code;
+}
+
+//$>>	bytesToBase64
+function bytesToBase64(bytes,url_no) {
+	let apha = url_no ? base64abc : base64abc_url
+	let result = '', i, l = bytes.length;
+	for (i = 2; i < l; i += 3) {
+		result += apha[bytes[i - 2] >> 2];
+		result += apha[((bytes[i - 2] & 0x03) << 4) | (bytes[i - 1] >> 4)];
+		result += apha[((bytes[i - 1] & 0x0F) << 2) | (bytes[i] >> 6)];
+		result += apha[bytes[i] & 0x3F];
+	}
+	if (i === l + 1) { // 1 octet yet to write
+		result += apha[bytes[i - 2] >> 2];
+		result += apha[(bytes[i - 2] & 0x03) << 4];
+		result += "==";
+	}
+	if (i === l) { // 2 octets yet to write
+		result += apha[bytes[i - 2] >> 2];
+		result += apha[((bytes[i - 2] & 0x03) << 4) | (bytes[i - 1] >> 4)];
+		result += apha[(bytes[i - 1] & 0x0F) << 2];
+		result += "=";
+	}
+	return result;
+}
+
+//$>>	base64ToBytes
+function base64ToBytes(str) {
+	if (str.length % 4 !== 0) {
+		throw new Error("Unable to parse base64 string.");
+	}
+	const index = str.indexOf("=");
+	if (index !== -1 && index < str.length - 2) {
+		throw new Error("Unable to parse base64 string.");
+	}
+	let missingOctets = str.endsWith("==") ? 2 : str.endsWith("=") ? 1 : 0,
+		n = str.length,
+		result = new Uint8Array(3 * (n / 4)),
+		buffer;
+	for (let i = 0, j = 0; i < n; i += 4, j += 3) {
+		buffer =
+			getBase64Code(str.charCodeAt(i)) << 18 |
+			getBase64Code(str.charCodeAt(i + 1)) << 12 |
+			getBase64Code(str.charCodeAt(i + 2)) << 6 |
+			getBase64Code(str.charCodeAt(i + 3));
+		result[j] = buffer >> 16;
+		result[j + 1] = (buffer >> 8) & 0xFF;
+		result[j + 2] = buffer & 0xFF;
+	}
+	return result.subarray(0, result.length - missingOctets);
+}
+
+
+//$>>	base64encode
+function base64encode(str, encoder = new TextEncoder()) {
+	return bytesToBase64(encoder.encode(str));
+}
+
+//$>>	base64decode
+function base64decode(str, decoder = new TextDecoder()) {
+	return decoder.decode(base64ToBytes(str));
+}
+
+
+
+//$EXPORTABLE::
+/*
+getBase64Code
+bytesToBase64
+base64ToBytes
+base64encode
+base64decode
+*/
+
+
+
+// MODULE: CRYPTO HASH (windowized)
+
+// >> import
+//modularize>> import * as base64 from "../modules/base64.js";
+//<<
+	base64 = window
+
+//$>>	do_hash_buffer
+async function do_hash_buffer(text) {
+    const encoder = new TextEncoder();
+    const data = encoder.encode(text);
+    const hash = await g_crypto.digest('SHA-256', data);
+    return hash
+}
+
+//$>>	do_hash
+async function do_hash(text) {
+    let buffer = await do_hash_buffer(text)
+    const hashArray = Array.from(new Uint8Array(buffer));
+    return base64.bytesToBase64(hashArray)
+}
+
+//$>>	from_hash
+function from_hash(base64text) {
+    let bytes = base64.base64ToBytes(base64text)
+    return bytes
+}
+
+//$>>	to_base64
+function to_base64(text) {
+    return base64.base64encode(text)
+}
+
+//$>>	from_base64
+function from_base64(base64text) {
+    let bytesAsText = base64.base64decode(base64text)
+    return bytesAsText
+}
+
+//$>>	from_base64_to_uint8array
+function from_base64_to_uint8array(base64text) {
+    while ( base64text.length %4 ) base64text += '='
+    return base64.base64ToBytes(base64text)
+}
+
+//$>>	to_base64_from_uint8array
+function to_base64_from_uint8array(a_uint8Array) {
+    let b = base64.bytesToBase64(a_uint8Array)
+    b = b.replace(/\=/g,'')
+    return b
+}
+
+//$EXPORTABLE::
+/*
+do_hash_buffer
+do_hash
+from_hash
+to_base64
+from_base64
+from_base64_to_uint8array
+to_base64_from_uint8array
+*/
+
+
+
+
+// MODULE: POST FETCH (windowized)
+
+//$>>	fetchEndPoint
+// //
+// fetch with GET method
+async function fetchEndPoint(endpoint,port) {
+	port = !(port) ? '' : ( port.length ? `:${port}`   : '')
+	let myRequest = new Request(`${location.protocol}//${g_siteURL}${port}/${endpoint}`);
+	try {
+		const body = await fetch(myRequest, {
+									method: 'GET', // *GET, POST, PUT, DELETE, etc.
+									mode: 'cors', // no-cors, *cors, same-origin
+									cache: 'no-cache', // *default, no-cache, reload, force-cache, only-if-cached
+									credentials: 'omit', // include, *same-origin, omit
+									redirect: 'follow', // manual, *follow, error
+									referrerPolicy: 'no-referrer', // no-referrer, *client
+								});
+		//
+		let infoObj = await body.json();
+		return(infoObj)
+		//
+	} catch (e) {
+		console.log(e.message)
+		return(false)
+	}
+}
+
+
+//$>>	fetchUrl
+// //
+// fetch with GET method
+async function fetchUrl(endpoint) {
+	let myRequest = new Request(endpoint);
+	try {
+		const body = await fetch(myRequest, {
+									method: 'GET', // *GET, POST, PUT, DELETE, etc.
+									mode: 'cors', // no-cors, *cors, same-origin
+									cache: 'no-cache', // *default, no-cache, reload, force-cache, only-if-cached
+									credentials: 'omit', // include, *same-origin, omit
+									redirect: 'follow', // manual, *follow, error
+									referrerPolicy: 'no-referrer', // no-referrer, *client
+								});
+		//
+		let infoObj = await body.json();
+		return(infoObj)
+		//
+	} catch (e) {
+		console.log(e.message)
+		return(false)
+	}
+}
+
+
+//$>>	postData
+// //
+//  call fetch with method POST tyr to help with parameters..  If data is FromData set do_stringify to false
+//  default content type 'application/json'
+//  User 'cors', Default cres = omit, If ctype == 'multipart/form-data' be sure to use FormData -- lets fetch set content type.
+//  RETURNS: parsed JSON object or an empty object. ... Check for fields
+//
+async function postData(url = '', data = {}, creds = 'omit', do_stringify = true, ctype) {
+	let content_type = 'application/json'
+	if ( ctype !== undefined ) {
+		content_type = ctype            // ctype is content type
+	}
+	let options = {
+		method: 'POST', // *GET, POST, PUT, DELETE, etc.
+		mode: 'cors', // no-cors, *cors, same-origin
+		cache: 'no-cache', // *default, no-cache, reload, force-cache, only-if-cached
+		credentials: creds, // include, *same-origin, omit
+		headers: {
+			'Content-Type': content_type
+		},
+		redirect: 'follow', // manual, *follow, error
+		referrerPolicy: 'no-referrer', // no-referrer, *client
+		body: (do_stringify ? JSON.stringify(data)  : data)	// body data type must match "Content-Type" header
+	}
+
+	if ( ctype === 'multipart/form-data') {
+		delete options.headers['Content-Type']  // content type will be set automatically with a boundary
+	}
+
+	// Default options are marked with *
+	const response = await fetch(url, options);
+	if ( response.ok == false ) {
+		console.log(response.status + ': ' + response.statusText)
+		return {}
+	} else {
+		return await response.json(); // parses JSON response into native JavaScript objects
+	}
+}
+
+
+//$>>	post_submit
+function hide_interface_box() {
+	let display = document.getElementById('interface-box')
+	if ( display ) {
+		display.style.visibility = "hidden"
+		display.style.display = "none"
+	}
+}
+
+function hide_box(bxname) {
+	let display = document.getElementById(bxname)
+	if ( display ) {
+		display.style.visibility = "hidden"
+		display.style.display = "none"
+	}
+}
+
+function show_box(bxname) {
+	let display = document.getElementById(bxname)
+	if ( display ) {
+		display.style.visibility = "visible"
+		display.style.display = "block"
+	}
+}
+
+hide_box('error-box')
+hide_box('success-box')
+
+async function post_submit(fields) {
+	let bdy = {}
+	fields.forEach(element => {
+		let fld = document.getElementById(element)
+		if ( fld ) {
+			bdy[element] = fld.value
+		}
+	});
+	let url = bdy.post_url
+	if ( url ) {
+		delete bdy.post_url
+		//
+		let resp = await postData(url, bdy)
+		//
+		if ( resp ) hide_interface_box()
+		if ( resp && (resp.OK === 'true') ) {
+			show_box('success-box')
+		} else {
+			show_box('error-box')
+		}
+	}
+}
+
+//$$EXPORTABLE::
+/*
+fetchEndPoint
+fetchUrl
+postData
+post_submit
+*/
+
+
+
+// SHARED CONSTANTS
+
+
+// SITE PAGE
+//
+const SITE_PAGE_TO_FRAME = "site_page_to_frame"
+const SITE_PAGE_TO_BUILDER = "site_page_to_builder"
+const SITE_PAGE_TO_ALL = "RELAY"
+const SITE_RELATES_TO_BUILDER = "site_page_request_id"
+const SITE_RELATES_TO_FRAME = "site_page_request_action"
+const SITE_RELATES_TO_ALL = "site_frame_yields_news"
+
+// FRAME PAGE
+const FRAME_PAGE_TO_HOSTED_APP = "frame_page_to_hosted_app"
+const FRAME_PAGE_TO_SITE = "frame_page_to_site"
+const FRAME_PAGE_TO_BUILDER = "frame_page_to_builder"
+const FRAME_PAGE_TO_SERVICE_WORKER = "frame_page_to_sw"
+const FRAME_PAGE_TO_WORKER = "frame_page_to_w"
+const FRAME_PAGE_RELATES_TO_SITE = "frame_page_injector"
+const FRAME_PAGE_RELATES_TO_BUILDER = "frame_page_reponses"
+const FRAME_PAGE_RELATES_TO_SERVICE_WORKER = "frame_page_shared_action"
+const FRAME_ACTION_TO_APP = "frame_page_request_action"
+const FRAME_REQUEST_SESSION = "frame_page_request_session"
+const FRAME_ACTION_FROM_APP = "hosted_app_requests_action"
+
+// APP PAGE
+//
+const HOSTED_APP_TO_FRAME = "hosted_app_to_frame"
+const HOSTED_APP_TO_ALL = "RELAY"
+const APP_RELATES_TO_FRAME = "app_in_human_context"
+const APP_RELATES_TO_ALL = "app_in_frame_yields_news"
+
+// BUILDER PAGE
+//
+const BUILDER_PAGE_TO_FRAME = "builder_page_to_frame"
+const BUILDER_PAGE_TO_SITE = "builder_page_to_site"
+const BUILDER_RELATES_TO_SITE = "builder_page_injector"
+const BUILDER_ACTION_TO_FRAME = "builder_page_request_action"
+
+// HUMAN FRAME WORKER
+const WORKER_TO_FRAME = "worker_to_frame"
+const WORKER_RELATES_TO_FRAME = "worker_request_action"
+
+
+//
+// actions
+const FRAME_COMPONENT_RESPOND = "respond"
+const FRAME_COMPONENT_RESPONDING = "responding"
+const FRAME_ACTION_LOAD_APP = "load-app"
+const FRAME_ACTION_INSTALL = "install-id"
+const FRAME_ACTION_INJECT = "inject"
+const FRAME_START_SESSION = "start-session"
+const FRAME_HAS_SESSION = "has-session"
+const FRAME_NEEDS_SIGNATURE = "get-signature"
+const FRAME_WANTS_SESSION = "get-session"
+const FRAME_STOP_SESSION = "stop-session"
+const FRAME_HAS_PERSONALIZATION = "has-personalization"
+const SITE_WANTS_SIGNATURE = "send-sig-remote"
+const HOST_UP_REQ_UPLOAD = "send-request-upload"
+
+
+const MANAGER_PAGE_TO_FRAME = "from-manager-to-frame"
+const ID_MANAGER_ACTION_TO_FRAME = "id-presence-manager"
+const FRAME_ACTION_REMOVE = "id-manager-remove-id"
+const FRAME_ACTION_UPLOAD = "id-manager-upload-id"
+const FRAME_ACTION_DOWNLOAD = "id-manager-download-id"
+const FRAME_ACTION_DOWNLOAD_PUBLIC = "id-manager-download-public-intro"
+const FRAME_MANAGE_PICTURE_ASSET = "manager-picture-asset"
+const FRAME_ACTION_ATTACH = "manager-asset-attach"
+
+const HOST_APP_PERSONALIZATION = "personalization"
+const HOST_APP_WANTS_SESSION = "session-to-app"
+
+
+// categories
+const FRAME_COMPONENT_SAY_ALIVE = "q-alive"
+const FRAME_COMPONENT_MANAGE_ID = "m-igid"
+const FRAME_TO_APP_PUBLIC_COMPONENT = "process-public-info"
+const SITE_TO_FRAME_SESSIONS = "transfer-session"
+const FRAME_TO_SITE_MANAGE_SESSION = "site-manage-session"
+const WORKER_TO_FRAME_SESSIONS = "w-transfer-session"
+const FRAME_WORKER_TO_SESSIONS = "transfer-session"
+const FRAME_TO_HOSTED_APP_SESSIONS = "transfer-session"
+const FRAME_TO_APP_SIGNATURE = "signed-data"
+const FRAME_SIGNED = "yep-signed"
+const FRAME_POSTED_PRIMARY = "yep-primary-response"
+//
+const HOSTED_APP_FILE_OPERATION = "yep-file-creation-db"
+const FRAME_TO_HOSTED_APP_DATA = "yep-data-from-db"
+const FRAME_LIST_DATA = "frame-lists-data-part-ids"
+const FRAME_RETURNS_DATA = "frame-provides-data-part"
+
+
+
+
+// ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ----
+
+//
+let g_user_current_session = false
+let g_current_user_id = false
+let g_current_user_name = false
+let g_current_pub_identity = false
+
+
+const g_message_template =  {
+                                "category" : "",
+                                "direction" : "",
+                                "action" : "",
+                                "relationship" : ""
+                            }
+
+
+/// END OF CONSTANTS  (ALPHA)
+
+
+
+
+
+
+
+
+
+// HOSTED APP PAGE COM
+//
+if ( typeof g_message_template === undefined ) {
+    window.g_message_template = g_message_template = {
+        "category" : "",
+        "direction" : "",
+        "action" : "",
+        "relationship" : ""
+    }
+}
+
+// constants in shared constants
+
+let g_frame_page = window.parent
+
+let hosted_page_application_handlers = (category,action,relationship,params) => {}
+
+
+
+function reponding_alive() {
+    let message = {
+        "category": FRAME_COMPONENT_SAY_ALIVE,
+        "action" : FRAME_COMPONENT_RESPONDING,
+        "data" : false
+    }
+    tell_frame_page(message)
+}
+
+
+function install_frame_page_response() {
+    window.addEventListener("message", (event) => {
+        let page_source = event.origin
+        if ( page_source !== '*' ) {
+            // let opener = event.source --- the site page is assumed to be the top level of the interactions
+            try {
+                let mobj = JSON.parse(event.data)
+                let category = mobj.category
+                let relationship = mobj.relationship
+                let action = mobj.action
+                let direction = mobj.direction
+                //
+                if ( direction === FRAME_PAGE_TO_HOSTED_APP ) {
+                    if ( category === FRAME_COMPONENT_SAY_ALIVE ) {
+                        if ( action === FRAME_COMPONENT_RESPOND ) {
+                            reponding_alive()
+                        }
+                    } else {
+                        let params = mobj.data
+                        hosted_page_application_handlers(category,action,relationship,params)
+                    }
+                }
+            } catch (e) {
+            }    
+        }
+    })
+}
+
+
+let injest_personalization = false
+let injest_session = false
+let application_specific_handlers = (category,action,relationship,params) => {}
+
+let personalization = (post_params) => {}
+
+
+hosted_page_application_handlers = async (category,action,relationship,params) => {
+    switch ( category ) {
+        case HOST_APP_PERSONALIZATION : {
+            if ( typeof injest_personalization === "function" ) {
+                await injest_personalization(action,params)
+            }
+            break;
+        }
+        case FRAME_TO_HOSTED_APP_SESSIONS : {          /// a hosted page that does not start a session.
+            if ( typeof injest_session === "function" ) {
+                await injest_session(action,params)
+            }
+            break;
+        }
+        default: {                  /// any other actions ... could be a login page that fetches a session
+            await application_specific_handlers(category,action,relationship,params)
+            break;
+        }
+    }
+}
+
+
+function tell_frame_page(message) {
+    if ( !g_frame_page ) return(false)
+    let msg = Object.assign({},g_message_template)
+    msg.direction = HOSTED_APP_TO_FRAME
+    msg.relationship = APP_RELATES_TO_FRAME
+    msg.action = message.action
+    msg.category = message.category
+    msg.data = message.data
+    let message_str = JSON.stringify(msg)
+    g_frame_page.postMessage(message_str,'*')
+    return true
+}
+
+function relay_to_pages(message) {
+    if ( !g_frame_page ) return(false)
+    let msg = Object.assign({},g_message_template)
+    msg.direction = HOSTED_APP_TO_ALL
+    msg.relationship = APP_RELATES_TO_ALL
+    msg.action = message.action
+    msg.category = message.category
+    msg.data = message.data
+    let message_str = JSON.stringify(msg)
+    g_frame_page.postMessage(message_str,'*')
+}
+
+
+
+// END OF HOSTED APP PAGE COM  (ALPHA)
+
+
+
+
+
+
+
+
+application_specific_handlers = async (category,action,relationship,params) => {
+		try {
+			if ( category === FRAME_TO_APP_PUBLIC_COMPONENT ) {
+				switch ( action ) {
+					case FRAME_POSTED_PRIMARY: {
+						let response = params.response
+						if ( response ) {
+							g_responder_tables["post-response"].resolver(response)
+						} else {
+							g_responder_tables["post-response"].rejector()
+						}
+						break
+					}
+					case FRAME_LIST_DATA: {
+						let data = params.data
+						if ( data && data.file_names ) {
+							g_responder_tables["data-requests"].resolver(data.file_names)
+						} else {
+							g_responder_tables["data-requests"].rejector()
+						}
+						break
+					}
+					case FRAME_RETURNS_DATA: {
+						let data = params.data
+						if ( data ) {
+							g_responder_tables["data-requests"].resolver(data)
+						} else {
+							g_responder_tables["data-requests"].rejector()
+						}
+						break
+					}
+				}
+			}
+		} catch (e) {
+			console.log(e)
+		}
+	}
+
+
+
+// MODULE: ????
+
+
+const AUDIO_STREAMING_SERVICE = "https://www.popsongnow.com/audio/"
+const VIDEO_STREAMING_SERVICE = "https://www.popsongnow.com/video/"
+const IMAGE_STORAGE_SERVICE = "https://www.popsongnow.com/images/"
+
+// 
+//
+// All of these make a link that will server the stored object given its placement into a p2p service cloud.
+// The link may be filtered through a service worker that translates it into the p2p pathway such as ipfs.
+//
+function make_audio_upload_link(obj) {
+	let file_name = obj.file_name
+	let stream_link = AUDIO_STREAMING_SERVICE + file_name
+	prep_upload_for(obj,upload_audio)
+	return(stream_link)
+}
+
+function make_video_upload_link(obj) {
+	let file_name = obj.file_name
+	let stream_link = VIDEO_STREAMING_SERVICE + file_name
+	prep_upload_for(obj,upload_video)
+	return(stream_link)
+}
+
+function make_image_upload_link(obj) {
+	let file_name = obj.file_name
+	let stream_link = IMAGE_STORAGE_SERVICE + file_name
+	prep_upload_for(obj,upload_image)
+	return(stream_link)	
+}
+
+
+
+
+// MODULE: UPLOAD MEDIA (windowized)
+
+
+const DEFINED_CHUNK_SIZE = 5000000
+const DEFINED_MAX_SIZE = 9000000
+
+
+
+
+// prep_upload_data
+// 	-- if needed prepare the blob...  in any case separate the blob from the com object to send it later.
+// 	-- return the com object and blob as a pair
+//
+async function prep_upload_data(obj,blob_already,protocol) {
+	//
+	let blob_data = ""
+	//
+	if ( !(blob_already) )  {
+		try {
+			let res = await fetch(obj.blob)
+			blob_data = await res.blob()
+		} catch(e) {
+			return
+		}
+	} else {
+		blob_data = blob_already
+	}
+	//
+	if ( obj.blob !== undefined )  {
+		delete obj.blob
+	}
+	obj.protocol = protocol ? protocol : 'p2p-default'
+	obj.preamble_size = blob_data.size
+
+	return [obj,blob_data]
+}
+
+
+
+//$>>	finalize_small_media_storage
+async function finalize_small_media_storage(url,primary_response) {
+	if ( primary_response.transition && primary_response.transition.token ) {
+		let transaction_token = primary_response.transition.token
+		let protocol = primary_response.elements.protocol
+		let media_id = primary_response.elements.media_id
+		let body = {
+			"token" : transaction_token,
+			"match" : "handshake",
+		}
+		body.protocol = protocol
+		body.media_id = media_id   // maybe a checksum
+		let secondary_resp =  await postData(url,body)
+		return [protocol,media_id]
+	}
+	return [false,false]
+}
+
+
+//$>>	finalize_media_storage
+//                                                  <<depends>> postData
+//	There are likely faster ways of sending the data. But, this way requires some permission and safe guarding by the server sid.
+async function finalize_media_storage(url,primary_response,formdata,blob,obj) {
+	//
+	let secondary_resp = primary_response
+	//
+	if ( primary_response.transition && primary_response.transition.token ) {	// A token has to be associated with the transaction
+		//
+		if ( formdata === false ) {
+			formdata = new FormData()
+			for ( let ky in obj ) {
+				formdata.append(ky, obj[ky])
+			}
+		}
+		let transaction_token = secondary_resp.transition.token		// call the transition token the transaction_token
+		let protocol = obj.protocol ? obj.protocol : 'p2p-default'				// These fields have no real value until the end, but are always checked in case they may be used for security.
+		let media_id = ""
+		//
+		formdata.set("protocol",protocol)				// Most likely ipfs ... 
+		formdata.set("media_id",media_id)				// not set until the storage system can identify 
+		formdata.set("token",transaction_token)
+		formdata.set("match","upload-next")				// tell the server that you are sending one chunk after another
+		formdata.set("next",true)  // NEXT
+		formdata.set("_t_match_field",obj.file_name)
+		//
+		let size_end = blob.size						// total length of the data in flight
+		let start = 0;
+		let span = DEFINED_CHUNK_SIZE					// application generation sets this (tuning upstream)
+		let num_sends = Math.floor(size_end/span) + 1	// size/chunk_size
+		//
+		for ( let i = 0; i < num_sends; i++ ) {			// the number of times this is called is determined by the client
+			//
+			let start = i*span
+			let end = Math.min((i+1)*span,size_end)
+			let blob_part = blob.slice(start,end)  				// next part of the blob
+			formdata.set('media_file', new Blob([blob_part]),obj.file_name)
+			secondary_resp = await postData(url,formdata, 'omit',false,'multipart/form-data')  // send it as a separate file
+			//
+			if ( (secondary_resp.OK !== "true") && (secondary_resp.OK !== true) ) {
+				break;			// This last send failed. Bailout  (If failed, the server will shutdown the communication)
+			}
+		}
+		//
+		if ( (secondary_resp.OK === "true") || (secondary_resp.OK === true) ) {						// The last send was good.
+			let body = {
+				"token" : transaction_token,
+				"match" : "complete",
+				"_t_match_field" : obj.file_name,
+				"file" : { "name" : obj.file_name },
+				"next"	: false		// NO NEXT
+			}
+			secondary_resp =  await postData(url,body)			// Tell the server that this transaction is done...
+			let elements = secondary_resp.state.elements			// The good stuff is returned in a state field 
+			protocol = elements.protocol  // final hash and provider returned in state (same as for the shor but in the state field)
+			media_id = elements.media_id
+		}
+		//
+		return [protocol,media_id]
+	}
+	return [false,false]
+}
+
+
+
+//$>>	finalize_media_array_storage
+//                                                  <<depends>> postData
+//	There are likely faster ways of sending the data. But, this way requires some permission and safe guarding by the server sid.
+async function finalize_media_array_storage(url,primary_response,formdata,blob_list,obj) {
+	//
+	let secondary_resp = primary_response
+	//
+	if ( primary_response.transition && primary_response.transition.token ) {	// A token has to be associated with the transaction
+		//
+		if ( formdata === false ) {
+			formdata = new FormData()
+			for ( let ky in obj ) {
+				formdata.append(ky, obj[ky])
+			}
+		}
+		let transaction_token = secondary_resp.transition.token		// call the transition token the transaction_token
+		let protocol = obj.protocol ? obj.protocol : 'p2p-default'				// These fields have no real value until the end, but are always checked in case they may be used for security.
+		let media_id = ""
+		//
+		formdata.set("protocol",protocol)				// Most likely ipfs ... 
+		formdata.set("media_id",media_id)				// not set until the storage system can identify 
+		formdata.set("token",transaction_token)
+		formdata.set("match","upload-next")				// tell the server that you are sending one chunk after another
+		formdata.set("next",true)  // NEXT
+		formdata.set("_t_match_field",obj.file_name)
+		//
+
+		let max_num_sends = 0
+		let blob_pars = blob_list.map( blob => {
+			let blob_url = blob.blob_url
+			let size_end = blob.size						// total length of the data in flight
+			let start = 0;
+			let span = DEFINED_CHUNK_SIZE					// application generation sets this (tuning upstream)
+			let num_sends = Math.floor(size_end/span) + 1	// size/chunk_size
+			max_num_sends = (num_sends > max_num_sends) ? max_num_sends : num_sends
+			return {
+				blob_str, size_end, start, span, num_sends
+			}
+		})
+		// 
+		let num_sends = Math.floor(size_end/span) + 1	// size/chunk_size
+		//
+		for ( let i = 0; i < max_num_sends; i++ ) {			// the number of times this is called is determined by the client
+			//
+			for ( let blob_dscr of blob_pars ) {
+				if ( blob_dscr.num_sends === 0 ) continue
+				let blob = blob_dscr.blob
+				let span = blob_dscr.span
+				let start = span*i
+				let size_end = blob_dscr.size_end
+				let end = Math.min((i+1)*span,size_end)
+
+				let blob_part = blob.slice(start,end)  				// next part of the blob
+				formdata.set('media_file', new Blob([blob_part]),blob_dscr.file_name)
+				blob_dscr.num_sends--
+			}
+			//
+			secondary_resp = await postData(url,formdata, 'omit',false,'multipart/form-data')  // send it as a separate file
+			//
+			if ( (secondary_resp.OK !== "true") && (secondary_resp.OK !== true) ) {
+				break;			// This last send failed. Bailout  (If failed, the server will shutdown the communication)
+			}
+		}
+		//
+		if ( (secondary_resp.OK === "true") || (secondary_resp.OK === true) ) {						// The last send was good.
+			let body = {
+				"token" : transaction_token,
+				"match" : "complete",
+				"_t_match_field" : obj.file_name,
+				"file" : { "name" : obj.file_name },
+				"next"	: false		// NO NEXT
+			}
+			// postData
+			secondary_resp =  await postData(url,body)			// Tell the server that this transaction is done...
+			let elements = secondary_resp.state.elements			// The good stuff is returned in a state field 
+			protocol = elements.protocol  // final hash and provider returned in state (same as for the shor but in the state field)
+			media_id = elements.media_id
+		}
+		//
+		return [protocol,media_id]
+	}
+	return [false,false]
+}
+
+
+
+
+//$>>	upload_small
+//                                                  <<depends>> postData,finalize_small_media_storage
+async function upload_small(url,obj,blob_already) {			// 	obj.media_type  // data:[<MIME-type>][;charset=<encoding>][;base64],<data>
+	//
+	let [com_obj,blob_data] = await prep_upload_data(obj,blob_already,'p2p-default')
+	//
+	let formdata = new FormData()
+	for ( let ky in com_obj ) {
+		formdata.append(ky, com_obj[ky])
+	}
+	formdata.append('media_file', new Blob([blob_data]), obj.file_name)
+	//
+	// in the small versions, the file is sent immediately. No preamble
+	//
+	let primary_response =  await postData(url,formdata,'omit',false,'multipart/form-data')
+	if ( primary_response.OK === "true" ) {
+		let media_store_characteristics = await finalize_small_media_storage(primary_response)
+		return media_store_characteristics
+	} else {
+		return [false, false]
+	}
+}
+
+//$>>	upload_big
+//                                                  <<depends>> postData,finalize_media_storage
+async function upload_big(url,obj,blob_already) {
+	//
+	let [com_obj,blob_data] = await prep_upload_data(obj,blob_already,'p2p-default')
+	//
+	let formdata = new FormData()
+	for ( let ky in com_obj ) {
+		formdata.append(ky, com_obj[ky])
+	}
+	//
+	// in the large versions, a preamble is sent with the size of the data. No data is sent in the first message
+	//
+	let primary_response = await postData(url,formdata,'omit',false,'multipart/form-data')
+	//
+	if ( primary_response.OK === "true" ) {		// If the system can handle the request, start a cycle of sends
+		let media_store_characteristics = await finalize_media_storage(primary_response,formdata,blob_data,obj)
+		return media_store_characteristics
+	} else {
+		return [false, false]
+	}
+}
+
+
+
+
+
+
+//$>>	upload_audio
+//                                                  <<depends>> upload_big,upload_small
+// ---- ---- ---- ---- ---- ---- ----
+async function upload_audio(obj) {
+	let blob_data
+	try {
+		let res = await fetch(obj.blob)
+		blob_data = await res.blob()
+	} catch(e) {
+		return
+	}
+	if ( blob_data.size > DEFINED_MAX_SIZE ) {
+		return await upload_big(obj,blob_data)
+	} else {
+		return await upload_small(obj,blob_data)
+	}
+}
+
+//$>>	upload_image
+// ---- ---- ---- ---- ---- ---- ----
+async function upload_image(obj) {
+	let blob_data
+	try {
+		let res = await fetch(obj.blob)
+		blob_data = await res.blob()
+	} catch(e) {
+		return
+	}
+	if ( blob_data.size > DEFINED_MAX_SIZE ) {
+		return await upload_big(obj,blob_data)
+	} else {
+		return await upload_small(obj,blob_data)
+	}
+}
+
+//$>>	upload_video
+//                                                  <<depends>> upload_big
+// ---- ---- ---- ---- ---- ---- ----
+async function upload_video(obj) {
+	return await upload_big(obj)
+}
+
+//$>>	prep_upload_for
+//
+// ---- ---- ---- ---- ---- ---- ----
+var g_uploader_cache = {}
+function prep_upload_for(obj,uploader_fun) {
+	//
+	g_uploader_cache[obj._dash_entry_id] = async () => {
+		return await uploader_fun(obj)
+	}
+	//
+}
+
+//$>>	do_media_upload
+//                                                  <<depends>> prep_upload_for
+//                                                  <<var-depends>> g_uploader_cache
+async function do_media_upload(obj) {		// earlier a link was made for the media, which will be uploaded if ever the user "save"s it.
+	let id = obj._dash_entry_id
+	let _uploader = g_uploader_cache[id]	// _uploader from map
+	if ( _uploader ) {
+		let [protocol,asset_id] = await _uploader()
+		return [protocol,asset_id]
+	}
+}
+
+
+//$$EXPORTABLE::
+/*
+finalize_small_media_storage
+finalize_media_storage
+upload_small
+upload_big
+upload_audio
+upload_image
+upload_video
+prep_upload_for
+do_media_upload
+*/
+
+
+	//
+	// ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ----
+	let g_punctuation = ".,;:\'\"~\~\`@#$%^&*()+=|\\][}{?/><"
+
+	function ispunct(c,add_dash) {
+		let is = (g_punctuation.indexOf(c) >= 0 )
+		if ( !(is) && add_dash ) {
+			is = (c == '-' || c == '_')
+		}
+		return is
+	}
+
+	function trim_punct(key,add_dash) {
+		while ( (key.length > 0) && ispunct(key[0],add_dash) ) {
+			key = key.substr(1)
+		}
+		while ( (key.length > 0) && ispunct(key[key.length - 1],add_dash) ) {
+			key = key.substr(0,(key.length - 1))
+		}
+		return(key)
+	}
+
+
+
+	class DataFromUi {
+
+		constructor() {
+			this._user_id = false
+			this._current_asset_history = false
+			this._current_asset_prev_text = ""
+			this._current_asset_text_ucwid_info = false
+		}
+
+		get_file(file_el) {
+			//
+			if ( file_el.files.length ) {
+				return new Promise((resolve,reject) => {
+					let file = file_el.files[0]
+					let fname =  file.name
+					let mtype = file.type
+					let reader = new FileReader();
+					let file_copy = Object.assign({},file)
+					for ( let ky in file ) { 
+						if ( ky === 'arrayBuffer' ) continue
+						if ( ky === 'slice' ) continue
+						if ( ky == 'stream' ) continue
+						if ( ky == 'text' ) continue
+						if ( ky == 'webkitRelativePath' ) continue
+						file_copy[ky] = file[ky]
+					}
+					reader.onload = (e) => {
+						//
+						let loaded = {
+							"blob_url" : e.target.result,
+							"name" : fname,
+							"mtype" : mtype,
+							"size" : file_copy.size,
+							"file" : file_copy
+						}
+						//
+						resolve(loaded)
+					};
+					reader.readAsDataURL(file)
+				})
+			}
+			//
+			return false
+		}
+
+		async gather_user_fields(field_vars) {
+			let upload_record = {}
+			try {
+				let tracking = ""
+				let t = field_vars['user-tracking']
+				if ( t.length ) { tracking = t }
+				//
+				let uid = field_vars['user-id']
+				if ( uid.length ) {
+					upload_record = {
+						"_id" : uid,
+						"_tracking" : tracking
+					}
+					this._user_id = uid
+					this._author_tracking = tracking
+					return upload_record
+				}
+
+			} catch (e) {
+				return false
+			}
+			return false
+		}
+
+		//  ----  ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ----
+		async gather_fields(field_vars) {
+			//
+			if ( this._user_id === false ) {
+				return false
+			}
+			//
+			let upload_record = {}
+			try {
+				let opt_fld = field_vars['rec-file-mtype']
+				let title_fld = field_vars['rec-title']
+				let subject_fld = field_vars['rec-subject']
+				let keys_fld = field_vars['rec-keys']
+				let abstract_fld = field_vars['rec-abstract']
+				let full_text_fld = field_vars['rec-full-text']
+				let file_name_fld = field_vars['rec-file-name']
+				let poster_name_fld = field_vars['rec-poster-name']
+				let paid_fld = field_vars['paid-checkbox']
+
+				if ( !(opt_fld && title_fld && keys_fld && abstract_fld && full_text_fld && file_name_fld && poster_name_fld) ) return false
+
+				let full_text = full_text_fld.value
+				//
+				let title = title_fld.value
+				if ( title.length === 0 ) return false
+				//
+				let subject = subject_fld.value
+				if ( subject.length === 0 ) return false
+				//
+				let abstract =  abstract_fld.value
+
+				let asset_pair = opt_fld.value
+				if ( asset_pair.length === 0 ) return false
+				//
+				let [asset_type,media_type] = asset_pair.split('/')
+				/*
+					stream/audio
+					stream/video
+					stream/image
+					blog/text
+					music_buzz/text
+				*/
+				let poster = await this.get_file(poster_name_fld)        // file names for stream type media
+				let media_data = await this.get_file(file_name_fld)
+
+				if ( (media_type !== 'text') && (media_data === false) && (poster === false) ) {
+					return false
+				}
+
+				if ( ( media_type === 'text' ) && ( full_text.length === 0 ) ) {
+					return false
+				} else if ( media_type !== 'text' ) {
+					full_text = file_name_fld.files[0].name
+				}
+
+				//
+				let modDate = media_data ? media_data.file.lastModified : ( poster ? poster.file.lastModified : Date.now())
+				//
+				let keys = keys_fld.value
+				keys = keys.split(' ').filter( key => {
+					let ok = (key !== undefined)
+					if ( ok ) ok = (key.length > 2)
+					return ok
+				})
+				keys = keys.map(key => {
+					key = trim_punct(key)
+					key = key.trim()
+					return(key)
+				})
+				keys = keys.filter( key => {
+					let ok = (key !== undefined)
+					if ( ok ) ok = (key.length > 2)
+					return ok
+				})
+				keys = keys.map(key => {
+					key = encodeURIComponent(key)
+					return(key)
+				})
+				//
+				let tracking = ""       // if it has been created
+				let tracker = field_vars["asset-id"]
+				if ( tracker ) {
+					let t = tracker.value
+					if ( t.length ) tracking = t
+				}
+
+
+				let paid = paid_fld ? paid_fld.checked : false
+
+				let exclusion_fields = [
+					"_history","_prev_text",
+					"_transition_path", "encode",
+					"media.poster.ucwid_info", "media.source.ucwid_info",
+					"media.poster.protocol", "media.source.protocol",
+					"media.poster.ipfs", "media.source.ipfs"
+				]
+				let repository_fields = [ "media.source", "media.poster" ]  // field that contain id's useful to pin object at the server
+				//
+				upload_record = {
+					"_tracking" : tracking,             // tracking of the asset
+					"_id" :  this._user_id,             // should be a UCWID
+					"_author_tracking" :  this._author_tracking,
+					"_paid" : paid,
+					"_transition_path" : "asset_path",
+					"asset_path" : `${tracking}+${asset_type}+${this._user_id}`,
+					"title" : encodeURIComponent(title),
+					"subject" : encodeURIComponent(subject),
+					"keys" : keys,
+					"asset_type" : asset_type,        // blog, stream, link-package, contact, ownership, etc...
+					"media_type" : media_type,        // text, audio, video, image
+					"abstract" : encodeURIComponent(abstract),
+					"media" : {
+						"poster" : poster,
+						"source" : media_data
+					},
+					"encode" : true,
+					"txt_full" : encodeURIComponent(full_text),
+					"dates" : {
+						"created" : Date.now(),
+						"updated" : modDate
+					},
+					"_history" : this._current_asset_history ? this._current_asset_history : [],
+					"_prev_text" : this._current_asset_prev_text,
+					"text_ucwid_info" : this._current_asset_text_ucwid_info,
+					"repository_fields" : repository_fields,
+					"exclusion_fields" : exclusion_fields
+				}
+				this._current_asset_history = false   // reset it when it is retrieved
+				//    
+			} catch (e) {
+				return false
+			}
+
+			return(upload_record)
+		}
+
+
+
+		//  ----  ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ----
+		async gather_identifying_fields(field_vars) {
+			//
+			if ( this._user_id === false ) {
+				return false
+			}
+			//
+			let upload_record = {}
+			try {
+				let tracker = field_vars["asset-id"]
+				let opt_fld = field_vars['rec-file-mtype']
+				if ( !(opt_fld && tracker) ) return false
+
+				let asset_pair = opt_fld.value
+				if ( asset_pair.length === 0 ) return false
+				//
+				let [asset_type,media_type] = asset_pair.split('/')
+				/*
+					stream/audio
+					stream/video
+					stream/image
+					blog/text
+					music_buzz/text
+				*/
+				//
+				//
+				let tracking = ""       // if it has been created
+				if ( tracker ) {
+					let t = tracker.value
+					if ( t.length ) tracking = t
+					else return false
+				}
+
+				let paid_fld = field_vars['paid-checkbox']
+				let paid = paid_fld ? paid_fld.checked : false
+
+				//
+				let exclusion_fields = [  // fields excluded from searching services.
+					"_history","_prev_text",
+					"_transition_path", "encode",
+					"media.poster.ucwid_info", "media.source.ucwid_info",
+					"media.poster.protocol", "media.source.protocol",
+					"media.poster.ipfs", "media.source.ipfs"
+				]
+
+				//
+				upload_record = {
+					"_tracking" : tracking,
+					"_id" :  this._user_id,
+					"_paid" : paid,
+					"_transition_path" : "asset_path",
+					"asset_path" : `${tracking}+${asset_type}+${this._user_id}`,
+					"asset_type" : asset_type,        // blog, stream, link-package, contact, ownership, etc...
+					"media_type" : media_type,
+					"exclusion_fields" : exclusion_fields
+				}
+				//
+			} catch (e) {
+				return false
+			}
+
+			return(upload_record)
+		}
+
+		// put_fields ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ----
+		put_fields(obj,field_vars) {
+			let opt_fld = field_vars['rec-file-mtype']
+			let title_fld = field_vars['rec-title']
+			let subject_fld = field_vars['rec-subject']
+			let keys_fld = field_vars['rec-keys']
+			let abstract_fld = field_vars['rec-abstract']
+			let full_text_fld = field_vars['rec-full-text']
+			let file_name_fld = field_vars['rec-file-name']
+			let poster_name_fld = field_vars['rec-poster-name']
+			let paid_fld = field_vars['paid-checkbox']
+			if ( !(opt_fld && title_fld && keys_fld && abstract_fld && full_text_fld && file_name_fld  && poster_name_fld) ) return false
+			
+			title_fld.value = decodeURIComponent(obj.title)
+			subject_fld.value = decodeURIComponent(obj.subject)
+			keys_fld.value = decodeURIComponent(obj.keys)
+			opt_fld.value = [obj.asset_type,obj.media_type].join('/')
+			abstract_fld.value = decodeURIComponent(obj.abstract)
+			full_text_fld.value = decodeURIComponent(obj.txt_full)
+
+			if ( paid_fld )  {
+				paid_fld.setAttribute("checked",obj._paid)
+			}
+
+			this._current_asset_history = obj._history
+			this._current_asset_prev_text = obj.txt_full
+			this._current_asset_text_ucwid_info = obj.text_ucwid_info ? obj.text_ucwid_info : false
+		}
+
+		async gather_asset_fields(field_vars) {
+			//
+			let upload_record = {}
+			try {
+				let asset_fld = field_vars['asset-id']
+				upload_record._id = asset_fld.value
+			} catch (e) {
+				return false
+			}
+			return upload_record
+		}
+
+	}
+
+
+
+
+	class Proxy {
+
+
+		constructor() {
+
+			//
+			this.new_entry_link = ""
+			this.get_entry_link = ""
+			this.update_entry_link = ""
+
+			this.delete_entry_link = ""
+			this.publish_entry_link = ""
+			this.unpublish_entry_link = ""
+			this.get_user_ready_link = ""
+
+		}
+
+
+		async new_entry(good_data) {
+			// to transitions 
+			let uploadable = {
+				"meta" : good_data		// good data already has urls for BLOBs representing the media to upload
+				// file entries, etc/	
+			}
+			let [result,pid] = await send_new_entry(uploadable,this.new_entry_link,good_data.asset_type)
+			if ( result.status === "OK" ) {
+				return status.tracker
+			}
+		}
+
+
+		async get_entry(good_data) {
+			let uploadable = {
+				"meta" : good_data
+				// file entries, etc/	
+			}
+			let result = await send_publication_command("get",uploadable,this.get_entry_link)
+			if ( result.status === "OK" ) {
+				return status.tracker
+			}
+		}
+
+		async update_entry(good_data) {
+			good_data.update = true   // something better?
+			let uploadable = {
+				"meta" : good_data
+				// file entries, etc/	
+			}
+			let [result,pid] = await send_new_entry(uploadable,this.update_entry_link,good_data.asset_type)
+			if ( result.status === "OK" ) {
+				return status.tracker
+			}
+		}
+
+		async delete_entry(good_data) {
+			let uploadable = {
+				"meta" : good_data
+				// file entries, etc/	
+			}
+			let result = await send_publication_command("get",uploadable,this.delete_entry_link)
+			if ( result.status === "OK" ) {
+				return status.tracker
+			}
+		}
+
+		async publish_entry(good_data) {
+			let uploadable = {
+				"meta" : good_data
+				// file entries, etc/	
+			}
+			let result = await send_publication_command("publish",uploadable,this.publish_entry_link)
+			if ( result.status === "OK" ) {
+				return status.tracker
+			}
+		}
+
+		async unpublish_entry(good_data) {
+			let uploadable = {
+				"meta" : good_data
+				// file entries, etc/	
+			}
+			let result = await send_publication_command("unpublish",uploadable,this.unpublish_entry_link)
+			if ( result.status === "OK" ) {
+				return status.tracker
+			}
+		}
+
+	}
+
+
+
+	let g_ui_data = new DataFromUi()
+	let g_proxy = new Proxy()
+
+	///
+
+	// field_data :: in the following, field_data is a map of fields ids to DOM element objects. 
+	// values will be read in from those fields
+	// calculation on values will be handled by gather_fields
+	// FILES: two fields will refer to the DOM element for file uploaders. 
+	//		-- rec-file-name	--- likely a media file e.g. mp3, mov, etc.
+	//		-- rec-poster-name   --- likely an image file that will be displayed
+
+	//
+	// ---- create_entry ---- ---- ---- ---- ---- ---- ----
+    async function create_entry(field_data) {
+        if ( field_data ) {
+			let good_data = g_ui_data.gather_fields(field_data)  // puts the upload file into the structure
+			let t_num = await g_proxy.new_entry(good_data)
+			return t_num /// for placement into display
+        }
+    }
+
+	// ---- get_entry ---- ---- ----
+	async function get_entry(field_data) {
+		let good_data = await g_ui_data.gather_identifying_fields(field_data)
+		if ( good_data ) {
+          let obj = await g_proxy.get_entry(good_data)
+          let t_num = obj._tracking
+          if ( t_num !== false ) {
+			field_data["asset-id"] = t_num
+          }
+          g_ui_data.put_fields(obj)
+        }
+    }
+  
+	// ---- update_entry ---- ---- ----
+    async function update_entry(field_data) {
+        let good_data = await g_ui_data.gather_fields(field_data)
+        if ( good_data ) {
+          let t_num = await g_proxy.update_entry(good_data)
+          if ( t_num !== false ) {
+			field_data["asset-id"] = t_num
+          }
+        }
+    }
+
+	// ---- delete_entry ---- ---- ----
+    async function delete_entry(field_data)  {
+      let good_data = await g_ui_data.gather_identifying_fields(field_data)
+        if ( good_data ) {
+          await g_proxy.delete_entry(good_data)
+        }
+    }
+
+	// ---- publish_entry ---- ---- ----
+    async function publish_entry(field_data) {
+        let good_data = await g_ui_data.gather_identifying_fields(field_data)
+        if ( good_data ) {
+          await g_proxy.publish_entry(good_data)
+        }
+    }
+
+	// ---- unpublish_entry ---- ---- ----
+    async function unpublish_entry(field_data) {
+        let good_data = await g_ui_data.gather_identifying_fields(field_data)
+        if ( good_data ) {
+          await g_proxy.unpublish_entry(good_data)
+        }
+    }
+
+	// ---- get_user_tracking ---- ---- ----
+    async function get_user_tracking(field_data) {
+		let good_data = await g_ui_data.gather_user_fields(field_data)
+		if ( good_data ) {
+			let t_num = await g_proxy.user_ready(good_data)
+			field_data["user-tracking"] = t_num
+		}
+    }
+
+
+
+	// ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ----
+
+
+
+	let g_responder_tables = {
+		"post-response" : {
+			"resolver" : false,
+			"rejector" : false
+		},
+		"data-requests" : {
+			"resolver" : false,
+			"rejector" : false
+		}
+	}
+
+	function promise_handling(source_name) {
+		if ( g_responder_tables[source_name] !== undefined ) {  // do we implement this entry?
+			let p = new Promise((resolve,reject) => {
+				g_responder_tables[source_name].resolver = (resp_obj) => {
+					g_responder_tables[source_name] = {
+						"resolver" : false,
+						"rejector" : false            
+					}
+					resolve(resp_obj)
+				}
+				g_responder_tables[source_name].rejector = () => {
+					g_responder_tables[source_name] = {
+						"resolver" : false,
+						"rejector" : false            
+					}
+					reject(false)
+				}
+			})
+			return p    
+		}
+		return false
+	}
+
+
+
+	let g_app_path = "command-upload"
+
+
+	// g_app_path important to nginx configuration
+
+	function get_transition_endpoint(endpoint) {
+		let url = `${location.protocol}//${location.host}/${g_app_path}/transition/${endpoint}`
+		return url
+	}
+
+	function get_secondary_transition_endpoint(endpoint) {
+		let url = `${location.protocol}//${location.host}/${g_app_path}/transition/secondary/${endpoint}`
+		return url
+	}
+
+
+	// prep_send_new_entry
+	async function prep_send_new_entry(data_hash,send_obj) {
+		// send the fields this knows about. Expect the human frame to handle a hash and security
+		let postable = Object.assign(send_obj,{
+			"topic" : "command-upload",
+			"path" : "upload-media"
+		})
+		//
+		//
+		let message = {
+			"category": FRAME_ACTION_FROM_APP,
+			"action" : HOST_UP_REQ_UPLOAD,
+			"data" : {
+				"link" : get_transition_endpoint(link_meta.link),
+				"hash" : data_hash,
+				"postable" : postable
+			}
+		}
+		tell_frame_page(message)  // ask for the primary transition to be handled by the human frame...
+		//
+		let primary_response = await promise_handling("post-response")
+		return primary_response
+	}
+
+
+
+	async function send_new_entry(object_data_meta,link_meta,asset_type) {
+		//
+		/*
+		object_data_meta === { "meta" : good_data }
+		*/
+		if ( object_data_meta.meta.media && object_data_meta.meta.media.source ) {
+			let blob_data = object_data_meta.meta.media.source.blob_url
+			let blob_data_size = object_data_meta.meta.media.source.size
+			if ( object_data_meta.meta.media.poster ) {
+				blob_data_size += object_data_meta.meta.media.poster.size
+			}
+			//
+			let com_obj = {
+				protocol : 'p2p-default',
+				preamble_size : blob_data_size  // send total size
+			}
+			com_obj = Object.assign(object_data_meta,com_obj)
+			//
+			// +  obj.protocol,  + obj.preamble_size    // { "meta" : good_data, "protocol" : - ,  "preamble_size" : - }
+			let data_hash = do_hash(blob_data)  // the file data of the main type of media (e.g. movie, sound, which might also upload an image)
+			//   post data in here  (prep --- don't send the actual file... )
+
+			let backup_media = {
+				"source" : com_obj.meta.media.source,
+				"poster" : com_obj.meta.media.poster
+			}
+
+
+			// make copies of the media components
+			com_obj.meta.media.source = Object.assign({},com_obj.meta.media.source)
+			delete com_obj.meta.media.source.blob_url  // (prep --- don't send the actual file... )
+			//
+			if ( object_data_meta.meta.media.poster ) {
+				com_obj.meta.media.poster = Object.assign({},com_obj.meta.media.poster)
+				delete com_obj.meta.media.poster.blob_url   // (prep --- don't send the actual file... )
+			}
+
+			let primary_response = await prep_send_new_entry(data_hash,com_obj)
+			//
+			if ( primary_response.OK == true ) {
+				let upload_keys = primary_response.elements  // should be produced by publication handling
+				let postable = Object.assign(com_obj,{
+					"token" : primary_response.token,		// primary action token (key to secondary)
+					"asset_type" : asset_type,
+					"sign" : upload_keys.sign,
+					"hash" : data_hash
+				})
+				// --- backup_media
+				let blob_list = [backup_media.source,backup_media.poster]
+				let link = get_secondary_transition_endpoint(link_meta.secondary_link)
+				//  , primary_response -> original respone, false -> will make FromData, blob_data -> one file, 
+				let media_store_characteristics = await finalize_media_array_storage(link,primary_response,false,blob_list,postable)
+				
+				//return media_store_characteristics
+			}
+		}
+
+		return [false,false]
+		//
+	}
+
+
+
+	async function send_publication_command(command,object_data_meta,link_meta) {
+		let data_hash = do_hash(object_data_meta)
+		//
+		let postable = Object.assign(object_data_meta,{
+			"topic" : `command-${command}`,
+			"path" : "upload-media",
+			"file_name" : data_hash
+		})
+		//
+		let message = {
+			"category": FRAME_ACTION_FROM_APP,
+			"action" : HOST_UP_REQ_UPLOAD,
+			"data" : {
+				"link" : get_transition_endpoint(link_meta.link),
+				"hash" : data_hash,
+				"postable" : postable
+			}
+		}
+		tell_frame_page(message)  // ask for the primary transition to be handled by the human frame...
+		//
+		let primary_response = await promise_handling("post-response")
+		if ( primary_response.OK == true ) {
+			return true
+		} 
+		return false
+		//
+	}
+
+
+
+
+	async function app_run_file_op(file_obj,operation) {
+		let message = {
+			"category": FRAME_ACTION_FROM_APP,
+			"action" : HOSTED_APP_FILE_OPERATION,
+			"data" : {
+				"op" : operation,
+				"file" : file_obj
+			}
+		}
+		//
+		tell_frame_page(message)  // ask for the primary transition to be handled by the human frame...
+		//
+		try {
+			let file_info = await promise_handling("data-requests")
+			return file_info
+		} catch (e) {
+		}
+		return false
+	}
+
+	async function get_all_user_files() {
+
+		let message = {
+			"category": FRAME_ACTION_FROM_APP,
+			"action" : HOSTED_APP_FILE_OPERATION,
+			"data" : {
+				"op" : "list"
+			}
+		}
+		//
+		tell_frame_page(message)  // ask for the primary transition to be handled by the human frame...
+
+		try {
+			let all_files = await promise_handling("data-requests")
+			return all_files
+		} catch (e) {
+		}
+		return false
+	}
+
+	async function app_get_file(name) {
+		let message = {
+			"category": FRAME_ACTION_FROM_APP,
+			"action" : HOSTED_APP_FILE_OPERATION,
+			"data" : {
+				"op" : "file-meta",
+				"file" : { "name" : name }
+			}
+		}
+		//
+		tell_frame_page(message)  // ask for the primary transition to be handled by the human frame...
+		//
+		try {
+			let file_info = await promise_handling("data-requests")
+			return file_info
+		} catch (e) {
+		}
+		return false
+	}
+
+
+// /////////////////////////////////////////////////////
+
+
+setup_window_crypto()
+
+</script>
