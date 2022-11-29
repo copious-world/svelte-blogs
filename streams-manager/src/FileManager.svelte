@@ -147,7 +147,9 @@ async function select_file(some_file) {
         <span>Operation:</span> 
         {#if (operation !== "selection") } 
             <span>&RightArrowBar;</span><span class="op-name op-action" on:click={run_operation}>{operation}</span>
+                {#if (type_class !== 'image') }
                 Choose a poster image? <span class="op-name op-action" on:click={(ev) => {open_file_selector(ev,'image')}}>poster</span>
+                {/if}
         {:else}
         <span class="op-name op-action" on:click={open_file_selector}>select file</span>
         {/if}

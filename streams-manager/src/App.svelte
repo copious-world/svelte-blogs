@@ -96,10 +96,11 @@
         //
         user_selected_file_op = false
         nothing_special = true
-
+        //
         let type_info = data_handle.substring(0,data_handle.indexOf(';'))
+        type_info = type_info.replace('data:','')
         g_current_media_selection.mime_type = type_info
-        type_info = type_info.replace('data:','').split('/')
+        type_info = type_info.split('/')
 console.log(type_info)
 console.log("------------")
         //
