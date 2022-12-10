@@ -12,11 +12,25 @@ export let user_picked_type
 export let type_class
 export let type_special
 
+export let file_proper
+
 let g_all_files = []
 let file_selections = []
 
 
 let current_file = false
+let pre_file = false
+
+if ( file_proper ) {
+    pre_file = Object.assign({},file_proper)
+    for ( let ky in file_proper ) {
+        let v = file_proper[ky]
+        if ( typeof v !== 'function' ) {
+            pre_file[ky] = file_proper[ky]
+        }
+    }
+    console.log(pre_file)
+}
 
 
 let title = ""

@@ -19,7 +19,7 @@
     let nothing_special = true
     let special_text = ""
      
-    let upload_type = "Image"
+    let g_upload_type = "Image"
     let accepted = ".jpg, .jpeg, .png"
     let icon_by_type = "../images/image-guess.png"
     let upload_icon = "../images/upload-icon.png"
@@ -42,6 +42,8 @@
 
 
     let g_current_media_selection = false
+    let g_current_file_selection = false
+    //
     let manager_window_title = "Media Manager"
     let user_selected_file_op = ""
     //
@@ -56,6 +58,7 @@
         user_selected_file_op = "selection"
         upload_done = false
         nothing_special = true
+        g_current_file_selection = false
         g_current_media_selection = {
             name : "unknown",
             size : 0,
@@ -92,19 +95,20 @@
 
     // ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ----
 
-    async function load_by_type(data_handle,file_list) {
+    async function load_by_type(data_handle,the_file) {
         //
         user_selected_file_op = false
         nothing_special = true
         //
-        let type_info = data_handle.substring(0,data_handle.indexOf(';'))
-        type_info = type_info.replace('data:','')
+        let type_info = data_handle ? data_handle.substring(0,data_handle.indexOf(';')) : the_file.type
+        if ( data_handle ) {
+            type_info = type_info.replace('data:','')
+        }
         g_current_media_selection.mime_type = type_info
-        type_info = type_info.split('/')
-console.log(type_info)
-console.log("------------")
         //
-        let m_type = "" + upload_type
+        type_info = type_info.split('/')
+        //
+        let m_type = "" + g_upload_type
         m_type = m_type.toLocaleLowerCase()
         //
         let special_case = false
@@ -118,7 +122,7 @@ console.log("------------")
         //
         switch (m_type) {
             case 'text' : {
-                let doctored_text = await convert_text(file_list[0])
+                let doctored_text = await convert_text(the_file)
                 if ( !(special_case) || special_case.substring(0,3) !== "svg" ) {
                     text_view = doctored_text
                 } else {
@@ -131,16 +135,23 @@ console.log("------------")
             }
             case 'audio' : {
                 if ( audio ) {
-                    paused = false
-                    source_link_update = data_handle
-        			audio.src = source_link_update
+                    if ( data_handle === false ) {
+                        let [fname,blob] = await drop(false,[the_file])
+                        data_handle = blob
+                    }
                     paused = true
+                    source_link_update = data_handle
                     audio.load()
+                    paused = false
                     audio.play()
                 }
                 break
             }
             case 'video' : {
+                if ( data_handle === false ) {      // or substitute a size warning... (size limite custom to type)
+                    let [fname,blob] = await drop(false,[the_file])
+                    data_handle = blob
+                }
                 source_link = data_handle
                 source = source_link
                 poster = poster_link
@@ -148,11 +159,15 @@ console.log("------------")
                 break
             }
             case 'image' : {
+                if ( data_handle === false ) {      // or substitute a size warning... (size limite custom to type)
+                    let [fname,blob] = await drop(false,[the_file])
+                    data_handle = blob
+                }
                 avatar = data_handle
                 break
             }
             case 'code' : {   /// dtype === application
-                let doctored_text = await convert_text(file_list[0])
+                let doctored_text = await convert_text(the_file)
                 code_view = doctored_text
                 break
             }
@@ -169,21 +184,22 @@ console.log("------------")
     // onFileSelected
     async function onFileSelected(e) {
         if ( e.target.files && e.target.files[0] ) {
-            g_current_media_selection = Object.assign(e.target.files[0])
-            let upload_size = e.target.files[0].size
+            g_current_file_selection = e.target.files[0]
+            g_current_media_selection = Object.assign(g_current_file_selection)
+            //
+            let upload_size = g_current_file_selection.size
+            let up_blob = false
             if ( upload_size < ONE_MEG ) {
                 let [fname,blob] = await drop(false,e.target.files)
                 g_current_media_selection.blob = blob
-                //
-                upload_done = true
-                load_by_type(blob,e.target.files)
+                up_blob = blob
             } else {
-                let [fname,blob] = await drop(false,e.target.files,ONE_MEG)
-                g_current_media_selection.blob = blob
-                //
-                upload_done = true
-                load_by_type(blob,e.target.files)
+                g_current_media_selection.blob = false
             }
+            upload_done = true
+            setTimeout(() => {
+                load_by_type(up_blob,g_current_file_selection)
+            },20)
         }
     }
 
@@ -202,31 +218,31 @@ console.log("------------")
         nothing_special = true
         switch (m_type) {
             case 'text' : {
-                upload_type = "Text"
+                g_upload_type = "Text"
                 accepted = file_types.text.join(', ')
                 icon_by_type = "../images/text-guess.png"
                 break
             }
             case 'audio' : {
-                upload_type = "Audio"
+                g_upload_type = "Audio"
                 accepted = file_types.audio.join(', ')
                 icon_by_type ="../images/audio-guess.png"
                 break
             }
             case 'video' : {
-                upload_type = "Video"
+                g_upload_type = "Video"
                 accepted = file_types.video.join(', ')
                 icon_by_type = "../images/video-guess.png"
                 break
             }
             case 'image' : {
-                upload_type = "Image"
+                g_upload_type = "Image"
                 accepted = file_types.image.join(', ')
                 icon_by_type = "../images/image-guess.png"
                 break
             }
             case 'code' : {
-                upload_type = "Code"
+                g_upload_type = "Code"
                 accepted = file_types.code.join(', ')
                 icon_by_type = "../images/code-guess.png"
                 break
@@ -279,13 +295,13 @@ console.log("------------")
             </td>
             <td style="width:80%;text-align:center" >
                 <div style="text-align:center;width:90%;">
-                    <h1>Upload {upload_type}</h1>
+                    <h1>Upload {g_upload_type}</h1>
                     {#if !upload_done }
                         <img class="avatar" src="{icon_by_type}" alt="" /> 
                     {:else}
-                        {#if (upload_type === 'Image') && avatar }
+                        {#if (g_upload_type === 'Image') && avatar }
                             <img class="avatar" src="{avatar}" alt="d" />
-                        {:else if (upload_type === 'Text') }
+                        {:else if (g_upload_type === 'Text') }
                             {#if nothing_special }
                                 <pre>
                                     {text_view}
@@ -293,23 +309,23 @@ console.log("------------")
                             {:else if (special_text === 'svg') }
                                 {@html svg_text}
                             {/if}
-                        {:else if (upload_type === 'Code') }
+                        {:else if (g_upload_type === 'Code') }
                             <pre>
                             <code>
                                 {code_view}
                             </code>
                             </pre>
-                        {:else if (upload_type === 'Audio') }
+                        {:else if (g_upload_type === 'Audio') }
                             <audio controls controlsList="nodownload" 
                                                     bind:this={audio}
                                                     bind:paused  >
                                 <source src={source_link_update} type="audio/ogg">
                                 <source src={source_link_update} type="audio/mpeg">
-                                <source src={source_link_update} type="audio/wav">
+                                <source src={source_link_update} type="audio/x-wav">
                                 Your browser does not support the audio element.
                                 <track kind="captions" />
                             </audio>
-                        {:else if (upload_type === 'Video') }
+                        {:else if (g_upload_type === 'Video') }
                             {#if !(show_video) }
                                 <span>no video</span>
                             {:else}
@@ -320,7 +336,7 @@ console.log("------------")
                 </div>
                 <div style="text-align:center;width:90%;">
                     <img class="upload" src="{upload_icon}" alt="" on:click={()=>{fileinput.click();}} />
-                    <div class="chan" on:click={()=>{fileinput.click();}}>Choose {upload_type}</div>
+                    <div class="chan" on:click={()=>{fileinput.click();}}>Choose {g_upload_type}</div>
                 </div>
                 <input style="display:none" type="file" accept="{accepted}" on:change={(e)=>onFileSelected(e)} bind:this={fileinput} >
             </td>
@@ -331,7 +347,7 @@ console.log("------------")
 
 <FloatWindow title={manager_window_title}  index={0} scale_size_array={all_window_scales} >
     {#if g_current_media_selection || (user_selected_file_op === "selection") }
-    <FileManager operation={user_selected_file_op} {...g_current_media_selection}   />
+    <FileManager operation={user_selected_file_op} {...g_current_media_selection} file_proper={g_current_file_selection}  />
     {:else}
     No File Selected
     {/if}
