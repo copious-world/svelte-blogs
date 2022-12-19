@@ -9,6 +9,7 @@
 
 
     import {file_types, start_drag, dragOverHandler, dropper, drop, convert_text} from '../../common/upload'
+
     //import frame_messaging from '../../common/human_frame'
 
     let  avatar, fileinput;
@@ -18,7 +19,7 @@
     let svg_text = ""
     let nothing_special = true
     let special_text = ""
-     
+    // ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ----
     let g_upload_type = "Image"
     let accepted = ".jpg, .jpeg, .png"
     let icon_by_type = "../images/image-guess.png"
@@ -38,19 +39,32 @@
     let show_video = false
     // ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ----
 
-    const ONE_MEG = Math.pow(2,20)
+    let there_is_going_session = false
+    let g_user_public = false
+    let g_user_public_ccwid = "--"
 
+    const ONE_MEG = Math.pow(2,20)
 
     let g_current_media_selection = false
     let g_current_file_selection = false
     //
     let manager_window_title = "Media Manager"
     let user_selected_file_op = ""
+    // ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ----
+
+    function empty_media(media_obj) {
+        if ( media_obj.name === "unknown" ) return true
+        if ( media_obj.blob === false || media_obj.size === 0 ) return true
+        return false
+    }
     //
     async function complete_media_upload() {
         // gather the files being uploaded and send the complete package to storage and publishers.
         manager_window_title = "Media Manager (Finalize Upload)"
         user_selected_file_op = "upload"
+        if ( empty_media(g_current_media_selection) ) {
+            file_from_db_storage()
+        }
         start_floating_window(0)
     }
     async function file_from_db_storage() {
@@ -74,26 +88,39 @@
     }
     async function publish_media(ev) {
         manager_window_title = "Media Manager (PUBLISH)"
-        user_selected_file_op = "pulish"
+        user_selected_file_op = "publish"
+        if ( empty_media(g_current_media_selection) ) {
+            file_from_db_storage()
+        }
         start_floating_window(0)
     }
     async function unpublish_media(ev) {
         manager_window_title = "MM - (Remove Publication)"
-        user_selected_file_op = "remove"
+        user_selected_file_op = "unpublish"
+        if ( empty_media(g_current_media_selection) ) {
+            file_from_db_storage()
+        }
         start_floating_window(0)
     }
     async function delete_media(ev) {
         manager_window_title = "Media Manager (Delete)"
         user_selected_file_op = "delete"
+        if ( empty_media(g_current_media_selection) ) {
+            file_from_db_storage()
+        }
         start_floating_window(0)
     }
     async function download_media(ev) {
         manager_window_title = "MM - (Retrieve & Download)"
         user_selected_file_op = "download"
+        if ( empty_media(g_current_media_selection) ) {
+            file_from_db_storage()
+        }
         start_floating_window(0)
     }
 
     // ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ----
+    
 
     async function load_by_type(data_handle,the_file) {
         //
@@ -122,12 +149,13 @@
         //
         switch (m_type) {
             case 'text' : {
-                let doctored_text = await convert_text(the_file)
+                let doctored_text = the_file ? await convert_text(the_file) : data_handle
                 if ( !(special_case) || special_case.substring(0,3) !== "svg" ) {
                     text_view = doctored_text
                 } else {
                     nothing_special = false
                     special_text = "svg"
+                    g_current_media_selection.text_special = special_text
                     svg_text = doctored_text
                 }
                 g_current_media_selection.display_text = doctored_text
@@ -167,7 +195,7 @@
                 break
             }
             case 'code' : {   /// dtype === application
-                let doctored_text = await convert_text(the_file)
+                let doctored_text = the_file ? await convert_text(the_file) : data_handle
                 code_view = doctored_text
                 break
             }
@@ -187,11 +215,12 @@
             g_current_file_selection = e.target.files[0]
             g_current_media_selection = Object.assign(g_current_file_selection)
             //
+            g_current_media_selection.upload_type = g_upload_type   // doc type will be stored for later restoration from local storage
             let upload_size = g_current_file_selection.size
             let up_blob = false
-            if ( upload_size < ONE_MEG ) {
+            if ( upload_size < (ONE_MEG*60) ) {   /// some arbitrary number for now ... TODO capture slices from large files
                 let [fname,blob] = await drop(false,e.target.files)
-                g_current_media_selection.blob = blob
+                g_current_media_selection.blob = blob   // add this (other properties cannot be set)
                 up_blob = blob
             } else {
                 g_current_media_selection.blob = false
@@ -203,12 +232,37 @@
         }
     }
 
-    
+
+
+    function list_selection_response(event) {
+        let cmd_obj = event.detail
+        if ( cmd_obj.cmd === 'local-selection' ) {
+            let file_descr = cmd_obj.file
+            g_current_media_selection = file_descr
+            g_current_file_selection = file_descr
+            user_selected_file_op = 'upload'
+            //
+            if ( file_descr.blob ) {
+                g_upload_type = file_descr.upload_type // set again (unless from the operation window ... then this is it)
+                g_current_media_selection.upload_type = g_upload_type   // doc type will be stored for later restoration from local storage
+                special_text = g_current_media_selection.text_special
+                special_text = (special_text === undefined) ? "" : special_text
+                upload_done = true
+                setTimeout(() => {
+                    load_by_type(file_descr.blob,false)  // file parameter has to be false here
+                },20)
+            }
+        } else if ( cmd_obj.cmd === 'deleted' ) {
+            user_selected_file_op = 'selection'
+            g_current_media_selection = false
+        }
+	}
+
+    // ---- ---- dropHandler ---- ---- ---- ---- ----
     async function dropHandler(ev) {
         let [fname,blob64] = await dropper(ev)
         avatar = blob64
     }
-
 
     // ---- choose_type  ---- Left Side Menu
     //
@@ -250,7 +304,7 @@
         }
     }
 
-
+    // ---- ---- ---- ---- ---- ---- ---- ---- ----
 
 	let window_scale = { "w" : 0.4, "h" : 0.6 }
 	//
@@ -267,92 +321,131 @@
 			window_scale.w = scale.w;
 			//
 		})
+
+        window.addEventListener('message', async (e) => {
+			const data = e.data;
+			const info = JSON.parse(data);
+            if ( info.category === undefined ) {
+                g_user_public = info
+                setTimeout(check_on_session,25)
+            }
+            
+		});
+
     })
+
+    $: {
+        if ( g_user_public.ccwid !== undefined ) {
+            g_user_public_ccwid = g_user_public.ccwid
+        }
+    }
+
+    // ---- ---- ---- ---- ---- ---- ----
+    //
+    let count_tries = 0
+    async function check_on_session() {
+        there_is_going_session = await window.session_acquired()
+        if ( !there_is_going_session ) {
+            count_tries++
+            if ( count_tries < 10 ) {
+                setTimeout(check_on_session,25)
+            }
+        } else {
+            window.set_global_user_id(g_user_public_ccwid)
+        }
+    }
 
 </script>
 
-<div id="app"  on:dragstart={start_drag}  on:drop={dropHandler} on:dragover={dragOverHandler} >
-    <table style="width:100%;">
-        <tr>
-            <td class="grad-background" style="width:10%;text-align:left">
-                <ul>
-                    <li on:click={ () => {choose_type('text')} }>text</li>
-                    <li on:click={ () => {choose_type('audio')} }>audio</li>
-                    <li on:click={ () => {choose_type('image')} }>image</li>
-                    <li on:click={ () => {choose_type('video')} }>video</li>
-                    <li on:click={ () => {choose_type('code')} }>code</li>
-                </ul>
-                <div class="button-list">
-                    {#if g_current_media_selection && (user_selected_file_op !== "selection") }
-                    <button on:click={complete_media_upload}>Finalize Upload</button>
+{#if there_is_going_session }
+    <div id="app"  on:dragstart={start_drag}  on:drop={dropHandler} on:dragover={dragOverHandler} >
+        <table style="width:100%;">
+            <tr>
+                <td class="grad-background" style="width:10%;text-align:left">
+                    <ul>
+                        <li on:click={ () => {choose_type('text')} }>text</li>
+                        <li on:click={ () => {choose_type('audio')} }>audio</li>
+                        <li on:click={ () => {choose_type('image')} }>image</li>
+                        <li on:click={ () => {choose_type('video')} }>video</li>
+                        <li on:click={ () => {choose_type('code')} }>code</li>
+                    </ul>
+                    <div class="button-list">
+                        {#if g_current_media_selection && !(empty_media(g_current_media_selection)) && (user_selected_file_op !== "selection") }
+                        <button on:click={complete_media_upload}>Finalize Upload</button>
+                        {/if}
+                        <button on:click={file_from_db_storage}>Previous Upload</button>
+                        <button on:click={publish_media}>Publish</button>
+                        <button on:click={unpublish_media}>Remove</button>
+                        <button on:click={delete_media}>Delete </button>
+                        <button on:click={download_media}>Download</button>
+                    </div>
+                </td>
+                <td style="width:80%;text-align:center" >
+                    {#if g_user_public !== false }
+                    <div style="text-align:left;width:90%;font-size:50%;font-weight:bolder">your galactic identity: {g_user_public_ccwid}</div>
                     {/if}
-                    <button on:click={file_from_db_storage}>Previous Upload</button>
-                    <button on:click={publish_media}>Publish</button>
-                    <button on:click={unpublish_media}>Remove</button>
-                    <button on:click={delete_media}>Delete </button>
-                    <button on:click={download_media}>Download</button>
-                </div>
-            </td>
-            <td style="width:80%;text-align:center" >
-                <div style="text-align:center;width:90%;">
-                    <h1>Upload {g_upload_type}</h1>
-                    {#if !upload_done }
-                        <img class="avatar" src="{icon_by_type}" alt="" /> 
-                    {:else}
-                        {#if (g_upload_type === 'Image') && avatar }
-                            <img class="avatar" src="{avatar}" alt="d" />
-                        {:else if (g_upload_type === 'Text') }
-                            {#if nothing_special }
+                    <div style="text-align:center;width:90%;">
+                        <h1>Upload {g_upload_type}</h1>
+                        {#if !upload_done }
+                            <img class="avatar" src="{icon_by_type}" alt="" /> 
+                        {:else}
+                            {#if (g_upload_type === 'Image') && avatar }
+                                <img class="avatar" src="{avatar}" alt="d" />
+                            {:else if (g_upload_type === 'Text') }
+                                {#if nothing_special }
+                                    <pre>
+                                        {text_view}
+                                    </pre>
+                                {:else if (special_text === 'svg') }
+                                    {@html svg_text}
+                                {/if}
+                            {:else if (g_upload_type === 'Code') }
                                 <pre>
-                                    {text_view}
+                                <code>
+                                    {code_view}
+                                </code>
                                 </pre>
-                            {:else if (special_text === 'svg') }
-                                {@html svg_text}
-                            {/if}
-                        {:else if (g_upload_type === 'Code') }
-                            <pre>
-                            <code>
-                                {code_view}
-                            </code>
-                            </pre>
-                        {:else if (g_upload_type === 'Audio') }
-                            <audio controls controlsList="nodownload" 
-                                                    bind:this={audio}
-                                                    bind:paused  >
-                                <source src={source_link_update} type="audio/ogg">
-                                <source src={source_link_update} type="audio/mpeg">
-                                <source src={source_link_update} type="audio/x-wav">
-                                Your browser does not support the audio element.
-                                <track kind="captions" />
-                            </audio>
-                        {:else if (g_upload_type === 'Video') }
-                            {#if !(show_video) }
-                                <span>no video</span>
-                            {:else}
-                                <VideoPlayer {source} {poster} calc_source={false} paused={!(isplaying)} />
+                            {:else if (g_upload_type === 'Audio') }
+                                <audio controls controlsList="nodownload" 
+                                                        bind:this={audio}
+                                                        bind:paused  >
+                                    <source src={source_link_update} type="audio/ogg">
+                                    <source src={source_link_update} type="audio/mpeg">
+                                    <source src={source_link_update} type="audio/x-wav">
+                                    Your browser does not support the audio element.
+                                    <track kind="captions" />
+                                </audio>
+                            {:else if (g_upload_type === 'Video') }
+                                {#if !(show_video) }
+                                    <span>no video</span>
+                                {:else}
+                                    <VideoPlayer {source} {poster} calc_source={false} paused={!(isplaying)} />
+                                {/if}
                             {/if}
                         {/if}
-                    {/if}
-                </div>
-                <div style="text-align:center;width:90%;">
-                    <img class="upload" src="{upload_icon}" alt="" on:click={()=>{fileinput.click();}} />
-                    <div class="chan" on:click={()=>{fileinput.click();}}>Choose {g_upload_type}</div>
-                </div>
-                <input style="display:none" type="file" accept="{accepted}" on:change={(e)=>onFileSelected(e)} bind:this={fileinput} >
-            </td>
-        </tr>
-    </table>
+                    </div>
+                    <div style="text-align:center;width:90%;">
+                        <img class="upload" src="{upload_icon}" alt="" on:click={()=>{fileinput.click();}} />
+                        <div class="chan" on:click={()=>{fileinput.click();}}>Choose {g_upload_type}</div>
+                    </div>
+                    <input style="display:none" type="file" accept="{accepted}" on:change={(e)=>onFileSelected(e)} bind:this={fileinput} >
+                </td>
+            </tr>
+        </table>
 
-</div>
+    </div>
 
-<FloatWindow title={manager_window_title}  index={0} scale_size_array={all_window_scales} >
-    {#if g_current_media_selection || (user_selected_file_op === "selection") }
-    <FileManager operation={user_selected_file_op} {...g_current_media_selection} file_proper={g_current_file_selection}  />
-    {:else}
-    No File Selected
-    {/if}
-</FloatWindow>
+    <FloatWindow title={manager_window_title}  index={0} scale_size_array={all_window_scales} >
+        {#if g_current_media_selection || (user_selected_file_op === "selection") }
+        <FileManager operation={user_selected_file_op} {...g_current_media_selection} file_proper={g_current_file_selection} on:message={list_selection_response} />
+        {:else}
+        No File Selected
+        {/if}
+    </FloatWindow>
 
+{:else}
+    <span> No user session has been established</span>
+{/if}
 
 
 <style>

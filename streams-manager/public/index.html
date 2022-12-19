@@ -108,6 +108,16 @@
 </html>
 <script>
 
+function some_def(val) {
+    if ( val === undefined ) return ""
+    return val
+}
+
+function some_def_bool(val) {
+    if ( val === undefined ) return false
+    if ( typeof val === 'boolean' ) return val
+    return !!(val)
+}
 
 
 // MODULE: GLOBAL CRYPTO (windowized)
@@ -546,6 +556,10 @@ const FRAME_PAGE_RELATES_TO_SERVICE_WORKER = "frame_page_shared_action"
 const FRAME_ACTION_TO_APP = "frame_page_request_action"
 const FRAME_REQUEST_SESSION = "frame_page_request_session"
 const FRAME_ACTION_FROM_APP = "hosted_app_requests_action"
+const FRAME_PAGE_TO_PUBLISHER = "frame_page_to_publisher"
+const FRAME_PAGE_RELATES_TO_PUBLISHER= "frame_page_publications"
+const FRAME_ACTION_FROM_PUBLISHER = "publisher_app_requests_action"
+
 
 // APP PAGE
 //
@@ -575,6 +589,7 @@ const FRAME_ACTION_INSTALL = "install-id"
 const FRAME_ACTION_INJECT = "inject"
 const FRAME_START_SESSION = "start-session"
 const FRAME_HAS_SESSION = "has-session"
+const FRAME_CHECK_SESSION = "check-session"
 const FRAME_NEEDS_SIGNATURE = "get-signature"
 const FRAME_WANTS_SESSION = "get-session"
 const FRAME_STOP_SESSION = "stop-session"
@@ -608,13 +623,17 @@ const FRAME_TO_HOSTED_APP_SESSIONS = "transfer-session"
 const FRAME_TO_APP_SIGNATURE = "signed-data"
 const FRAME_SIGNED = "yep-signed"
 const FRAME_POSTED_PRIMARY = "yep-primary-response"
+const FRAME_RAN_PUB_OP = "yep-publication-operation"
 //
 const HOSTED_APP_FILE_OPERATION = "yep-file-creation-db"
 const FRAME_TO_HOSTED_APP_DATA = "yep-data-from-db"
 const FRAME_LIST_DATA = "frame-lists-data-part-ids"
 const FRAME_RETURNS_DATA = "frame-provides-data-part"
+const FRAME_RETURNS_SESSION_CHECK = "frame-provides-session-check"
 
-
+// PUBLISHER PAGE
+const HOSTED_PUBLISHER_TO_FRAME = "publisher_to_frame"
+const PUBLISHER_RELATES_TO_FRAME = "publisher_ask_frame_op"
 
 
 // ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ----
@@ -663,10 +682,10 @@ let hosted_page_application_handlers = (category,action,relationship,params) => 
 
 
 
-function reponding_alive() {
+function responding_alive() {
     let message = {
         "category": FRAME_COMPONENT_SAY_ALIVE,
-        "action" : FRAME_COMPONENT_RESPONDING,
+        "action" : FRAME_COMPONENT_RESPOND,
         "data" : false
     }
     tell_frame_page(message)
@@ -685,10 +704,10 @@ function install_frame_page_response() {
                 let action = mobj.action
                 let direction = mobj.direction
                 //
-                if ( direction === FRAME_PAGE_TO_HOSTED_APP ) {
+                if ( direction === FRAME_PAGE_TO_PUBLISHER ) {
                     if ( category === FRAME_COMPONENT_SAY_ALIVE ) {
-                        if ( action === FRAME_COMPONENT_RESPOND ) {
-                            reponding_alive()
+                        if ( action === FRAME_COMPONENT_RESPONDING ) {
+                            console.log("functioning")
                         }
                     } else {
                         let params = mobj.data
@@ -734,8 +753,8 @@ hosted_page_application_handlers = async (category,action,relationship,params) =
 function tell_frame_page(message) {
     if ( !g_frame_page ) return(false)
     let msg = Object.assign({},g_message_template)
-    msg.direction = HOSTED_APP_TO_FRAME
-    msg.relationship = APP_RELATES_TO_FRAME
+    msg.direction = HOSTED_PUBLISHER_TO_FRAME
+    msg.relationship = PUBLISHER_RELATES_TO_FRAME
     msg.action = message.action
     msg.category = message.category
     msg.data = message.data
@@ -781,22 +800,36 @@ application_specific_handlers = async (category,action,relationship,params) => {
 						break
 					}
 					case FRAME_LIST_DATA: {
-						let data = params.data
-						if ( data && data.file_names ) {
-							g_responder_tables["data-requests"].resolver(data.file_names)
+						if ( params && params.file_names ) {
+							g_responder_tables["data-requests"].resolver(params.file_names)
+						} else {
+							g_responder_tables["data-requests"].rejector()
+						}
+						break
+					}
+					case FRAME_RAN_PUB_OP: {
+						if ( params.op ) {
+							g_responder_tables["data-requests"].resolver(params.op)
 						} else {
 							g_responder_tables["data-requests"].rejector()
 						}
 						break
 					}
 					case FRAME_RETURNS_DATA: {
-						let data = params.data
-						if ( data ) {
-							g_responder_tables["data-requests"].resolver(data)
+						if ( params ) {
+							g_responder_tables["data-requests"].resolver(params)
 						} else {
 							g_responder_tables["data-requests"].rejector()
 						}
 						break
+					}
+					case FRAME_RETURNS_SESSION_CHECK: {
+						if ( params.active ) {
+							g_responder_tables["session-check"].resolver(true)
+						} else {
+							g_responder_tables["session-check"].resolver(false)
+						}
+						break;
 					}
 				}
 			}
@@ -973,9 +1006,10 @@ async function finalize_media_array_storage(url,primary_response,formdata,blob_l
 	//
 	let secondary_resp = primary_response
 	//
+	// TOKEN ->
 	if ( primary_response.transition && primary_response.transition.token ) {	// A token has to be associated with the transaction
 		//
-		if ( formdata === false ) {
+		if ( formdata === false ) {		// sending as a file form
 			formdata = new FormData()
 			for ( let ky in obj ) {
 				formdata.append(ky, obj[ky])
@@ -1023,6 +1057,7 @@ async function finalize_media_array_storage(url,primary_response,formdata,blob_l
 				blob_dscr.num_sends--
 			}
 			//
+			// POST chunk wrapped in a Form descriptor
 			secondary_resp = await postData(url,formdata, 'omit',false,'multipart/form-data')  // send it as a separate file
 			//
 			if ( (secondary_resp.OK !== "true") && (secondary_resp.OK !== true) ) {
@@ -1031,6 +1066,7 @@ async function finalize_media_array_storage(url,primary_response,formdata,blob_l
 		}
 		//
 		if ( (secondary_resp.OK === "true") || (secondary_resp.OK === true) ) {						// The last send was good.
+			// SEND LAST CHUNK
 			let body = {
 				"token" : transaction_token,
 				"match" : "complete",
@@ -1040,12 +1076,12 @@ async function finalize_media_array_storage(url,primary_response,formdata,blob_l
 			}
 			// postData
 			secondary_resp =  await postData(url,body)			// Tell the server that this transaction is done...
-			let elements = secondary_resp.state.elements			// The good stuff is returned in a state field 
+			let elements = secondary_resp.state.elements		// The good stuff is returned in a state field 
 			protocol = elements.protocol  // final hash and provider returned in state (same as for the shor but in the state field)
 			media_id = elements.media_id
 		}
 		//
-		return [protocol,media_id]
+		return [protocol,media_id]   // this will be for tracking, etc.
 	}
 	return [false,false]
 }
@@ -1218,64 +1254,53 @@ do_media_upload
 			this._current_asset_text_ucwid_info = false
 		}
 
-		get_file(file_el) {
+		get_file(name,file_record) {
 			//
-			if ( file_el.files.length ) {
-				return new Promise((resolve,reject) => {
-					let file = file_el.files[0]
-					let fname =  file.name
-					let mtype = file.type
-					let reader = new FileReader();
-					let file_copy = Object.assign({},file)
-					for ( let ky in file ) { 
-						if ( ky === 'arrayBuffer' ) continue
-						if ( ky === 'slice' ) continue
-						if ( ky == 'stream' ) continue
-						if ( ky == 'text' ) continue
-						if ( ky == 'webkitRelativePath' ) continue
-						file_copy[ky] = file[ky]
+			if ( name.length ) {
+				if ( file_record.blob ) {
+					let loaded = {
+						"blob_url" : file_record.blob,
+						"name" : name,
+						"mtype" : file_record.type,
+						"size" : file_record.size,
+						"file" : Object.assign(file_record)
 					}
-					reader.onload = (e) => {
-						//
-						let loaded = {
-							"blob_url" : e.target.result,
-							"name" : fname,
-							"mtype" : mtype,
-							"size" : file_copy.size,
-							"file" : file_copy
+					return loaded
+				} else {
+					return new Promise((resolve,reject) => {
+						let file = file_el.files[0]
+						let fname =  file.name
+						let mtype = file.type
+						let reader = new FileReader();
+						let file_copy = Object.assign({},file)
+						for ( let ky in file ) { 
+							if ( ky === 'arrayBuffer' ) continue
+							if ( ky === 'slice' ) continue
+							if ( ky == 'stream' ) continue
+							if ( ky == 'text' ) continue
+							if ( ky == 'webkitRelativePath' ) continue
+							file_copy[ky] = file[ky]
 						}
-						//
-						resolve(loaded)
-					};
-					reader.readAsDataURL(file)
-				})
+						reader.onload = (e) => {
+							let loaded = {
+								"blob_url" : e.target.result,
+								"name" : fname,
+								"mtype" : mtype,
+								"size" : file_copy.size,
+								"file" : file_copy
+							}
+							resolve(loaded)
+						};
+						reader.readAsDataURL(file)
+					})
+				}
 			}
 			//
 			return false
 		}
 
-		async gather_user_fields(field_vars) {
-			let upload_record = {}
-			try {
-				let tracking = ""
-				let t = field_vars['user-tracking']
-				if ( t.length ) { tracking = t }
-				//
-				let uid = field_vars['user-id']
-				if ( uid.length ) {
-					upload_record = {
-						"_id" : uid,
-						"_tracking" : tracking
-					}
-					this._user_id = uid
-					this._author_tracking = tracking
-					return upload_record
-				}
-
-			} catch (e) {
-				return false
-			}
-			return false
+		set_user_id(uid) {
+			this._user_id = uid
 		}
 
 		//  ----  ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ----
@@ -1287,31 +1312,25 @@ do_media_upload
 			//
 			let upload_record = {}
 			try {
-				let opt_fld = field_vars['rec-file-mtype']
-				let title_fld = field_vars['rec-title']
-				let subject_fld = field_vars['rec-subject']
-				let keys_fld = field_vars['rec-keys']
-				let abstract_fld = field_vars['rec-abstract']
-				let full_text_fld = field_vars['rec-full-text']
-				let file_name_fld = field_vars['rec-file-name']
-				let poster_name_fld = field_vars['rec-poster-name']
-				let paid_fld = field_vars['paid-checkbox']
-
-				if ( !(opt_fld && title_fld && keys_fld && abstract_fld && full_text_fld && file_name_fld && poster_name_fld) ) return false
-
-				let full_text = full_text_fld.value
+				let asset_pair = field_vars['rec-file-mtype']
+				let title = field_vars['rec-title']
+				let subject = field_vars['rec-subject']
+				let keys = field_vars['rec-keys']
+				let abstract = field_vars['rec-abstract']
+				let full_text = field_vars['rec-full-text']
+				let paid = field_vars['paid-checkbox']
 				//
-				let title = title_fld.value
+				let name = field_vars['rec-file-name']
+				let file_proper = field_vars['rec-file-proper']
+				let poster = field_vars['rec-poster-name']
+				let poster_file_proper = field_vars['rec-poster-proper']
+				//
+				let been_published = field_vars['rec-was-published']
+				let uploaded = field_vars['rec-was-uploaded']
+				//
 				if ( title.length === 0 ) return false
-				//
-				let subject = subject_fld.value
 				if ( subject.length === 0 ) return false
-				//
-				let abstract =  abstract_fld.value
-
-				let asset_pair = opt_fld.value
 				if ( asset_pair.length === 0 ) return false
-				//
 				let [asset_type,media_type] = asset_pair.split('/')
 				/*
 					stream/audio
@@ -1320,23 +1339,20 @@ do_media_upload
 					blog/text
 					music_buzz/text
 				*/
-				let poster = await this.get_file(poster_name_fld)        // file names for stream type media
-				let media_data = await this.get_file(file_name_fld)
+				let media_data = await this.get_file(name,file_proper)
+				let poster_data = await this.get_file(poster,poster_file_proper)        // file names for stream type media
 
 				if ( (media_type !== 'text') && (media_data === false) && (poster === false) ) {
 					return false
 				}
-
 				if ( ( media_type === 'text' ) && ( full_text.length === 0 ) ) {
 					return false
 				} else if ( media_type !== 'text' ) {
-					full_text = file_name_fld.files[0].name
+					full_text = name
 				}
-
 				//
-				let modDate = media_data ? media_data.file.lastModified : ( poster ? poster.file.lastModified : Date.now())
+				let modDate = media_data ? media_data.file.lastModified : ( poster_data ? poster_data.file.lastModified : Date.now())
 				//
-				let keys = keys_fld.value
 				keys = keys.split(' ').filter( key => {
 					let ok = (key !== undefined)
 					if ( ok ) ok = (key.length > 2)
@@ -1363,10 +1379,7 @@ do_media_upload
 					let t = tracker.value
 					if ( t.length ) tracking = t
 				}
-
-
-				let paid = paid_fld ? paid_fld.checked : false
-
+				//
 				let exclusion_fields = [
 					"_history","_prev_text",
 					"_transition_path", "encode",
@@ -1390,7 +1403,7 @@ do_media_upload
 					"media_type" : media_type,        // text, audio, video, image
 					"abstract" : encodeURIComponent(abstract),
 					"media" : {
-						"poster" : poster,
+						"poster" : poster_data,
 						"source" : media_data
 					},
 					"encode" : true,
@@ -1414,8 +1427,6 @@ do_media_upload
 			return(upload_record)
 		}
 
-
-
 		//  ----  ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ----
 		async gather_identifying_fields(field_vars) {
 			//
@@ -1426,10 +1437,7 @@ do_media_upload
 			let upload_record = {}
 			try {
 				let tracker = field_vars["asset-id"]
-				let opt_fld = field_vars['rec-file-mtype']
-				if ( !(opt_fld && tracker) ) return false
-
-				let asset_pair = opt_fld.value
+				let asset_pair = field_vars['rec-file-mtype']
 				if ( asset_pair.length === 0 ) return false
 				//
 				let [asset_type,media_type] = asset_pair.split('/')
@@ -1449,8 +1457,7 @@ do_media_upload
 					else return false
 				}
 
-				let paid_fld = field_vars['paid-checkbox']
-				let paid = paid_fld ? paid_fld.checked : false
+				let paid = field_vars['paid-checkbox']
 
 				//
 				let exclusion_fields = [  // fields excluded from searching services.
@@ -1513,8 +1520,8 @@ do_media_upload
 			//
 			let upload_record = {}
 			try {
-				let asset_fld = field_vars['asset-id']
-				upload_record._id = asset_fld.value
+				let asset_id = field_vars['asset-id']
+				upload_record._id = asset_id
 			} catch (e) {
 				return false
 			}
@@ -1532,17 +1539,69 @@ do_media_upload
 		constructor() {
 
 			//
-			this.new_entry_link = ""
-			this.get_entry_link = ""
-			this.update_entry_link = ""
+			this.new_entry_link = {
+				"link" : "",
+				"secondary_link" : ""
+			}
+			this.get_entry_link = {
+				"link" : "",
+				"secondary_link" : ""
+			}
+			this.update_entry_link = {
+				"link" : "",
+				"secondary_link" : ""
+			}
 
-			this.delete_entry_link = ""
-			this.publish_entry_link = ""
-			this.unpublish_entry_link = ""
-			this.get_user_ready_link = ""
+			this.delete_entry_link = {
+				"link" : "",
+				"secondary_link" : ""
+			}
+			this.publish_entry_link = {
+				"link" : "",
+				"secondary_link" : ""
+			}
+			this.unpublish_entry_link = {
+				"link" : "",
+				"secondary_link" : ""
+			}
+			this.get_user_ready_link = {
+				"link" : "",
+				"secondary_link" : ""
+			}
 
 		}
 
+		set_links(link_conf) {
+			this.new_entry_link = {
+				"link" : some_def(link_conf.new_entry.link),
+				"secondary_link" : some_def(link_conf.new_entry.secondary_link)
+			}
+			this.get_entry_link = {
+				"link" : some_def(link_conf.get_entry.link),
+				"secondary_link" : some_def(link_conf.get_entry.secondary_link),
+			}
+			this.update_entry_link = {
+				"link" : some_def(link_conf.update_entry.link),
+				"secondary_link" : some_def(link_conf.update_entry.secondary_link),
+			}
+
+			this.delete_entry_link = {
+				"link" : some_def(link_conf.delete_entry.link),
+				"secondary_link" : some_def(link_conf.delete_entry.secondary_link),
+			}
+			this.publish_entry_link = {
+				"link" : some_def(link_conf.publish_entry.link),
+				"secondary_link" : some_def(link_conf.publish_entry.secondary_link),
+			}
+			this.unpublish_entry_link = {
+				"link" : some_def(link_conf.unpublish_entry.link),
+				"secondary_link" : some_def(link_conf.unpublish_entry.secondary_link),
+			}
+			this.get_user_ready_link = {
+				"link" : some_def(link_conf.get_user.link),
+				"secondary_link" : some_def(link_conf.get_user.secondary_link),
+			}
+		}
 
 		async new_entry(good_data) {
 			// to transitions 
@@ -1633,9 +1692,12 @@ do_media_upload
 	// ---- create_entry ---- ---- ---- ---- ---- ---- ----
     async function create_entry(field_data) {
         if ( field_data ) {
-			let good_data = g_ui_data.gather_fields(field_data)  // puts the upload file into the structure
-			let t_num = await g_proxy.new_entry(good_data)
-			return t_num /// for placement into display
+			let good_data = await g_ui_data.gather_fields(field_data)  // puts the upload file into the structure
+			if ( good_data ) {
+				let t_num = await g_proxy.new_entry(good_data)
+				return t_num /// for placement into display				
+			}
+			return false
         }
     }
 
@@ -1687,16 +1749,6 @@ do_media_upload
         }
     }
 
-	// ---- get_user_tracking ---- ---- ----
-    async function get_user_tracking(field_data) {
-		let good_data = await g_ui_data.gather_user_fields(field_data)
-		if ( good_data ) {
-			let t_num = await g_proxy.user_ready(good_data)
-			field_data["user-tracking"] = t_num
-		}
-    }
-
-
 
 	// ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ----
 
@@ -1708,6 +1760,10 @@ do_media_upload
 			"rejector" : false
 		},
 		"data-requests" : {
+			"resolver" : false,
+			"rejector" : false
+		},
+		"session-check" : {
 			"resolver" : false,
 			"rejector" : false
 		}
@@ -1738,7 +1794,7 @@ do_media_upload
 
 
 
-	let g_app_path = "command-upload"
+	let g_app_path = "publisher"
 
 
 	// g_app_path important to nginx configuration
@@ -1755,16 +1811,16 @@ do_media_upload
 
 
 	// prep_send_new_entry
-	async function prep_send_new_entry(data_hash,send_obj) {
+	async function prep_send_new_entry(data_hash,send_obj,link_meta) {
 		// send the fields this knows about. Expect the human frame to handle a hash and security
 		let postable = Object.assign(send_obj,{
 			"topic" : "command-upload",
-			"path" : "upload-media"
+			"path" : "upload"
 		})
 		//
 		//
 		let message = {
-			"category": FRAME_ACTION_FROM_APP,
+			"category": FRAME_ACTION_FROM_PUBLISHER,
 			"action" : HOST_UP_REQ_UPLOAD,
 			"data" : {
 				"link" : get_transition_endpoint(link_meta.link),
@@ -1781,9 +1837,8 @@ do_media_upload
 
 
 	async function send_new_entry(object_data_meta,link_meta,asset_type) {
-		//
 		/*
-		object_data_meta === { "meta" : good_data }
+		object_data_meta === { "meta" : good_data }  // search for>> "meta" : good_data
 		*/
 		if ( object_data_meta.meta.media && object_data_meta.meta.media.source ) {
 			let blob_data = object_data_meta.meta.media.source.blob_url
@@ -1807,7 +1862,6 @@ do_media_upload
 				"poster" : com_obj.meta.media.poster
 			}
 
-
 			// make copies of the media components
 			com_obj.meta.media.source = Object.assign({},com_obj.meta.media.source)
 			delete com_obj.meta.media.source.blob_url  // (prep --- don't send the actual file... )
@@ -1817,7 +1871,8 @@ do_media_upload
 				delete com_obj.meta.media.poster.blob_url   // (prep --- don't send the actual file... )
 			}
 
-			let primary_response = await prep_send_new_entry(data_hash,com_obj)
+			// TELL THE FRAME THAT YOU ARE ABOUT TO UPLOAD DATA (and need a ticket)
+			let primary_response = await prep_send_new_entry(data_hash,com_obj,link_meta)
 			//
 			if ( primary_response.OK == true ) {
 				let upload_keys = primary_response.elements  // should be produced by publication handling
@@ -1827,13 +1882,13 @@ do_media_upload
 					"sign" : upload_keys.sign,
 					"hash" : data_hash
 				})
-				// --- backup_media
+				// --- backup_media -- the blobs should be loaded (later -- maybe sliceable)
 				let blob_list = [backup_media.source,backup_media.poster]
 				let link = get_secondary_transition_endpoint(link_meta.secondary_link)
 				//  , primary_response -> original respone, false -> will make FromData, blob_data -> one file, 
 				let media_store_characteristics = await finalize_media_array_storage(link,primary_response,false,blob_list,postable)
 				
-				//return media_store_characteristics
+				return media_store_characteristics
 			}
 		}
 
@@ -1853,7 +1908,7 @@ do_media_upload
 		})
 		//
 		let message = {
-			"category": FRAME_ACTION_FROM_APP,
+			"category": FRAME_ACTION_FROM_PUBLISHER,
 			"action" : HOST_UP_REQ_UPLOAD,
 			"data" : {
 				"link" : get_transition_endpoint(link_meta.link),
@@ -1876,7 +1931,7 @@ do_media_upload
 
 	async function app_run_file_op(file_obj,operation) {
 		let message = {
-			"category": FRAME_ACTION_FROM_APP,
+			"category": FRAME_ACTION_FROM_PUBLISHER,
 			"action" : HOSTED_APP_FILE_OPERATION,
 			"data" : {
 				"op" : operation,
@@ -1890,6 +1945,7 @@ do_media_upload
 			let file_info = await promise_handling("data-requests")
 			return file_info
 		} catch (e) {
+			console.log(e)
 		}
 		return false
 	}
@@ -1897,7 +1953,7 @@ do_media_upload
 	async function get_all_user_files() {
 
 		let message = {
-			"category": FRAME_ACTION_FROM_APP,
+			"category": FRAME_ACTION_FROM_PUBLISHER,
 			"action" : HOSTED_APP_FILE_OPERATION,
 			"data" : {
 				"op" : "list"
@@ -1911,12 +1967,12 @@ do_media_upload
 			return all_files
 		} catch (e) {
 		}
-		return false
+		return []
 	}
 
 	async function app_get_file(name) {
 		let message = {
-			"category": FRAME_ACTION_FROM_APP,
+			"category": FRAME_ACTION_FROM_PUBLISHER,
 			"action" : HOSTED_APP_FILE_OPERATION,
 			"data" : {
 				"op" : "file-meta",
@@ -1935,9 +1991,79 @@ do_media_upload
 	}
 
 
+	async function app_check_session() {
+		if ( g_frame_page ) {
+			let message = {
+				"category": FRAME_ACTION_FROM_PUBLISHER,
+				"action" : FRAME_CHECK_SESSION,
+				"data" : false
+			}
+			//
+			tell_frame_page(message)  // ask for the primary transition to be handled by the human frame...
+			//
+			try {
+				let is_active = await promise_handling("session-check")
+				return is_active
+			} catch (e) {
+			}
+		}
+		return false
+	}
+
+
+	let g_in_real_session = false
+	injest_session = async (action,params) => {
+		g_in_real_session = await app_check_session()
+	}
+
+	function session_acquired() {
+		return g_in_real_session
+	}
+
+	function set_global_user_id(ccwid) {
+		if ( g_ui_data ) {
+			g_ui_data.set_user_id(ccwid)
+		}
+	}
+
 // /////////////////////////////////////////////////////
 
 
 setup_window_crypto()
+install_frame_page_response()
+
+
+async function session_startup_process() {
+	responding_alive()
+}
+
+
+window.onload = (ev) => {
+	g_proxy.set_links({
+			"new_entry" : {
+				"link" : "publication-commands",
+				"secondary_link" : "do_param_upload"
+			},
+			"update_entry" : {
+				"link" : "publication-commands",
+				"secondary_link" : "do_param_upload"
+			},
+			"get_entry" : false,
+			"delete_entry" : {
+				"link" : "publication-commands"
+			},
+			"publish_entry" : {
+				"link" : "publication-commands"
+			},
+			"unpublish_entry" : {
+				"link" : "publication-commands"
+			},
+			"get_user" : false
+		}
+	)
+
+    session_startup_process()
+}
+
 
 </script>
