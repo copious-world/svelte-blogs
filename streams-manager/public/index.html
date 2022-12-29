@@ -937,6 +937,7 @@ async function finalize_small_media_storage(url,primary_response) {
 //$>>	finalize_media_storage
 //                                                  <<depends>> postData
 //	There are likely faster ways of sending the data. But, this way requires some permission and safe guarding by the server sid.
+//	sending multi part form data . The blob list is actually file objects 
 async function finalize_media_storage(url,primary_response,formdata,blob,obj) {
 	//
 	let secondary_resp = primary_response
@@ -973,12 +974,12 @@ async function finalize_media_storage(url,primary_response,formdata,blob,obj) {
 			formdata.set('media_file', new Blob([blob_part]),obj.file_name)
 			secondary_resp = await postData(url,formdata, 'omit',false,'multipart/form-data')  // send it as a separate file
 			//
-			if ( (secondary_resp.OK !== "true") && (secondary_resp.OK !== true) ) {
+			if ( (secondary_resp.OK !== "true") && (secondary_resp.OK !== "true") ) {
 				break;			// This last send failed. Bailout  (If failed, the server will shutdown the communication)
 			}
 		}
 		//
-		if ( (secondary_resp.OK === "true") || (secondary_resp.OK === true) ) {						// The last send was good.
+		if ( (secondary_resp.OK === "true") || (secondary_resp.OK === "true") ) {						// The last send was good.
 			let body = {
 				"token" : transaction_token,
 				"match" : "complete",
@@ -987,9 +988,13 @@ async function finalize_media_storage(url,primary_response,formdata,blob,obj) {
 				"next"	: false		// NO NEXT
 			}
 			secondary_resp =  await postData(url,body)			// Tell the server that this transaction is done...
-			let elements = secondary_resp.state.elements			// The good stuff is returned in a state field 
-			protocol = elements.protocol  // final hash and provider returned in state (same as for the shor but in the state field)
-			media_id = elements.media_id
+			if ( secondary_resp && secondary_resp.state ) {
+				let elements = secondary_resp.state.elements			// The good stuff is returned in a state field 
+				if ( elements ) {
+					protocol = elements.protocol  // final hash and provider returned in state (same as for the shor but in the state field)
+					media_id = elements.media_id
+				}
+			}
 		}
 		//
 		return [protocol,media_id]
@@ -1002,6 +1007,7 @@ async function finalize_media_storage(url,primary_response,formdata,blob,obj) {
 //$>>	finalize_media_array_storage
 //                                                  <<depends>> postData
 //	There are likely faster ways of sending the data. But, this way requires some permission and safe guarding by the server sid.
+//	sending multi part form data . The blob list is actually file objects 
 async function finalize_media_array_storage(url,primary_response,formdata,blob_list,obj) {
 	//
 	let secondary_resp = primary_response
@@ -1009,6 +1015,7 @@ async function finalize_media_array_storage(url,primary_response,formdata,blob_l
 	// TOKEN ->
 	if ( primary_response.transition && primary_response.transition.token ) {	// A token has to be associated with the transaction
 		//
+		// include extra (not default) fields and elements
 		if ( formdata === false ) {		// sending as a file form
 			formdata = new FormData()
 			for ( let ky in obj ) {
@@ -1029,18 +1036,16 @@ async function finalize_media_array_storage(url,primary_response,formdata,blob_l
 
 		let max_num_sends = 0
 		let blob_pars = blob_list.map( blob => {
-			let blob_url = blob.blob_url
 			let size_end = blob.size						// total length of the data in flight
 			let start = 0;
 			let span = DEFINED_CHUNK_SIZE					// application generation sets this (tuning upstream)
 			let num_sends = Math.floor(size_end/span) + 1	// size/chunk_size
-			max_num_sends = (num_sends > max_num_sends) ? max_num_sends : num_sends
+			max_num_sends = (num_sends > max_num_sends) ?  num_sends : max_num_sends
 			return {
-				blob_str, size_end, start, span, num_sends
+				blob, size_end, start, span, num_sends
 			}
 		})
 		// 
-		let num_sends = Math.floor(size_end/span) + 1	// size/chunk_size
 		//
 		for ( let i = 0; i < max_num_sends; i++ ) {			// the number of times this is called is determined by the client
 			//
@@ -1053,7 +1058,7 @@ async function finalize_media_array_storage(url,primary_response,formdata,blob_l
 				let end = Math.min((i+1)*span,size_end)
 
 				let blob_part = blob.slice(start,end)  				// next part of the blob
-				formdata.set('media_file', new Blob([blob_part]),blob_dscr.file_name)
+				formdata.set('media_file', new Blob([blob_part]), blob_dscr.file_name)
 				blob_dscr.num_sends--
 			}
 			//
@@ -1076,7 +1081,104 @@ async function finalize_media_array_storage(url,primary_response,formdata,blob_l
 			}
 			// postData
 			secondary_resp =  await postData(url,body)			// Tell the server that this transaction is done...
-			let elements = secondary_resp.state.elements		// The good stuff is returned in a state field 
+			let elements = secondary_resp.state		// The good stuff is returned in a state field 
+			protocol = elements.protocol  // final hash and provider returned in state (same as for the shor but in the state field)
+			media_id = elements.media_id
+		}
+		//
+		return [protocol,media_id]   // this will be for tracking, etc.
+	}
+	return [false,false]
+}
+
+
+
+//$>>	finalize_media_array_storage_deep_json
+//                                                  <<depends>> postData
+// sending json with a layerd structure (includes meta field)
+// this is distinguished from the other methods that expect a file object to be used as multipart form data...
+// not sedning multi-part form data
+//	There are likely faster ways of sending the data. But, this way requires some permission and safe guarding by the server sid.
+async function finalize_media_array_storage_deep_json(url,token,primary_response,formdata,blob_list,postable) {
+	//
+	let secondary_resp = primary_response
+	//
+	// TOKEN ->
+	if ( primary_response.transition && primary_response.transition.token ) {	// A token has to be associated with the transaction
+		//
+		// include extra (not default) fields and elements
+		if ( formdata === false ) {		// sending as a file form
+			formdata = {}
+			for ( let ky in postable ) {
+				if ( ky === 'meta' ) continue
+				formdata[ky] = postable[ky]
+			}
+		}
+		let transaction_token = token		// call the transition token the transaction_token
+		let protocol = postable.protocol ? postable.protocol : 'p2p-default'				// These fields have no real value until the end, but are always checked in case they may be used for security.
+		let media_id = ""
+		formdata.json_chunks = true
+		//
+		formdata.protocol = protocol					// Most likely ipfs ... 
+		formdata.media_id = media_id					// not set until the storage system can identify 
+		formdata.token = transaction_token
+		formdata.match = "upload-next"					// tell the server that you are sending one chunk after another
+		formdata.next = true
+		formdata._t_match_field = postable.file_name
+		//
+		let max_num_sends = 0
+		let blob_pars = blob_list.map( blob_descr => {
+			let blob = blob_descr.blob_url
+			let name = blob_descr.name
+			let size_end = blob.length						// total length of the data in flight
+			let start = 0;
+			let span = DEFINED_CHUNK_SIZE					// application generation sets this (tuning upstream)
+			let num_sends = Math.floor(size_end/span) + 1	// size/chunk_size
+			max_num_sends = (num_sends > max_num_sends) ? num_sends : max_num_sends
+			return {
+				blob, name, size_end, start, span, num_sends
+			}
+		})
+		// 
+		let media_meta = postable.meta
+		//
+		for ( let i = 0; i < max_num_sends; i++ ) {			// the number of times this is called is determined by the client
+			//
+			formdata.media_parts = {}
+			for ( let blob_dscr of blob_pars ) {
+				if ( blob_dscr.num_sends === 0 ) continue
+				let blob = blob_dscr.blob
+				let span = blob_dscr.span
+				let start = span*i
+				let size_end = blob_dscr.size_end
+				let end = Math.min((i+1)*span,size_end)
+				//
+				let blob_part = blob.slice(start,end)  				// next part of the blob
+				formdata.media_parts[blob_dscr.name] = blob_part
+				blob_dscr.num_sends--
+			}
+			//
+			// POST chunk wrapped in a Form descriptor
+			secondary_resp = await postData(url,formdata,'omit')	//	the blob_url will be sent as part of the JSON object
+			//
+			if ( (secondary_resp.OK !== "true") && (secondary_resp.OK !== true) ) {
+				break;			// This last send failed. Bailout  (If failed, the server will shutdown the communication)
+			}
+		}
+		//
+		if ( (secondary_resp.OK === "true") || (secondary_resp.OK === true) ) {						// The last send was good.
+			// SEND LAST CHUNK
+			let body = {
+				"token" : transaction_token,
+				"match" : "complete",
+				"file_list" : blob_list,
+				"_t_match_field" : postable.file_name,
+				"file" : { "name" : postable.file_name },
+				"next"	: false		// NO NEXT
+			}
+			// postData
+			secondary_resp =  await postData(url,body)			// Tell the server that this transaction is done...
+			let elements = secondary_resp.state		// The good stuff is returned in a state field 
 			protocol = elements.protocol  // final hash and provider returned in state (same as for the shor but in the state field)
 			media_id = elements.media_id
 		}
@@ -1258,12 +1360,17 @@ do_media_upload
 			//
 			if ( name.length ) {
 				if ( file_record.blob ) {
+					let basename = name.substring(0,name.lastIndexOf('.'))
+					let ext = name.replace(basename + '.','')
 					let loaded = {
 						"blob_url" : file_record.blob,
-						"name" : name,
+						"name" : basename,
+						"ext" : ext,
 						"mtype" : file_record.type,
 						"size" : file_record.size,
-						"file" : Object.assign(file_record)
+						"file" : {
+							"lastModified" : file_record.lastModified
+						}
 					}
 					return loaded
 				} else {
@@ -1282,9 +1389,12 @@ do_media_upload
 							file_copy[ky] = file[ky]
 						}
 						reader.onload = (e) => {
+							let basename = fname.substring(0,fname.lastIndexOf('.') + 1)
+							let ext = fname.replace(basename + '.','')
 							let loaded = {
 								"blob_url" : e.target.result,
-								"name" : fname,
+								"name" : basename,
+								"ext" : ext,
 								"mtype" : mtype,
 								"size" : file_copy.size,
 								"file" : file_copy
@@ -1795,7 +1905,7 @@ do_media_upload
 
 
 	let g_app_path = "publisher"
-
+	let g_uploader_path = "uploaders"
 
 	// g_app_path important to nginx configuration
 
@@ -1805,9 +1915,15 @@ do_media_upload
 	}
 
 	function get_secondary_transition_endpoint(endpoint) {
-		let url = `${location.protocol}//${location.host}/${g_app_path}/transition/secondary/${endpoint}`
+		let url = `${location.protocol}//${location.host}/${g_app_path}/secondary/transition`
 		return url
 	}
+
+	function get_secondary_transition_uploader_endpoint(endpoint) {
+		let url = `${location.protocol}//${location.host}/${g_uploader_path}/secondary/transition`
+		return url
+	}
+
 
 
 	// prep_send_new_entry
@@ -1815,7 +1931,7 @@ do_media_upload
 		// send the fields this knows about. Expect the human frame to handle a hash and security
 		let postable = Object.assign(send_obj,{
 			"topic" : "command-upload",
-			"path" : "upload"
+			"path" : "upload-media"			// dashboard is sending files... while others may send just JSON on the 'lite' path
 		})
 		//
 		//
@@ -1854,12 +1970,12 @@ do_media_upload
 			com_obj = Object.assign(object_data_meta,com_obj)
 			//
 			// +  obj.protocol,  + obj.preamble_size    // { "meta" : good_data, "protocol" : - ,  "preamble_size" : - }
-			let data_hash = do_hash(blob_data)  // the file data of the main type of media (e.g. movie, sound, which might also upload an image)
+			let data_hash = await do_hash(blob_data)  // the file data of the main type of media (e.g. movie, sound, which might also upload an image)
 			//   post data in here  (prep --- don't send the actual file... )
 
 			let backup_media = {
-				"source" : com_obj.meta.media.source,
-				"poster" : com_obj.meta.media.poster
+				"source" : com_obj.meta.media.source ? com_obj.meta.media.source : undefined,
+				"poster" : com_obj.meta.media.poster ? com_obj.meta.media.poster : undefined
 			}
 
 			// make copies of the media components
@@ -1874,7 +1990,7 @@ do_media_upload
 			// TELL THE FRAME THAT YOU ARE ABOUT TO UPLOAD DATA (and need a ticket)
 			let primary_response = await prep_send_new_entry(data_hash,com_obj,link_meta)
 			//
-			if ( primary_response.OK == true ) {
+			if ( primary_response.OK == "true" ) {
 				let upload_keys = primary_response.elements  // should be produced by publication handling
 				let postable = Object.assign(com_obj,{
 					"token" : primary_response.token,		// primary action token (key to secondary)
@@ -1883,10 +1999,15 @@ do_media_upload
 					"hash" : data_hash
 				})
 				// --- backup_media -- the blobs should be loaded (later -- maybe sliceable)
-				let blob_list = [backup_media.source,backup_media.poster]
-				let link = get_secondary_transition_endpoint(link_meta.secondary_link)
+				let blob_list = []
+				if ( backup_media.source ) blob_list.push(backup_media.source)
+				if ( backup_media.poster ) blob_list.push(backup_media.poster)
+				//
+				let link = get_secondary_transition_uploader_endpoint(link_meta.secondary_link)
+				//
+				let token = primary_response.elements.token
 				//  , primary_response -> original respone, false -> will make FromData, blob_data -> one file, 
-				let media_store_characteristics = await finalize_media_array_storage(link,primary_response,false,blob_list,postable)
+				let media_store_characteristics = await finalize_media_array_storage_deep_json(link,token,primary_response,false,blob_list,postable)
 				
 				return media_store_characteristics
 			}
@@ -1919,7 +2040,7 @@ do_media_upload
 		tell_frame_page(message)  // ask for the primary transition to be handled by the human frame...
 		//
 		let primary_response = await promise_handling("post-response")
-		if ( primary_response.OK == true ) {
+		if ( primary_response.OK == "true" ) {
 			return true
 		} 
 		return false

@@ -46,7 +46,7 @@
 		}
 		//
 		try {
-			let result = await fetchUrl(url)
+			let result = await fetchUrl(url)    // DOES A GET
 			if ( result.status === "OK" ) {
 				return result.links
 			}
