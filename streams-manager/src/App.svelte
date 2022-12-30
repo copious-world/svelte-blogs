@@ -255,6 +255,8 @@
         } else if ( cmd_obj.cmd === 'deleted' ) {
             user_selected_file_op = 'selection'
             g_current_media_selection = false
+        } else if ( cmd_obj.cmd === 'set-operation' ) {
+            user_selected_file_op = cmd_obj.op
         }
 	}
 

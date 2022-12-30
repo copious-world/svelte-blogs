@@ -55,6 +55,9 @@ let been_published = false
 let locally_stored = false
 let uploaded = false
 // ---- ---- ---- ---- ---- ---- ---- ----
+let update_operation = "upload"
+// ---- ---- ---- ---- ---- ---- ---- ----
+
 
 $: if ( file_proper ) {
     pre_file = Object.assign({},file_proper)
@@ -92,6 +95,10 @@ $: {
     }
 }
 
+
+$: if ( operation === false ) {
+    update_operation = "select"
+}
 
 // ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ----
 //
@@ -334,6 +341,13 @@ function close_poster_view(ev) {
 }
 
 
+function select_operation(ev) {
+    dispatch('message', {
+			'cmd': 'set-operation',
+			'op' : update_operation
+		});
+}
+
 function selection_to_global(selected_file) {
     dispatch('message', {
 			'cmd': 'local-selection',
@@ -361,6 +375,7 @@ async function select_file(some_file) {
             current_file = cur_file.data
             current_file_to_vars(current_file)
             selection_to_global(current_file)
+            update_operation = "select"
         }
         close_file_selector()
     }
@@ -400,9 +415,21 @@ async function onPosterSelected(e) {
     <div class = "mat-back mat-back-2 form "  style="white-space:nowrap;height:20px;overflow-x:auto" >
         <span>Operation:</span> 
         {#if (operation !== "selection") }
-            <span>&RightArrowBar;</span><span class="op-name op-action" on:click={run_operation}>{operation}</span>
-            {#if (operation === "upload") }
-            Upload later? <span class="op-name op-action" on:click={(ev) => {run_operation(ev,false,true)}}>store</span>
+            {#if operation === false }
+                <span>&RightArrowBar;</span>
+                <select class="op-selector" bind:value={update_operation} on:change={select_operation}>
+                    <option value="select">select</option>
+                    <option value="upload">upload</option>
+                    <option value="publish">publish</option>
+                    <option value="remove">remove</option>
+                    <option value="delete">delete</option>
+                    <option value="download">download</option>
+                  </select>
+            {:else}
+                <span>&RightArrowBar;</span><span class="op-name op-action" on:click={run_operation}>{operation}</span>
+                {#if (operation === "upload") }
+                Upload later? <span class="op-name op-action" on:click={(ev) => {run_operation(ev,false,true)}}>store</span>
+                {/if}
             {/if}
         {:else}
         <span class="op-name op-action" on:click={open_file_selector}>select file</span>
@@ -666,4 +693,10 @@ async function onPosterSelected(e) {
 		height:200px;
 		width:200px;
 	}
+
+    .op-selector {
+        font-weight: bold;
+        height: 24px;
+        font-size: 75%;
+    }
 </style>
