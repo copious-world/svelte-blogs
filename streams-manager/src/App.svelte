@@ -3,11 +3,11 @@
     import VideoPlayer from 'svelte-video-player';
     import FloatWindow from 'svelte-float-window';
     import FileManager from './FileManager.svelte';
+    import ContractEdit from './ContractEdit.svelte';
     //
 	import { popup_size } from '../../common/display-utils.js'
     import { onMount } from 'svelte';
-
-
+    // ----
     import {file_types, start_drag, dragOverHandler, dropper, drop, convert_text} from '../../common/upload'
 
     //import frame_messaging from '../../common/human_frame'
@@ -16,6 +16,7 @@
 
     let text_view = ""
     let code_view = ""
+    let contract_view = ""
     let svg_text = ""
     let nothing_special = true
     let special_text = ""
@@ -39,7 +40,7 @@
     let show_video = false
     // ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ----
 
-    let there_is_going_session = false
+    let there_is_going_session =  true //false
     let g_user_public = false
     let g_user_public_ccwid = "--"
 
@@ -199,6 +200,12 @@
                 code_view = doctored_text
                 break
             }
+            case 'contract' : {
+                /// dtype === application
+                let doctored_text = the_file ? await convert_text(the_file) : data_handle
+                contract_view = JSON.parse(doctored_text)
+                break;
+            }
         }
     }
 
@@ -303,6 +310,12 @@
                 icon_by_type = "../images/code-guess.png"
                 break
             }
+            case 'contract' : {
+                g_upload_type = "Contract"
+                accepted = '.json'
+                icon_by_type = "../images/code-guess.png"
+                break
+            }
         }
     }
 
@@ -346,7 +359,8 @@
     //
     let count_tries = 0
     async function check_on_session() {
-        there_is_going_session = await window.session_acquired()
+        there_is_going_session = true
+        //there_is_going_session = await window.session_acquired()
         if ( !there_is_going_session ) {
             count_tries++
             if ( count_tries < 10 ) {
@@ -357,19 +371,29 @@
         }
     }
 
+    // ---- ---- ---- ---- ---- ---- ----
+    //
+    function contract_creator(ev) {
+        contract_view = {
+            "name" : false
+        }
+        upload_done = true
+    }
+
 </script>
 
 {#if there_is_going_session }
     <div id="app"  on:dragstart={start_drag}  on:drop={dropHandler} on:dragover={dragOverHandler} >
         <table style="width:100%;">
             <tr>
-                <td class="grad-background" style="width:10%;text-align:left">
+                <td class="grad-background" style="width:10%;text-align:left;vertical-align:top">
                     <ul>
                         <li on:click={ () => {choose_type('text')} }>text</li>
                         <li on:click={ () => {choose_type('audio')} }>audio</li>
                         <li on:click={ () => {choose_type('image')} }>image</li>
                         <li on:click={ () => {choose_type('video')} }>video</li>
                         <li on:click={ () => {choose_type('code')} }>code</li>
+                        <li on:click={ () => {choose_type('contract')} }>contract</li>
                     </ul>
                     <div class="button-list">
                         {#if g_current_media_selection && !(empty_media(g_current_media_selection)) && (user_selected_file_op !== "selection") }
@@ -387,7 +411,12 @@
                     <div style="text-align:left;width:90%;font-size:50%;font-weight:bolder">your galactic identity: {g_user_public_ccwid}</div>
                     {/if}
                     <div style="text-align:center;width:90%;">
-                        <h1>Upload {g_upload_type}</h1>
+                        <h1>Upload
+                            {#if (g_upload_type === 'Contract') && !upload_done }
+                            or <span class="create-contract" on:click={contract_creator}>Create</span>
+                            {/if}
+                            {g_upload_type}
+                        </h1>
                         {#if !upload_done }
                             <img class="avatar" src="{icon_by_type}" alt="" /> 
                         {:else}
@@ -407,6 +436,8 @@
                                     {code_view}
                                 </code>
                                 </pre>
+                            {:else if (g_upload_type === 'Contract') }
+                                <ContractEdit bind:contract_view user_identity={g_user_public_ccwid} />
                             {:else if (g_upload_type === 'Audio') }
                                 <audio controls controlsList="nodownload" 
                                                         bind:this={audio}
@@ -478,6 +509,7 @@
         overflow-y: auto;
     }
 
+
 	#app{
 	    display:flex;
 		align-items:center;
@@ -509,6 +541,24 @@
 		background: linear-gradient(to right, rgba(242, 242, 210, 0.3), white );
         border-right: 1px blue solid;
     }
+
+    .create-contract {
+        color: orangered; 
+        border-bottom: 1px solid darkgreen;
+    }
+
+    .create-contract:hover {
+        color: green;
+        border-top: 1px solid darkgreen;
+        cursor: pointer;
+    }
+
+    .create-contract:active {
+        color: limegreen;
+        border: 1px solid darkgreen;
+        cursor:grab;
+    }
+
 </style>
 
  
