@@ -347,6 +347,11 @@ export function convert_text(blob) {
 }
 
 
+export function to_blob_url(str) {
+	const blob = new Blob([str]);
+	const url = URL.createObjectURL(blob);
+	return [url,url.length]
+}
 
 
 /*

@@ -8,7 +8,7 @@
 	import { popup_size } from '../../common/display-utils.js'
     import { onMount } from 'svelte';
     // ----
-    import {file_types, start_drag, dragOverHandler, dropper, drop, convert_text} from '../../common/upload'
+    import {file_types, start_drag, dragOverHandler, dropper, drop, convert_text, to_blob_url} from '../../common/upload'
 
     //import frame_messaging from '../../common/human_frame'
 
@@ -243,7 +243,23 @@
 
     function list_selection_response(event) {
         let cmd_obj = event.detail
-        if ( cmd_obj.cmd === 'local-selection' ) {
+        if ( cmd_obj.cmd === 'set-contract' ) {
+            let blob = cmd_obj.contract_json
+            let size = cmd_obj.size
+            let data_obj = false
+            try {
+                data_obj = JSON.parse(blob)
+            } catch(e) {
+                return false
+            }
+            cmd_obj.file = {
+                "name" : data_obj.name,
+                "upload_type" : "Contract",
+                "blob" : blob,
+                "size" : size
+            }
+        }
+        if ( (cmd_obj.cmd === 'local-selection') || (cmd_obj.cmd === 'set-contract') ) {
             let file_descr = cmd_obj.file
             g_current_media_selection = file_descr
             g_current_file_selection = file_descr
@@ -437,7 +453,7 @@
                                 </code>
                                 </pre>
                             {:else if (g_upload_type === 'Contract') }
-                                <ContractEdit bind:contract_view user_identity={g_user_public_ccwid} />
+                                <ContractEdit bind:contract_view user_identity={g_user_public_ccwid} on:message={list_selection_response} />
                             {:else if (g_upload_type === 'Audio') }
                                 <audio controls controlsList="nodownload" 
                                                         bind:this={audio}

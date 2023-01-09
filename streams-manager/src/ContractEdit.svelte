@@ -1,7 +1,7 @@
 <script>
 
 import { createEventDispatcher } from 'svelte';
-const dispatch = createEventDispatcher();//
+const dispatch = createEventDispatcher(); // ---- ---- ---- ---- ---- ---- ---- ----
 //
 
 export let contract_view = {
@@ -16,7 +16,7 @@ export let user_identity = ""
 let name = ""
 let name_entry = ""
 let edit_mode = "editing"
-
+let store_ok = false
 
 let payout_entries_producers = []
 let payout_entries_authors = []
@@ -33,16 +33,14 @@ $: contract_view.name = name_entry
 $: {
     //
     if ( contract_view.authors === undefined ) {
-        contract_view.authors = {}
+        contract_view.authors = []
     }
     if ( contract_view.producers === undefined ) {
-        contract_view.producers = {}
+        contract_view.producers = []
     }
     //
-    let payouts_a = Object.keys(contract_view.authors)
-    let payouts_p = Object.keys(contract_view.producers)
-    payout_entries_authors = payouts_a.map( aky => { contract_view.authors[aky] })
-    payout_entries_producers = payouts_p.map( aky => { contract_view.producers[aky] })
+    payout_entries_authors = contract_view.authors
+    payout_entries_producers = contract_view.producers
     //
 }
 
@@ -51,6 +49,26 @@ $: if ( (typeof contract_view._tracking === 'string') ) {
     tracking = contract_view._tracking
 }
 
+
+// ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ----
+// ---- prep_upload_contract ----
+
+function prep_upload_contract(ev) {
+    //
+    contract_view.authors = payout_entries_authors
+    contract_view.producers = payout_entries_producers
+    //
+    let contract_data = JSON.stringify(contract_view)
+    //
+    dispatch('message', {
+        'cmd': 'set-contract',
+        'contract_json' : contract_data,
+        'size' : contract_data.length
+    });
+    store_ok = false
+}
+
+// ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ----
 
 // svelte weirdness
 let authors_changed = true
@@ -138,9 +156,11 @@ function remove_producers(ev) {
 // update_name
 function update_name(entry,value) {
     entry.name = value
+    store_ok = true
 }
 function update_role(entry,value) {
     entry.role = value
+    store_ok = true
 }
 function update_percentage(type,entry,value) {
     entry.percent = value
@@ -159,7 +179,6 @@ function set_percentages(type,percent_update_array) {
     }
     if ( percent_lock ) {
         // ---- ---- ---- ---- ---- ---- ---- ---- ---- ----
-        let n = percent_update_array.length
         let total = 0
         for ( let entry of percent_update_array ) {
             total += parseInt(entry.percent)
@@ -172,6 +191,7 @@ function set_percentages(type,percent_update_array) {
     }
     // ---- ---- ---- ---- ---- ---- ---- ---- ---- ----
     setTimeout(() => {
+        store_ok = true
         if ( type === 'a' ) {
             authors_changed = true
         } else {
@@ -190,6 +210,9 @@ function finalize_percentages(type) {
 <div class="edit-contract-presentation">
     <div class="contact-controls">
         <span class="contract-mode">Edit mode:</span>&nbsp;<span>{edit_mode}</span>
+        {#if store_ok}
+        <span  class="edit-button-small button-like" on:click={prep_upload_contract}>save changes</span>
+        {/if}
         &nbsp;::&nbsp;
         {#if !enter_name }
         <span class="contract-mode">name:</span>&nbsp;<span>{name}</span>
@@ -341,6 +364,12 @@ function finalize_percentages(type) {
         margin: 1px;
         width:fit-content;
         height: 16px;
+    }
+
+    .button-like {
+        border-radius: 9%;
+        border: solid 1px orange;
+        padding:2px;
     }
 
     .edit-button:hover {
