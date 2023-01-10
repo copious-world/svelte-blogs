@@ -417,7 +417,7 @@ async function onPosterSelected(e) {
         {#if (operation !== "selection") }
             {#if operation === false }
                 <span>&RightArrowBar;</span>
-                <select class="op-selector" bind:value={update_operation} on:change={select_operation}>
+                <select class="op-selector" bind:value={update_operation} on:change={select_operation} >
                     <option value="select">select</option>
                     <option value="upload">upload</option>
                     <option value="publish">publish</option>

@@ -68,6 +68,20 @@ function prep_upload_contract(ev) {
     store_ok = false
 }
 
+
+let show_media_selector = false
+function open_file_selector(ev) {
+    if ( show_media_selector ) {
+        show_media_selector = false
+    } else {
+        show_media_selector = true
+    }
+}
+
+function close_file_selector(ev) {
+    show_media_selector = false
+}
+
 // ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ----
 
 // svelte weirdness
@@ -205,13 +219,18 @@ function finalize_percentages(type) {
     set_percentages(type,percent_update_array) 
 }
 
+
+
+let media_type_contract = "text"
+let contract_media_id = "unknown"
+
 </script>
 
 <div class="edit-contract-presentation">
     <div class="contact-controls">
         <span class="contract-mode">Edit mode:</span>&nbsp;<span>{edit_mode}</span>
         {#if store_ok}
-        <span  class="edit-button-small button-like" on:click={prep_upload_contract}>save changes</span>
+        <button class="edit-button-small button-like" on:click={prep_upload_contract}>save changes</button>
         {/if}
         &nbsp;::&nbsp;
         {#if !enter_name }
@@ -220,13 +239,70 @@ function finalize_percentages(type) {
         <span class="contract-mode">enter name:</span>&nbsp;<input type="text" bind:value={name_entry}/>
         {/if}
         <span class="contract-mode">Contract Manager:</span>&nbsp;<span>{user_identity}</span>
-        <span style="font-style:italic;font-size:xx-small">tracking: {tracking}</span>
+        &nbsp;...&nbsp;<span style="font-style:italic;font-size:xx-small">tracking: {tracking}</span>
     </div>
-    <div class="contact-parts"><span>Authors</span> <span class="edit-button" on:click={add_author}>+</span> <span class="edit-button" on:click={remove_authors} >-</span> 
+    <div class="contact-controls lighter-controls">
+        <span><u>type of media</u> &RightArrowBar;</span>
+        <select class="op-selector" bind:value={media_type_contract} >
+            <option value="text">text</option>
+            <option value="audio">audio</option>
+            <option value="image">image</option>
+            <option value="video">video</option>
+            <option value="code">code</option>
+        </select>
+        <span><u>media </u>&RightArrowBar;<u> contract subject</u> &RightArrowBar;</span>
+        <button class="edit-button-small button-like" on:click={open_file_selector}>select media</button>
+        <span>&RightArrowBar;<u>media id</u> &RightArrowBar; {contract_media_id}</span>
+        {#if show_media_selector }
+        <div style="width:100%;border: solid 1px blue;">
+            <div class="sel-box-controls">
+                <div style="display:inline-block;float:left;text-align:left;width:fit-content;">
+                    <button class="sel-box-button" on:click={close_file_selector}>cancel</button>
+                </div>
+                <div style="display:inline-end;float:unset;text-align:center;width:auto;padding-top:4px;">
+                    <span>Select a file</span>
+                </div>
+            </div>
+            <div class="media-slector" >
+                media selector {media_type_contract}<br>
+                media selector {media_type_contract}<br>
+                media selector {media_type_contract}<br>
+                media selector {media_type_contract}<br>
+                media selector {media_type_contract}<br>
+                media selector {media_type_contract}<br>
+                media selector {media_type_contract}<br>    
+                media selector {media_type_contract}<br>
+                media selector {media_type_contract}<br>
+                media selector {media_type_contract}<br>
+                media selector {media_type_contract}<br>
+                media selector {media_type_contract}<br>
+                media selector {media_type_contract}<br>
+                media selector {media_type_contract}<br>    
+                media selector {media_type_contract}<br>
+                media selector {media_type_contract}<br>
+                media selector {media_type_contract}<br>
+                media selector {media_type_contract}<br>
+                media selector {media_type_contract}<br>
+                media selector {media_type_contract}<br>
+                media selector {media_type_contract}<br>    
+                media selector {media_type_contract}<br>
+                media selector {media_type_contract}<br>
+                media selector {media_type_contract}<br>
+                media selector {media_type_contract}<br>
+                media selector {media_type_contract}<br>
+                media selector {media_type_contract}<br>
+                media selector {media_type_contract}<br>    
+            </div>
+        </div>
+        {/if}
+    </div>
+    <div class="contact-parts">
+        <span>Authors</span> 
+        <button class="edit-button button-like" on:click={add_author}>+</button> <button class="edit-button button-like" on:click={remove_authors} >-</button> 
         {#if percent_lock }
-        <span class="edit-button-small" on:click={() => {percent_lock = false} }>% figure</span>
+        <button class="edit-button-small button-like" on:click={() => {percent_lock = false} }>% figure</button>
         {:else}
-        <span class="edit-button-small" on:click={() => {percent_lock = true; finalize_percentages('a')} }>% enter</span>
+        <button class="edit-button-small button-like" on:click={() => {percent_lock = true; finalize_percentages('a')} }>% enter</button>
         {/if}
     </div>
     <div class="row-keeper">
@@ -254,11 +330,14 @@ function finalize_percentages(type) {
         {/each}
         {/if}
     </div>
-    <div class="contact-parts" ><span>Producers</span> <span class="edit-button"  on:click={add_producer} >+</span> <span class="edit-button" on:click={remove_producers} >-</span>
+    <div class="contact-parts" >
+        <span>Producers</span> 
+        <button class="edit-button button-like"  on:click={add_producer} >+</button> 
+        <button class="edit-button button-like" on:click={remove_producers} >-</button>
         {#if percent_lock }
-        <span class="edit-button-small" on:click={() => {percent_lock = false} }>% figure</span>
+        <button class="edit-button-small button-like" on:click={() => {percent_lock = false} }>% figure</button>
         {:else}
-        <span class="edit-button-small" on:click={() => {percent_lock = true; finalize_percentages('p') } }>% enter</span>
+        <button class="edit-button-small button-like" on:click={() => {percent_lock = true; finalize_percentages('p') } }>% enter</button>
         {/if}
     </div>
     <div class="row-keeper">
@@ -296,14 +375,22 @@ function finalize_percentages(type) {
 
     .contact-controls {
         text-align: left;
+        vertical-align: middle;
         border: solid 1px navy;
+        padding: 2px;
         padding-left: 8px;
         background-color: rgb(240, 245, 245);
     }
 
+    .lighter-controls {
+        background-color: rgb(244, 250, 246);
+    }
+
     .contact-parts {
         text-align: center;
+        vertical-align: middle;
         border: solid 1px navy;
+        padding: 2px;
         padding-left: 8px;
         background-color: rgb(242, 245, 240);
     }
@@ -347,13 +434,12 @@ function finalize_percentages(type) {
     }
 
     .edit-button {
-      cursor: pointer;
-      font-size: 200%;
-      font-weight: bold;
-      color: darkblue;
-      margin: 1px;
-      width:fit-content;
-      height: 16px;
+        cursor: pointer;
+        font-size: 180%;
+        font-weight: bold;
+        color: darkblue;
+        margin: 1px;
+        width:fit-content;
     }
 
     .edit-button-small {
@@ -363,20 +449,27 @@ function finalize_percentages(type) {
         color: darkblue;
         margin: 1px;
         width:fit-content;
-        height: 16px;
     }
 
     .button-like {
         border-radius: 9%;
         border: solid 1px orange;
         padding:2px;
+        font-family: Arial, Helvetica, sans-serif;
     }
 
-    .edit-button:hover {
+    .button-like:hover {
       background-color : #CACAFF;
       color: darkred;
     }
 
+    .media-slector {
+        max-height: 200px;
+        overflow-y: scroll;
+        width: inherit;
+        background-color: floralwhite;
+        border: solid 1px black;
+    }
 
     .op-name {
         color:seagreen;
@@ -456,6 +549,7 @@ function finalize_percentages(type) {
 
     .sel-box-button {
         font-size: xx-small;
+        cursor: pointer;
     }
 
     .sel-box-controls {
