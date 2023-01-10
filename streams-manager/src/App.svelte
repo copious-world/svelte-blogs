@@ -417,7 +417,7 @@
                         {/if}
                         <button on:click={file_from_db_storage}>Previous Upload</button>
                         <button on:click={publish_media}>Publish</button>
-                        <button on:click={unpublish_media}>Remove</button>
+                        <button on:click={unpublish_media}>Pull Out</button>
                         <button on:click={delete_media}>Delete </button>
                         <button on:click={download_media}>Download</button>
                     </div>

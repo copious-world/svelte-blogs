@@ -81,16 +81,15 @@ let contract_media_id = "unknown"
 async function load_file_list(mtype) {
     let files = await window.get_all_user_files()
     files = files.filter((fdescr) => { return (fdescr.media_type === mtype) && (fdescr._tracking) })
-    file_selections = ([].concat(files)).map(fname => { return { "name" : fname } } )
-    return file_selections
+    return files
 }
 
 let typed_uploaded_media = []
 
 let show_media_selector = false
 async function open_file_selector(ev) {
-    typed_uploaded_media = []
-    await load_file_list(media_type_contract)
+    //
+    typed_uploaded_media = await load_file_list(media_type_contract)
     //
     if ( show_media_selector ) {
         show_media_selector = false
@@ -103,7 +102,15 @@ function close_file_selector(ev) {
     show_media_selector = false
 }
 
+async function load_file_to_selecor(ev) {
+    typed_uploaded_media = await load_file_list(media_type_contract)
+}
 
+
+function select_media_for_contract(med_dscr) {
+    let tracking = med_dscr._tracking
+    contract_media_id = tracking
+}
 
 // ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ----
 // ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ----
@@ -263,7 +270,7 @@ function finalize_percentages(type) {
     </div>
     <div class="contact-controls lighter-controls">
         <span><u>type of media</u> &RightArrowBar;</span>
-        <select class="op-selector" bind:value={media_type_contract} >
+        <select class="op-selector" bind:value={media_type_contract} on:change={load_file_to_selecor}>
             <option value="text">text</option>
             <option value="audio">audio</option>
             <option value="image">image</option>
@@ -284,9 +291,9 @@ function finalize_percentages(type) {
                 </div>
             </div>
             <div class="media-slector" >
-                {#each typed_uploaded_media as contractable }
-                <div class="media-choice">
-                    media selector {media_type_contract}<br>
+                {#each typed_uploaded_media as contractable}
+                <div class="media-choice" on:click={() => { select_media_for_contract(contractable) }}>
+                    {contractable.name}
                 </div>
                 {/each} 
             </div>
@@ -466,6 +473,16 @@ function finalize_percentages(type) {
         width: inherit;
         background-color: floralwhite;
         border: solid 1px black;
+    }
+
+
+    .media-choice {
+        cursor: pointer;
+        border-bottom: 1px solid rgb(119, 88, 148);
+    }
+
+    .media-choice:hover {
+        background-color: ivory;
     }
 
     .op-name {
