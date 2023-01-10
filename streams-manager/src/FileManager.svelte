@@ -33,6 +33,8 @@ let abstract = ""
 let full_text = ""
 let poster = false
 let is_paid = false
+let is_WIP = false
+let is_contract = false
 
 let field_vars = {}
 
@@ -58,6 +60,12 @@ let uploaded = false
 let update_operation = "upload"
 // ---- ---- ---- ---- ---- ---- ---- ----
 
+$: {
+    if ( user_picked_type === 'contract' ) {
+        is_contract = true
+        is_paid = false
+    }
+}
 
 $: if ( file_proper ) {
     pre_file = Object.assign({},file_proper)
@@ -445,7 +453,12 @@ async function onPosterSelected(e) {
     <div>
         <div class = "mat-back mat-back-2 form" style="white-space:nowrap;height:35pxoverflow-x:auto">
             <span>Asset ID: </span><input type="text" id="asset-id" >&nbsp;&nbsp;<span style="color:blue;font-size: larger;">&nbsp;&RightArrowBar;&nbsp;</span>
+            {#if !is_contract }
             <span style="color: rgb(6, 32, 6);font-weight: 600;">paid content:</span>&nbsp;&nbsp;<input bind:checked={is_paid} type="checkbox" id="paid-checkbox" />
+            {/if}
+            {#if !is_paid || is_contract }
+            <span style="color: rgb(6, 32, 6);font-weight: 600;">work in progress:</span>&nbsp;&nbsp;<input bind:checked={is_WIP} type="checkbox" id="paid-checkbox" />
+            {/if}
             {#if (type_class !== 'image') }
             &nbsp;&nbsp;<span style="color:blue;font-size: larger;">&nbsp;&RightArrowBar;&nbsp;</span>
             Choose a poster image? <span class="op-name op-action" on:click={(ev) => {open_file_selector(ev,'image',true)}}>poster</span>
