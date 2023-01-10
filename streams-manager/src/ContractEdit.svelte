@@ -79,7 +79,28 @@ let contract_media_id = "unknown"
 
 
 async function load_file_list(mtype) {
-    let files = await window.get_all_user_files()
+    let files = [] //  await window.get_all_user_files()
+
+    files = [
+        { "name"  : "A", "media_type" : "text", "_tracking" : "111111" },
+        { "name"  : "B", "media_type" : "video", "_tracking" : "222222"  },
+        { "name"  : "C", "media_type" : "code", "_tracking" : "11311"  },
+        { "name"  : "D", "media_type" : "audio", "_tracking" : "14111"  },
+        { "name"  : "E", "media_type" : "text", "_tracking" : "11511"  },
+        { "name"  : "FI", "media_type" : "code"  },
+        { "name"  : "GI", "media_type" : "code", "_tracking" : "17511"  },
+        { "name"  : "E", "media_type" : "text", "_tracking" : "11511"  },
+        { "name"  : "G", "media_type" : "video", "_tracking" : "11711"  },
+        { "name"  : "H", "media_type" : "video", "_tracking" : "11811"  },
+        { "name"  : "I", "media_type" : "video", "_tracking" : "11911"  },
+        { "name"  : "J", "media_type" : "video", "_tracking" : "111011"  },
+        { "name"  : "K", "media_type" : "video", "_tracking" : "111121"  },
+        { "name"  : "L", "media_type" : "video", "_tracking" : "111113"  },
+        { "name"  : "KI", "media_type" : "code", "_tracking" : "175611"  },
+        { "name"  : "Z", "media_type" : "audio"  }
+    ]
+
+
     files = files.filter((fdescr) => { return (fdescr.media_type === mtype) && (fdescr._tracking) })
     return files
 }
