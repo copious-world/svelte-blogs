@@ -69,8 +69,29 @@ function prep_upload_contract(ev) {
 }
 
 
+// ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ----
+
+
+
+let media_type_contract = "text"
+let contract_media_id = "unknown"
+
+
+
+async function load_file_list(mtype) {
+    let files = await window.get_all_user_files()
+    files = files.filter((fdescr) => { return (fdescr.media_type === mtype) && (fdescr._tracking) })
+    file_selections = ([].concat(files)).map(fname => { return { "name" : fname } } )
+    return file_selections
+}
+
+let typed_uploaded_media = []
+
 let show_media_selector = false
-function open_file_selector(ev) {
+async function open_file_selector(ev) {
+    typed_uploaded_media = []
+    await load_file_list(media_type_contract)
+    //
     if ( show_media_selector ) {
         show_media_selector = false
     } else {
@@ -82,6 +103,9 @@ function close_file_selector(ev) {
     show_media_selector = false
 }
 
+
+
+// ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ----
 // ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ----
 
 // svelte weirdness
@@ -220,10 +244,6 @@ function finalize_percentages(type) {
 }
 
 
-
-let media_type_contract = "text"
-let contract_media_id = "unknown"
-
 </script>
 
 <div class="edit-contract-presentation">
@@ -264,34 +284,11 @@ let contract_media_id = "unknown"
                 </div>
             </div>
             <div class="media-slector" >
-                media selector {media_type_contract}<br>
-                media selector {media_type_contract}<br>
-                media selector {media_type_contract}<br>
-                media selector {media_type_contract}<br>
-                media selector {media_type_contract}<br>
-                media selector {media_type_contract}<br>
-                media selector {media_type_contract}<br>    
-                media selector {media_type_contract}<br>
-                media selector {media_type_contract}<br>
-                media selector {media_type_contract}<br>
-                media selector {media_type_contract}<br>
-                media selector {media_type_contract}<br>
-                media selector {media_type_contract}<br>
-                media selector {media_type_contract}<br>    
-                media selector {media_type_contract}<br>
-                media selector {media_type_contract}<br>
-                media selector {media_type_contract}<br>
-                media selector {media_type_contract}<br>
-                media selector {media_type_contract}<br>
-                media selector {media_type_contract}<br>
-                media selector {media_type_contract}<br>    
-                media selector {media_type_contract}<br>
-                media selector {media_type_contract}<br>
-                media selector {media_type_contract}<br>
-                media selector {media_type_contract}<br>
-                media selector {media_type_contract}<br>
-                media selector {media_type_contract}<br>
-                media selector {media_type_contract}<br>    
+                {#each typed_uploaded_media as contractable }
+                <div class="media-choice">
+                    media selector {media_type_contract}<br>
+                </div>
+                {/each} 
             </div>
         </div>
         {/if}
