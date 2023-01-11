@@ -92,6 +92,8 @@ $: {
         "rec-abstract" : abstract,
         "rec-full-text" : full_text,
         "paid-checkbox" : is_paid,
+        "WIP-checkbox"  : is_WIP,
+        "rec-contract"  : is_contract,
         "rec-file-name" : name,
         "rec-poster-name" : poster ? poster : "",
         "rec-file-proper" : file_proper,
@@ -102,6 +104,7 @@ $: {
         "rec-was-uploaded" : uploaded
     }
 }
+
 
 
 $: if ( operation === false ) {
@@ -134,6 +137,8 @@ function value_to_current_file(file_rep) {
     file_rep.abstract = abstract
     file_rep.full_text = full_text
     file_rep.is_paid = is_paid
+    file_rep.is_WIP = is_WIP
+    file_rep.is_contract = is_contract
     file_rep.name = name
     file_rep.poster = poster
     file_rep.published = been_published
@@ -141,7 +146,6 @@ function value_to_current_file(file_rep) {
     file_rep.uploaded = uploaded
     file_rep.original_dir = o_directory
 }
-
 
 function unload_field_vars(field_vars) {
     //
@@ -160,6 +164,12 @@ function unload_field_vars(field_vars) {
     full_text = some_def(full_text)
     is_paid = field_vars['paid-checkbox']
     is_paid = some_def_bool(is_paid)
+    //
+    is_WIP = field_vars['WIP-checkbox']
+    is_WIP = some_def_bool(is_WIP)
+    //
+    is_contract = field_vars['rec-contract']
+    is_contract = some_def_bool(is_contract)
     //
     name = field_vars['rec-file-name']
     name = some_def(name)
@@ -204,6 +214,10 @@ async function current_file_to_vars(file_rep) {
     full_text = some_def(full_text)
     is_paid = file_rep.is_paid
     is_paid = some_def_bool(is_paid)
+    is_WIP = file_rep.is_WIP
+    is_WIP = some_def_bool(is_WIP)
+    is_contract = file_rep.is_contract
+    is_contract = some_def_bool(is_contract)
     name = file_rep.name
     name = some_def(name)
     if ( title.length === 0 ) title = name
@@ -457,7 +471,7 @@ async function onPosterSelected(e) {
             <span style="color: rgb(6, 32, 6);font-weight: 600;">paid content:</span>&nbsp;&nbsp;<input bind:checked={is_paid} type="checkbox" id="paid-checkbox" />
             {/if}
             {#if !is_paid || is_contract }
-            <span style="color: rgb(6, 32, 6);font-weight: 600;">work in progress:</span>&nbsp;&nbsp;<input bind:checked={is_WIP} type="checkbox" id="paid-checkbox" />
+            <span style="color: rgb(6, 32, 6);font-weight: 600;">work in progress:</span>&nbsp;&nbsp;<input bind:checked={is_WIP} type="checkbox" id="WIP-checkbox" />
             {/if}
             {#if (type_class !== 'image') }
             &nbsp;&nbsp;<span style="color:blue;font-size: larger;">&nbsp;&RightArrowBar;&nbsp;</span>

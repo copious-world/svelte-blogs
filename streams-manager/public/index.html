@@ -1428,7 +1428,10 @@ do_media_upload
 				let keys = field_vars['rec-keys']
 				let abstract = field_vars['rec-abstract']
 				let full_text = field_vars['rec-full-text']
+				//
 				let paid = field_vars['paid-checkbox']
+				let WIP = field_vars['WIP-checkbox']
+				let contract = field_vars['rec-contract']
 				//
 				let name = field_vars['rec-file-name']
 				let file_proper = field_vars['rec-file-proper']
@@ -1504,6 +1507,8 @@ do_media_upload
 					"_id" :  this._user_id,             // should be a UCWID
 					"_author_tracking" :  this._author_tracking,
 					"_paid" : paid,
+					"_contract" : contract,
+					"_work_in_progress" : WIP,
 					"_transition_path" : "asset_path",
 					"asset_path" : `${tracking}+${asset_type}+${this._user_id}`,
 					"title" : encodeURIComponent(title),
@@ -1568,6 +1573,8 @@ do_media_upload
 				}
 
 				let paid = field_vars['paid-checkbox']
+				let WIP = field_vars['WIP-checkbox']
+				let contract = field_vars['rec-contract']
 
 				//
 				let exclusion_fields = [  // fields excluded from searching services.
@@ -1583,6 +1590,8 @@ do_media_upload
 					"_tracking" : tracking,
 					"_id" :  this._user_id,
 					"_paid" : paid,
+					"_contract" : contract,
+					"_work_in_progress" : WIP,
 					"_transition_path" : "asset_path",
 					"asset_path" : `${tracking}+${asset_type}+${this._user_id}`,
 					"asset_type" : asset_type,        // blog, stream, link-package, contact, ownership, etc...
@@ -1608,6 +1617,9 @@ do_media_upload
 			let file_name_fld = field_vars['rec-file-name']
 			let poster_name_fld = field_vars['rec-poster-name']
 			let paid_fld = field_vars['paid-checkbox']
+			let WIP_fld = field_vars['WIP-checkbox']
+			let contact_fld = field_vars['rec-contract']
+
 			if ( !(opt_fld && title_fld && keys_fld && abstract_fld && full_text_fld && file_name_fld  && poster_name_fld) ) return false
 			
 			title_fld.value = decodeURIComponent(obj.title)
@@ -1619,6 +1631,9 @@ do_media_upload
 
 			if ( paid_fld )  {
 				paid_fld.setAttribute("checked",obj._paid)
+			}
+			if ( paid_fld )  {
+				paid_fld.setAttribute("checked",obj._work_in_progress)
 			}
 
 			this._current_asset_history = obj._history
@@ -1820,7 +1835,12 @@ do_media_upload
           if ( t_num !== false ) {
 			field_data["asset-id"] = t_num
           }
-          g_ui_data.put_fields(obj)
+		  for ( let fld in field_data ) {
+			let v = obj[fld]
+			if ( v !== undefined ) {
+				field_data[fld] = obj[fld]
+			}
+		  }
         }
     }
   
