@@ -1736,7 +1736,7 @@ do_media_upload
 			}
 			let [result,pid] = await send_new_entry(uploadable,this.new_entry_link,good_data.asset_type)
 			if ( result.status === "OK" ) {
-				return status.tracker
+				return result.tracker
 			}
 		}
 
@@ -1748,7 +1748,7 @@ do_media_upload
 			}
 			let result = await send_publication_command("get",uploadable,this.get_entry_link)
 			if ( result.status === "OK" ) {
-				return status.tracker
+				return result.tracker
 			}
 		}
 
@@ -1760,7 +1760,7 @@ do_media_upload
 			}
 			let [result,pid] = await send_new_entry(uploadable,this.update_entry_link,good_data.asset_type)
 			if ( result.status === "OK" ) {
-				return status.tracker
+				return result.tracker
 			}
 		}
 
@@ -1771,7 +1771,7 @@ do_media_upload
 			}
 			let result = await send_publication_command("get",uploadable,this.delete_entry_link)
 			if ( result.status === "OK" ) {
-				return status.tracker
+				return result.tracker
 			}
 		}
 
@@ -1782,7 +1782,7 @@ do_media_upload
 			}
 			let result = await send_publication_command("publish",uploadable,this.publish_entry_link)
 			if ( result.status === "OK" ) {
-				return status.tracker
+				return result.tracker
 			}
 		}
 
@@ -1793,7 +1793,7 @@ do_media_upload
 			}
 			let result = await send_publication_command("unpublish",uploadable,this.unpublish_entry_link)
 			if ( result.status === "OK" ) {
-				return status.tracker
+				return result.tracker
 			}
 		}
 
