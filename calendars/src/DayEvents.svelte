@@ -56,12 +56,10 @@ let editor_for_update = false
 let editor_for_cancel = false
 
 
-
 let dropped_event = false
 let changed_event = false
 let updating_event = false
 
-let topic_group = cnst.CALENDAR_TOPIC_GROUP
 
 let revized_all_day_list = []
 let events_in_play = {}
@@ -71,7 +69,7 @@ let tzoof_ts = 0
 let src_date = new Date(year,month,day)
 
 
-function  set_ev_values(time,model_ev,ev,how_long) {
+function set_ev_values(time,model_ev,ev,how_long) {
     if ( ev === undefined ) {
         return
     }
