@@ -285,3 +285,30 @@ export function process_search_results(stindex,qstart,search_result,other_things
 }
 
 
+
+export function remove_duplicate_entries(ply2_ary) {
+    let deletes = []
+    let n = ply2_ary.length;
+    for (let i = 0; i < n; i++ ) {
+        let chk = ply2_ary[i]
+        let next_i = i
+        for ( let j = i+1; j < n; j++ ) {
+            let tst = ply2_ary[j]
+            if ( chk[0] === tst[0] ) {
+                if ( chk[1] === tst[1] ) {
+                    deletes.push(j)
+                    next_i++
+                }
+            }
+        }
+        i = next_i
+    }
+
+    while ( deletes.length ) {
+        let dj = deletes.pop()
+        if ( dj !== undefined ) {
+            ply2_ary.splice(dj,1)  
+        }
+    }
+    return ply2_ary
+}

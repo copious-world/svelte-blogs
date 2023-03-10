@@ -14,15 +14,15 @@
 	import Clock from 'svelte-clock'
 
 
-	import { process_search_results, place_data, merge_data, make_empty_thing, link_server_fetch } from '../../common/data-utils.js'
+	import { process_search_results, place_data, merge_data, make_empty_thing, remove_duplicate_entries } from '../../common/data-utils.js'
 	import { popup_size } from '../../common/display-utils.js'
 	import { get_search } from "../../common/search_box.js"
 
 	import { EventDays } from 'event-days'
 	import {add_ws_endpoint} from '../../common/ws-relay-app'
-	import tl_subr from '../../calendar-common/subcription_handlers'
-	import cnst from '../../calendar-common/constants'
-	import local_presets from '../../calendar-common/schedule-preset'
+	import tl_subr from '../../chat-common/subcription_handlers'
+	import cnst from '../../chat-common/constants'
+	import local_presets from '../../chat-common/schedule-preset'
 	import {timestamp_db} from '../../common/timestamp_db'
 
 
@@ -869,8 +869,18 @@
 	// ---- ---- ---- ---- ---- ---- ---- ----
 	//
 	function injest_request(req) {
-		tl_subr.injest_request(req,things)
-		data_fetcher()
+		let conflicts = tl_subr.injest_request(req,things)
+		if ( conflicts !== false && Array.isArray(conflicts)) {
+			// once in a while get the whole history data_fetcher()   // basically saying all info will from the outside.
+			// merge conflicts and things
+			let a_slot = conflicts[0]
+			let comments = a_slot.comments
+			let new_comments = req.comments
+			comments = comments.contact(new_comments)
+			comments.sort((a,b) => {  let t1 = a[0], t2 = b[0]; return (t1 - t2) })
+			remove_duplicate_entries(comments)
+			a_slot.comments = comments
+		}
 	}
 
 

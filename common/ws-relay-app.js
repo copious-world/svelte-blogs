@@ -4,15 +4,16 @@ const g_topic_group_to_url = {}
 const g_topic_to_messenger = {}
 
 
-export function add_ws_endpoint(topic_group,url,a_port,a_path,subscriptions) {
+export function add_ws_endpoint(topic_group,url,a_port,a_path,subscriptions,ws_connect_url) {
     //
     g_topic_group_to_url[topic_group] = url
     //
     let port = a_port ? a_port : ''
     let api_path = a_path ? a_path : ''
+    let connect_url = (ws_connect_url ? ws_connect_url : "localhost")
     g_topic_to_messenger[topic_group] = {
         "com" : new WSMessageRelayer({
-                        "host" : "localhost",
+                        "address" : connect_url,
                         "port" : port,
                         "path" : api_path
                     }),

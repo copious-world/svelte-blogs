@@ -1,8 +1,5 @@
 // 
 
-const HOST = "localhost"
-const PORT = "9696"
-
 class JSONMessageQueue {
 
     constructor(decoder,encoder) {
@@ -988,6 +985,7 @@ class MessageRelayer extends Communicator {
 
     closeAll() {
     }
+
 
 }
 

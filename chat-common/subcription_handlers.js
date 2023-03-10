@@ -3,24 +3,6 @@ import cnst from './constants'
 import {EventDays} from './event-days'
 
 
-class MonthFetcher {
-    //
-    constructor(list_from_editor) {
-        this.source_month_map = {}
-        for ( let mo of list_from_editor ) {
-            source_month_map[mo.start_time] = mo
-        }
-    }
-
-    get(month_list) {
-        let result = {}
-        for ( let moky of month_list ) {
-            result[moky] = this.source_month_map[moky]
-        }
-        return result   
-    }
-    //
-}
 
 // list_on_display -- this is actually using the thing list... it has the current edits. 
 //
@@ -70,13 +52,12 @@ export async function injest_request(slot,things) {
             //
             let tlsa = a_thing.cal.map[slot.mo_key]
             if ( tlsa ) {
-                let conflicts = tlsa.add_slot(slot)
+                let conflicts = tlsa.add_slot(slot)  // take in new information...
                 if ( conflicts ) {
                     // slot was not added...
+                    return conflicts
                 }
             }
-            //
-            return true
         }
     }
     return false
