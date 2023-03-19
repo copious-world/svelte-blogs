@@ -22,8 +22,6 @@
 	import {add_ws_endpoint} from '../../common/ws-relay-app'
 	import tl_subr from '../../chat-common/subcription_handlers'
 	import cnst from '../../chat-common/constants'
-	import local_presets from '../../chat-common/schedule-preset'
-	import {timestamp_db} from '../../common/timestamp_db'
 
 
 	import { onMount } from 'svelte';
@@ -48,11 +46,13 @@
 	const ONE_QUARTER_HOUR_MINUTES = (15)
 	const ONE_HALF_HOUR_MINUTES  = (30)
 	//
+
+
 	const USE_AS_BLOCK = "block"
 	const USE_AS_MEET = "meeting"
-	const USE_AS_ACTIVITY = "activity"
 	const USE_AS_OPEN = "open"
-	//
+
+	// ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ----
 
 	const MonthContainer = EventDays.MonthContainer
 	const Slot = EventDays.Slot
@@ -62,52 +62,32 @@
 	let g_timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
 
-	let g_active_slot_list = []
-	function update_active_slot_list(d_date,slot_defs) {
-		let slots = []
-		for ( let s_label in slot_defs ) {
-			let slot = slot_defs[s_label]
-			if ( slot ) {
-				let dt = d_date.getTime()
-				if ( (dt >= slot.start_time) && (dt <= slot.end_time) ) {
-					slots.push(slot)
-				}
-			}
-		}
-		return slots
-	}
 
-	function best_for_hour(slot_list,time,blocked) {
-		let slots_of_hour = []
-		for ( let slot of slot_list ) {
-			if ( slot.begin_at <= time && time <= slot.end_at ) {
-				slots_of_hour.push(slot)
-			}
-		}
-		//
-		if ( slots_of_hour.length === 0 ) {
-			return blocked
-		}
-		if ( slots_of_hour.length === 1 ) {
-			return slots_of_hour[0].use
-		}
-		// else
-		let priority = -1
-		let pindex = -1
-		for ( let i = 0; i < slots_of_hour.length; i++ ) {
-			let slot = slots_of_hour[i]
-			let tspan = slot.end_time - slot.start_time
-			let toffset = time - slot.start_time
-			let partial = toffset/tspan
-			let bias = slot.offset_bias(partial) ///  from the definition of a slot...
-			if ( bias > priority ) {
-				priority = bias
-				pindex = i
-			}
-		}
-		//
-		return slots_of_hour[pindex].use
+
+	// 
+	let tz_city = g_timezone.split('/')[1]
+
+	// ----
+	let home_time = new Date()
+	let g_home_timezone = g_timezone
+	let home_tz_str = home_time.toLocaleTimeString("en-US", { timeZone: g_home_timezone })
+	let home_tparts = home_tz_str.split(':')
+	let home_hr_update = parseInt(home_tparts[0])
+
+	let h_rest = home_tparts[2].split(' ')
+	let h_night_n_day = h_rest[1].trim()
+
+	if ( (h_night_n_day === "PM") && (home_hr_update !== 12) ) {
+		home_hr_update += 12
 	}
+	let h_tz_date_str = home_time.toLocaleDateString("en-US", { timeZone: g_timezone })
+	let home_extract_day = h_tz_date_str.split('/')[1]
+
+	const HR_WINDOW_SIZE = 2
+	let g_future_cutoff = home_time + ONE_HOUR*HR_WINDOW_SIZE
+	let g_yesterday = home_time - ONE_HOUR*HR_WINDOW_SIZE  ///
+	
+
 
 	// --- ReqSlot --- --- --- --- --- --- --- --- --- ---
 	class ReqSlot extends Slot {
@@ -210,55 +190,10 @@
 		fill_day(year,month,key) {
 			let d_date = new Date(year,month,this.day,0,0,0);  // these have been passed
 
-			let dkey = d_date.toLocaleDateString('en-US',local_presets.time_zone)
-
-			let mnight = local_presets.saturdays[dkey]
-			if ( mnight !== undefined ) {
-
-//console.log("SATURDAY",dkey)
-				let day_defs = local_presets.presets.saturday
-				for ( let def of day_defs ) {
-					let ev = Object.assign({},def)
-					ev.begin_at = mnight + def.begin_at*ONE_HOUR
-					ev.end_at = mnight + def.end_at*ONE_HOUR
-					ev.how_long = (def.end_at - def.begin_at)*60
-					timestamp_db.add(ev)
-				}
-			} else {
-				mnight = local_presets.sundays[dkey]
-				if ( mnight !== undefined ) {
-//console.log("SUNDAY",dkey)
-					let day_defs = local_presets.presets.sunday
-					for ( let def of day_defs ) {
-						let ev = Object.assign({},def)
-						ev.begin_at = mnight + def.begin_at*ONE_HOUR
-						ev.end_at = mnight + def.end_at*ONE_HOUR
-						ev.how_long = (def.end_at - def.begin_at)*60
-						timestamp_db.add(ev)
-					}
-				} else {
-					let day_def = local_presets.holidays[dkey]
-					if ( day_def !== undefined ) {
-//console.log("HOLIDAY",dkey)
-						let ev = Object.assign({},day_def)
-						ev.how_long = 24*60
-						timestamp_db.add(ev)
-					} else {
-						let day_defs = local_presets.presets.daily
-						let a_day = new Date(dkey)
-						mnight = a_day.getTime()
-//console.log("DAILY",dkey)
-						for ( let def of day_defs ) {
-							let ev = Object.assign({},def)
-							ev.begin_at = mnight + def.begin_at*ONE_HOUR
-							ev.end_at = mnight + def.end_at*ONE_HOUR
-							ev.how_long = (def.end_at - def.begin_at)*60
-							timestamp_db.add(ev)
-						}
-					}
-				}
-			}
-
+			// in the calendar interface, there is much to do with loading presets 
+			// that block out possible times of entry.
+			// But, we assume that the chat is open all day anytime wants to say something,
+			// even if no one is listening.
 			let all_day_list = this.all_day_list
 			//
 			//
@@ -266,6 +201,12 @@
 				//
 				let minutes = d_date.getMinutes()
 				let time = d_date.getTime()
+				// 
+				if ( time < g_future_cutoff ) {
+					blocked = USE_AS_BLOCK  // to far into the future... 
+				} else if ( time > g_yesterday ) {
+					blocked = USE_AS_MEET  // past (can't add to chat of previous days)
+				}
 				//
 				let blocked = USE_AS_OPEN
 				all_day_list[i] = new ReqSlot("",time,0,{
@@ -273,32 +214,8 @@
 														"blocked" : blocked,
 														"on_half_hour" : (minutes !== 0)
 													},d_date,key)
-				//
-				let ev = timestamp_db.find_event(time)
-				if ( !!(ev) ) {
-					all_day_list[i].use = ev.use
-					all_day_list[i].end_at = ev.end_at
-					all_day_list[i].how_long = ev.how_long
-					if ( ev.how_long > 30 ) {
-						let time_left = (ev.how_long - 30)
-						while ( (time_left > 0) && (i < 48) ) {
-							i++;
-							time_left -= 30
-							time += ONE_HALF_HOUR
-							d_date = new Date(time)
-							minutes = d_date.getMinutes()
-							//
-							all_day_list[i] = new ReqSlot("",time,0,{
-														"index" : i,
-														"blocked" : ev.use,
-														"on_half_hour" : (minutes !== 0)
-													},d_date,key)
-							all_day_list[i].begin_at = time
-							all_day_list[i].how_long = (all_day_list[i-1].how_long - 30)
-						}
-					}
-				}
-				//
+				// don'e search for the events in the timestamp db.... its presence is not important in chat.
+				// keep making slots for places to put chat.
 				time += ONE_HALF_HOUR
 				d_date = new Date(time)
 			}
@@ -917,25 +834,6 @@
 		}
 	}
 
-
-	// 
-	let tz_city = g_timezone.split('/')[1]
-
-	// ----
-	let home_time = new Date()
-	let g_home_timezone = g_timezone
-	let home_tz_str = home_time.toLocaleTimeString("en-US", { timeZone: g_home_timezone })
-	let home_tparts = home_tz_str.split(':')
-	let home_hr_update = parseInt(home_tparts[0])
-
-	let h_rest = home_tparts[2].split(' ')
-	let h_night_n_day = h_rest[1].trim()
-
-	if ( (h_night_n_day === "PM") && (home_hr_update !== 12) ) {
-		home_hr_update += 12
-	}
-	let h_tz_date_str = home_time.toLocaleDateString("en-US", { timeZone: g_timezone })
-	let home_extract_day = h_tz_date_str.split('/')[1]
 
 	// ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ----
 	let g_all_clocks = [

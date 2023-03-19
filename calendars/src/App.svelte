@@ -14,7 +14,7 @@
 	import Clock from 'svelte-clock'
 
 
-	import { process_search_results, place_data, merge_data, make_empty_thing, link_server_fetch } from '../../common/data-utils.js'
+	import { process_search_results, place_data, merge_data, make_empty_thing } from '../../common/data-utils.js'
 	import { popup_size } from '../../common/display-utils.js'
 	import { get_search } from "../../common/search_box.js"
 

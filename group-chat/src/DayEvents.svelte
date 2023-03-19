@@ -34,7 +34,6 @@ const ONE_HALF_HOUR_MINUTES  = (30)
 
 const USE_AS_BLOCK = "block"
 const USE_AS_MEET = "meeting"
-const USE_AS_ACTIVITY = "activity"
 const USE_AS_OPEN = "open"
 
 
@@ -112,8 +111,6 @@ $: if ( all_day_list !== undefined ) {
         let ev = timestamp_db.find_event(time - tzoof_ts)
     
         if ( ev !== false ) {
-            let how_long = (ev.end_at - time + tzoof_ts)/ONE_MINUTE
-
             let t = time - tzoof_ts
             //
             if ( (ev.use !== USE_AS_BLOCK) && (ev.use !== USE_AS_OPEN) ) {
@@ -320,8 +317,8 @@ function show_chat_lines(hour_data) {
 
 
 function publish_chat_line(ev) {
-    let ev_data = revized_all_day_list[maybe_event_index]
-    ev_data.use = USE_AS_MEET
+    // let ev_data = revized_all_day_list[maybe_event_index]
+    // ev_data.use = USE_AS_MEET -- don't change the use for the chat....
 
    // hide_editor()  -- hide the editor when the user wants to ... they can keep adding lines
     changed_event = true    /// REACTIVE
