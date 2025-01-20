@@ -8,11 +8,10 @@
     import { onMount } from 'svelte';
     // ----
     import {file_types, start_drag, dragOverHandler, dropper, drop, convert_text } from '../../common/upload'
-    import { each } from 'svelte/internal';
 
     //import frame_messaging from '../../common/human_frame'
 
-    export let name
+    export const name = "file-uploader"
 
     let  avatar, fileinput;
 

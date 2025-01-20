@@ -62,12 +62,6 @@ let uploaded = false
 let update_operation = "upload"
 // ---- ---- ---- ---- ---- ---- ---- ----
 
-$: {
-    if ( user_picked_type === 'contract' ) {
-        is_contract = true
-        is_paid = false
-    }
-}
 
 $: if ( file_proper ) {
     pre_file = Object.assign({},file_proper)
@@ -442,7 +436,7 @@ async function onPosterSelected(e) {
             {#if (operation !== "selection") }
                 {#if operation === false }
                     <span>&RightArrowBar;</span>
-                    <select class="op-selector" bind:value={update_operation} on:change={select_operation} >
+                    <select class="op-selector" bind:value={update_operation} on:blur={select_operation} >
                         <option value="select">select</option>
                         <option value="upload">upload</option>
                         <option value="publish">publish</option>
