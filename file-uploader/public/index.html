@@ -1998,6 +1998,14 @@ do_media_upload
 
 
 	// prep_send_new_entry
+	/**
+	 * prep_send_new_entry
+	 * 
+	 * Begin uploading by getting permission from the human frame.
+	 * This begins a primary transition on the server and yields a transition token 
+	 * to be used in a secondary transition called upon in `finalize_media_array_storage_deep_json`.
+	 * 
+	 */
 	async function prep_send_new_entry(data_hash,send_obj,link_meta) {
 		// send the fields this knows about. Expect the human frame to handle a hash and security
 		let postable = Object.assign(send_obj,{
@@ -2022,7 +2030,11 @@ do_media_upload
 	}
 
 
-
+	/**
+	 * send_new_entry
+	 * 
+	 * 
+	 */
 	async function send_new_entry(object_data_meta,link_meta,asset_type) {
 		/*
 		object_data_meta === { "meta" : good_data }  // search for>> "meta" : good_data

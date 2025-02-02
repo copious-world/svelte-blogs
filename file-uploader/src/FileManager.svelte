@@ -79,7 +79,7 @@ $: if ( pre_file ) {
 
 
 //
-$: {
+$: {                    // this is create asset meta (with many more working parts)
     field_vars = {
         "rec-file-mtype" : mime_type,
         "rec-title" : title,
