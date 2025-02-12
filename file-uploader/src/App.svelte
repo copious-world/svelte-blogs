@@ -342,12 +342,13 @@
 
         window.addEventListener('message', async (e) => {
 			const data = e.data;
-			const info = JSON.parse(data);
-            if ( info.category === undefined ) {
-                g_user_public = info
-                setTimeout(check_on_session,25)
+            if ( data !== undefined ) {
+                const info = JSON.parse(data);
+                if ( info.category === undefined ) {
+                    g_user_public = info
+                    setTimeout(check_on_session,25)
+                }
             }
-            
 		});
 
     })
