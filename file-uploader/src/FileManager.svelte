@@ -18,6 +18,10 @@ export let type_special
 // ---- ---- ---- ---- ---- ---- ---- ----
 
 export let file_proper
+
+// ---- ---- ---- ---- ---- ---- ---- ----
+
+
 let poster_file_proper = false
 
 let poster_accepted = file_types.image.join(', ')
