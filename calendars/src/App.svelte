@@ -819,6 +819,8 @@
 			let srver = location.host
 			let prot = location.protocol
 			let sp = '//'
+			let data_stem = "calendar-search"   // Switch nginx to the proxy path for the blog's search server...
+
 			//data_stem = ""  // TEST  /${data_stem}
 			//let search_result = await link_server_fetch(`${prot}${sp}${srver}/${data_stem}/${rest}`,post_params, postData)
 

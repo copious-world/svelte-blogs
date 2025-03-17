@@ -268,6 +268,7 @@
 			"offset" : stindex
 		};
 		try {
+			let data_stem = "demos-search"   // Switch nginx to the proxy path for the blog's search server...
 			let rest = `${post_params.uid}/${post_params.query}/${post_params.box_count}/${post_params.offset}`
 			let srver = location.host
 			let prot = location.protocol

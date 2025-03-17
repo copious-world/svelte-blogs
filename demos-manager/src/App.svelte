@@ -83,7 +83,7 @@
 
 	let g_max_title_chars = 20
 
-	const data_stem = "load_demos"
+	const data_stem = "demo-manager-search"   // Switch nginx to the proxy path for the blog's search server...
 
 
 	let current_roller_title = ""

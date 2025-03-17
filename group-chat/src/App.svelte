@@ -271,7 +271,7 @@
 	}
 
 
-	let data_stem = "contactsearch"
+	let data_stem = "group-chat-search"
 
 	
 	let qlist_ordering = [

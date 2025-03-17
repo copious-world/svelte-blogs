@@ -487,7 +487,7 @@
 		force_day_event_update = false
 	}
 
-	let data_stem = "contactsearch"
+	const data_stem = "group-chat-owner-search"   // Switch nginx to the proxy path for the blog's search server...
 
 	
 	let qlist_ordering = [

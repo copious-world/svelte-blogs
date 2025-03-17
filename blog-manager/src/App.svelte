@@ -29,6 +29,8 @@
 
 
 	let all_link_picks = []
+	const data_stem = "blog-manager-search"   // Switch nginx to the proxy path for the blog's search server...
+
 
 	let search_ordering = qlist_ordering[2];
 	let search_topic = 'any'

@@ -9,7 +9,7 @@
 
 	import {get_search} from "./search_box.js"
 
-	const appsearch = 'search'  // songsearch  search
+	const data_stem = "link-packages-search"   // Switch nginx to the proxy path for the blog's search server...
 
 	let qlist_ordering = [
 		{ id: 1, text: `update_date` },
@@ -309,7 +309,7 @@
 			let srver = location.host
 			let prot = location.protocol
 			let sp = '//'
-			let search_result = await postData(`${prot}${sp}${srver}/${appsearch}/${rest}`, post_data)
+			let search_result = await postData(`${prot}${sp}${srver}/${data_stem}/${rest}`, post_data)
 			if ( search_result ) {
 				let data = search_result.data;
 				if ( data ) {

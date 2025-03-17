@@ -42,7 +42,7 @@
 
 	let g_max_title_chars = 20
 
-	const data_stem = "songsearch"
+	const data_stem = "stream-search"   // Switch nginx to the proxy path for the blog's search server...
 
 
 	let current_roller_title = ""
