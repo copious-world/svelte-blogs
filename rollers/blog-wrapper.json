@@ -1,0 +1,17 @@
+{
+    "top_dir" : "svelte-blogs",
+    "dir" : "blog/public",
+    "file" : "index.html",
+    "to_staging" : "blog_index.html",
+    "key_values" : {
+        "$$AUTHOR" : "@author_value",
+        "$$LOGO" : "@logo_value",
+        "$$CANONICAL" : "@canonical_value",
+        "$$TITLE" : "@site_base_name Streams",
+        "$$CONTENT" : "@content_value",
+        "$$SVG_CONTENT" : "file://@logal_file_stem.svg",
+        "$$BASE_URL" : "@site_url",
+        "$$HEADER_TITLE" : "@@caps(@site_base_name) Blog",
+        "$$COPYRIGHT_YEAR" : "2025"
+    }
+}
