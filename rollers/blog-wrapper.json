@@ -7,7 +7,7 @@
         "$$AUTHOR" : "@author_value",
         "$$LOGO" : "@logo_value",
         "$$CANONICAL" : "@canonical_value",
-        "$$TITLE" : "@site_base_name Streams",
+        "$$TITLE" : "@site_base_name Blog",
         "$$CONTENT" : "@content_value",
         "$$SVG_CONTENT" : "file://@logal_file_stem.svg",
         "$$BASE_URL" : "@site_url",

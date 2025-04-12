@@ -11,7 +11,7 @@
         "$$CONTENT" : "@content_value",
         "$$SVG_CONTENT" : "file://@logal_file_stem.svg",
         "$$BASE_URL" : "@site_url",
-        "$$HEADER_TITLE" : "@@caps(@site_base_name) Demos",
+        "$$HEADER_TITLE" : "@@caps(@site_base_name) Streams",
         "$$COPYRIGHT_YEAR" : "2025"
     }
 }
