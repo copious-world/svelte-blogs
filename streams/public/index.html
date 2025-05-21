@@ -18,7 +18,6 @@
 	<link rel="canonical" href="$$CANONICAL">
 	<meta name="description" content="$$CONTENT">
 
-
 	<script defer src='./build/bundle.js'></script>	
 
 <script>
@@ -27,13 +26,13 @@
 
 	async function media_startup(tracking,protocol,media,counter_link,session) { // _x_link_counter > counter_link
 		if ( tracking === undefined ) return false
-		if ( protocol === 'ipfs' ) {
-			let links = await crypto_ready_counted(counter_link,tracking,session,media)  // src is for checking...
-			return links
-		} else if ( protocol === 'local' ) {
+		if ( protocol === 'local' ) {
 			let links = await clear_counted(counter_link,tracking,session,media)  // src is for checking...
 			return links
-		} else {		// default
+		} else if ( protocol && (protocol !== 'test') ) {
+			let links = await crypto_ready_counted(counter_link,tracking,session,media)  // src is for checking...
+			return links
+		} else {		// default for test
 			counter_link = "localhost:7777"
 			let links = await clear_counted(counter_link,tracking,session,media)
 			return links
@@ -53,14 +52,18 @@
 		//
 		let prot = "http:"  // https
 		let sp = "//"
-		let url = `${prot}${sp}${counter_link}/key-media/${tracking}`
-		if ( (typeof session === 'string') && (session.length > 0) ) {
-			url += `/${session}`
-		}
-		//
+		let url = `${prot}${sp}${counter_link}/transition/key-media`
+		
+		// /${tracking}`
+		// if ( (typeof session === 'string') && (session.length > 0) ) {
+		// 	url += `/${session}`
+		// }
+
 		try {
 			let req_obj = {
-				"url" : url
+				"url" : url,
+				"session" : session,
+				"_tracking" : tracking
 			}
 			let result = await app_make_request(session,req_obj)  // asks the frame to get the object
 			if ( result.status === "OK" ) {
@@ -1206,7 +1209,7 @@ async function app_fetch_session() {
 
 
 
-async function app_make_request(session,req_obj) {
+async function app_make_request(session,req_obj) {   // req_obj has url in it
 	if ( g_frame_page ) {
 		req_obj.session_key = session
 		let message = {

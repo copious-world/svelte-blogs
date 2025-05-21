@@ -41,6 +41,8 @@ let poster = false
 let is_paid = false
 let is_WIP = false
 let is_contract = false
+let default_protocol = "p2p-default"
+
 
 let field_vars = {}
 
@@ -101,7 +103,8 @@ $: {                    // this is create asset meta (with many more working par
         "rec-original-directory" : o_directory,
         "rec-was-published" : been_published,
         "rec-was-stored" : locally_stored,
-        "rec-was-uploaded" : uploaded
+        "rec-was-uploaded" : uploaded,
+        "rec-default-protocol" : false
     }
 }
 
@@ -145,6 +148,7 @@ function value_to_current_file(file_rep) {
     file_rep.stored = locally_stored
     file_rep.uploaded = uploaded
     file_rep.original_dir = o_directory
+    file.default_protocol = default_protocol
 }
 
 function unload_field_vars(field_vars) {
@@ -164,6 +168,8 @@ function unload_field_vars(field_vars) {
     full_text = some_def(full_text)
     is_paid = field_vars['paid-checkbox']
     is_paid = some_def_bool(is_paid)
+    //
+    default_protocol = field_vars['rec-default-protocol']
     //
     is_WIP = field_vars['WIP-checkbox']
     is_WIP = some_def_bool(is_WIP)
@@ -237,6 +243,7 @@ async function current_file_to_vars(file_rep) {
     locally_stored = file_rep.stored ? true : false
     uploaded = file_rep.uploaded ? true : false
     o_directory = file_rep.original_dir
+    default_protocol = file_rep.default_protocol
 }
 
 

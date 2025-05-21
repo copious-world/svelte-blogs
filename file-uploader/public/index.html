@@ -30,7 +30,7 @@
 		} else if ( protocol === 'local' ) {
 			let links = await clear_counted(counter_link,tracking,session,media)  // src is for checking...
 			return links
-		} else {		// default
+		} else {		// default			// LAN
 			counter_link = "localhost:7777"
 			let links = await clear_counted(counter_link,tracking,session,media)
 			return links
@@ -1196,7 +1196,7 @@ async function finalize_media_array_storage_deep_json(url,token,primary_response
 		for ( let i = 0; i < max_num_sends; i++ ) {			// the number of times this is called is determined by the client
 			//
 			formdata.media_parts = {}
-			for ( let blob_dscr of blob_pars ) {
+			for ( let blob_dscr of blob_pars ) {	// may send some number of blobs
 				if ( blob_dscr.num_sends === 0 ) continue
 				let blob = blob_dscr.blob
 				let span = blob_dscr.span
@@ -1491,6 +1491,11 @@ do_media_upload
 				//
 				let been_published = field_vars['rec-was-published']
 				let uploaded = field_vars['rec-was-uploaded']
+
+				let protocol = field_vars['rec-default-protocol']  
+				if ( !protocol ) {
+					protocol = "p2p-default"
+				}
 				//
 				if ( title.length === 0 ) return false
 				if ( subject.length === 0 ) return false
@@ -1549,7 +1554,7 @@ do_media_upload
 					"_transition_path", "encode",
 					"media.poster.ucwid_info", "media.source.ucwid_info",
 					"media.poster.protocol", "media.source.protocol",
-					"media.poster.ipfs", "media.source.ipfs"
+					`media.poster.${protocol}`, `media.source.${protocol}`
 				]
 				let repository_fields = [ "media.source", "media.poster" ]  // field that contain id's useful to pin object at the server
 				//

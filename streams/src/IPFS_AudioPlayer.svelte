@@ -30,8 +30,8 @@
 		}
 	}
 
-	async function figure_source_link(scounter) {
-		source_link = await media_startup(audio,'audio','ipfs',a_cid,source,scounter)
+	async function figure_source_link(scounter) {		// source.protocol is ipfs, LAN, local, TORv2, etc.
+		source_link = await media_startup(audio,'audio',source.protocol,a_cid,source,scounter)
 	}
 
 	function stopOthers() {

@@ -52,7 +52,7 @@
  
 	async function set_links(tracking) {
 		let counter_service = media._x_link_counter
-		media_links = await media_startup(tracking,'ipfs',media,counter_service,session)
+		media_links = await media_startup(tracking,media.protocol,media,counter_service,session)
 		if ( media_links ) {
 			if ( media_links.poster ) {
 				poster_link = media_links.poster

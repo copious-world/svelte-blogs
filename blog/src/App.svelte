@@ -83,9 +83,9 @@
 		if ( (idx !== undefined) && (idx >= 0) && (idx < things.length)) {
 			let athing = things[idx];
 			if ( athing !== undefined ) {
-				if ( etype === 'click' ) {
-					current_thing = athing;
-					start_floating_window(0);
+				if ( etype === 'click' ) {			// SELECT MEDIA FROM BOX
+					current_thing = athing;			// NOW CURRENT
+					start_floating_window(0);		// SHOW MEDIA IN WINDOW
 				} else {
 					current_roller_title = athing.title
 					current_roller_subject = athing.subject

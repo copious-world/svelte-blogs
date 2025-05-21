@@ -3,7 +3,6 @@
 	// When an element is selected, one kind of media play gets picked depending on the element media type.
 import ExtendedVideoPlayer from "./ExtendedVideoPlayer.svelte";
 import AudioPlayer from "./AudioPlayer.svelte";
-import IPFS_AudioPlayer from "./IPFS_AudioPlayer.svelte"
 import {link_picker} from "../../common/link-pick.js"
 
 //
