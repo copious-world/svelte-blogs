@@ -22,6 +22,7 @@
 	//
 	// ---- ---- ---- ---- ---- ---- ---- ---- ---- ----
 
+	// _x_link_counter -> counter_link
 	async function media_startup(tracking,protocol,media,counter_link,session) { // _x_link_counter > counter_link
 		if ( protocol === 'ipfs' ) {
 			let links = await crypto_ready_counted(counter_link,tracking,session,media)  // src is for checking...
