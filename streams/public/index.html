@@ -34,7 +34,7 @@
 			let links = await crypto_ready_counted(counter_link,tracking,session,media)  // src is for checking...
 			return links
 		} else {		// default for test
-			counter_link = "localhost:7777"
+			counter_link = "localhost:3777"
 			let links = await clear_counted(counter_link,tracking,session,media)
 			return links
 		}
@@ -51,7 +51,7 @@
 
 	async function crypto_ready_counted(counter_link,tracking,session,src) {
 		//
-		let prot = "http:"  // https
+		let prot = "https:"  // https
 		let sp = "//"
 		let url = `${prot}${sp}${counter_link}/transition/key-media`
 		
@@ -80,14 +80,15 @@
 		//
 		let prot = location.protocol
 		let sp = "//"
-		let url = `${prot}${sp}${counter_link}/clear-media/${tracking}`
+		let url = `${prot}${sp}${counter_link}/transition/clear-media`
 		if ( (typeof session === 'string') && session.length > 0 ) {
 			url += `/${session}`
 		}
 		//
 		try {
 			let req_obj = {
-				"url" : url
+				"url" : url,
+				"_tracking" : tracking
 			}
 			let result = await app_make_request(session,req_obj)  // asks the frame to get the object
 			if ( result.status === "OK" ) {
