@@ -2274,5 +2274,417 @@ window.onload = (ev) => {  // loaded after the frame page loads
     session_startup_process()
 }
 
+/*
 
+https://github.com/GoogleChromeLabs/text-editor/tree/main/src
+
+
+
+let fileHandle;
+butOpenFile.addEventListener('click', async () => {
+	// Destructure the one-element array.
+	[fileHandle] = await window.showOpenFilePicker();
+	// Do something with the file handle.
+
+	// e.g. read the file
+	const file = await fileHandle.getFile();
+	const contents = await file.text();
+
+	// textArea ???
+	textArea.value = contents;
+});
+
+
+async function getNewFileHandle() {
+  const options = {
+    types: [
+      {
+        description: 'Text Files',
+        accept: {
+          'text/plain': ['.txt'],
+        },
+      },
+    ],
+  };
+  const handle = await window.showSaveFilePicker(options);
+  return handle;
+}
+
+
+// fileHandle is an instance of FileSystemFileHandle..
+async function writeFile(fileHandle, contents) {
+  // Create a FileSystemWritableFileStream to write to.
+  const writable = await fileHandle.createWritable();
+  // Write the contents of the file to the stream.
+  await writable.write(contents);
+  // Close the file and write the contents to disk.
+  await writable.close();
+}
+
+
+
+
+// Read a stream from a stream writing source...
+// Pipe to a file in OPFS
+async function writeURLToFile(fileHandle, url) {
+  // Create a FileSystemWritableFileStream to write to.
+  const writable = await fileHandle.createWritable();
+  // Make an HTTP request for the contents.
+  const response = await fetch(url);
+  // Stream the response into the file.
+  await response.body.pipeTo(writable);
+  // pipeTo() closes the destination pipe by default, no need to close it.
+}
+
+
+
+// SUGGEST FILE NAME
+const fileHandle = await self.showSaveFilePicker({
+  suggestedName: 'Untitled Text.txt',
+  types: [{
+    description: 'Text documents',
+    accept: {
+      'text/plain': ['.txt'],
+    },
+  }],
+});
+
+
+// SUGGES DIRECTORY 
+const fileHandle = await self.showOpenFilePicker({
+  startIn: 'pictures'
+});
+
+
+// Assume `directoryHandle` is a handle to a previously opened directory.
+const fileHandle = await self.showOpenFilePicker({
+  startIn: directoryHandle
+});
+
+
+// LAST FILE OPENER LOCATION (DIFFERENT FOR TYPES, etc)
+const fileHandle1 = await self.showSaveFilePicker({
+  id: 'openText',
+});
+
+const fileHandle2 = await self.showSaveFilePicker({
+  id: 'importImage',
+});
+
+
+
+
+
+// USE INDEXED DB for local meta descriptions about files. Store data in the files, though.
+
+import { get, set } from 'https://unpkg.com/idb-keyval@5.0.2/dist/esm/index.js';
+
+const pre1 = document.querySelector('pre.file');
+const pre2 = document.querySelector('pre.directory');
+const button1 = document.querySelector('button.file');
+const button2 = document.querySelector('button.directory');
+
+// File handle
+button1.addEventListener('click', async () => {
+  try {
+    const fileHandleOrUndefined = await get('file');
+    if (fileHandleOrUndefined) {
+      pre1.textContent = `Retrieved file handle "${fileHandleOrUndefined.name}" from IndexedDB.`;
+      return;
+    }
+    const [fileHandle] = await window.showOpenFilePicker();
+    await set('file', fileHandle);
+    pre1.textContent = `Stored file handle for "${fileHandle.name}" in IndexedDB.`;
+  } catch (error) {
+    alert(error.name, error.message);
+  }
+});
+
+// Directory handle
+button2.addEventListener('click', async () => {
+  try {
+    const directoryHandleOrUndefined = await get('directory');
+    if (directoryHandleOrUndefined) {
+      pre2.textContent = `Retrieved directroy handle "${directoryHandleOrUndefined.name}" from IndexedDB.`;
+      return;
+    }
+    const directoryHandle = await window.showDirectoryPicker();
+    await set('directory', directoryHandle);
+    pre2.textContent = `Stored directory handle for "${directoryHandle.name}" in IndexedDB.`;
+  } catch (error) {
+    alert(error.name, error.message);
+  }
+});
+
+
+
+async function verifyPermission(fileHandle, readWrite) {
+  const options = {};
+  if (readWrite) {
+    options.mode = 'readwrite';
+  }
+  // Check if permission was already granted. If so, return true.
+  if ((await fileHandle.queryPermission(options)) === 'granted') {
+    return true;
+  }
+  // Request permission. If the user grants permission, return true.
+  if ((await fileHandle.requestPermission(options)) === 'granted') {
+    return true;
+  }
+  // The user didn't grant permission, so return false.
+  return false;
+}
+
+
+// WORK WITH DIRECTORIES
+
+butDir.addEventListener('click', async () => {
+  const dirHandle = await window.showDirectoryPicker();
+  for await (const entry of dirHandle.values()) {
+    console.log(entry.kind, entry.name);
+  }
+});
+
+// list of files
+butDir.addEventListener('click', async () => {
+  const dirHandle = await window.showDirectoryPicker();
+  const promises = [];
+  for await (const entry of dirHandle.values()) {
+    if (entry.kind !== 'file') {
+      continue;
+    }
+    promises.push(entry.getFile().then((file) => `${file.name} (${file.size})`));
+  }
+  console.log(await Promise.all(promises));
+});
+
+
+// In an existing directory, create a new directory named "My Documents".
+const newDirectoryHandle = await existingDirectoryHandle.getDirectoryHandle('My Documents', {
+  create: true,
+});
+// In this new directory, create a file named "My Notes.txt".
+const newFileHandle = await newDirectoryHandle.getFileHandle('My Notes.txt', { create: true });
+
+
+// GET PATH AS AN ARRAY
+// Resolve the path of the previously created file called "My Notes.txt".
+const path = await newDirectoryHandle.resolve(newFileHandle);
+// `path` is now ["My Documents", "My Notes.txt"]
+
+
+// FILE DELETE IS DIRECTORY OP
+// Delete a file.
+await directoryHandle.removeEntry('Abandoned Projects.txt');
+// Recursively delete a folder.
+await directoryHandle.removeEntry('Old Stuff', { recursive: true });
+
+// Delete a file.  USING HANDLE
+await fileHandle.remove();
+// Delete a directory.
+await directoryHandle.remove();
+
+
+
+
+// Rename the file.  SAME DIR
+await file.move('new_name');
+// Move the file to a new directory.	DIRECTORY HANDLE
+await file.move(directory);
+// Move the file to a new directory and rename it.	DIRECTORY HANDLE
+await file.move(directory, 'newer_name');
+
+
+
+
+
+
+
+elem.addEventListener('dragover', (e) => {
+  // Prevent navigation.
+  e.preventDefault();
+});
+
+elem.addEventListener('drop', async (e) => {
+  e.preventDefault();
+
+  const fileHandlesPromises = [...e.dataTransfer.items]
+    .filter((item) => item.kind === 'file')
+    .map((item) => item.getAsFileSystemHandle());
+
+  for await (const handle of fileHandlesPromises) {
+    if (handle.kind === 'directory') {
+      console.log(`Directory: ${handle.name}`);
+    } else {
+      console.log(`File: ${handle.name}`);
+    }
+  }
+});
+
+
+
+// HAVE TO GET DIRECTORY HANDLE TO EVEN SEE THE FILES (seen in the sense that something reports an organized file structure 
+// based on some type of storage not necessarily humanly consumable.)
+//
+const root = await navigator.storage.getDirectory();
+// Create a new file handle.
+const fileHandle = await root.getFileHandle('Untitled.txt', { create: true });
+// Create a new directory handle.
+const dirHandle = await root.getDirectoryHandle('New Folder', { create: true });
+// Recursively remove a directory.
+await root.removeEntry('Old Stuff', { recursive: true });
+
+
+// MUST BE CALLED IN A WEB WORKER ... for speed...
+// (Read and write operations are synchronous,
+// but obtaining the handle is asynchronous.)
+// Synchronous access exclusively in Worker contexts.
+const accessHandle = await fileHandle.createSyncAccessHandle();
+const writtenBytes = accessHandle.write(buffer);
+const readBytes = accessHandle.read(buffer, { at: 1 });
+
+
+// download="WebfundamentalsLogo"  a[download]
+// <a href="http://web-central.appspot.com/.../web-fundamentals-icon192x192.png" download="WebfundamentalsLogo">download me</a>
+
+
+
+
+
+// ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ----
+// ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ----
+// QR CODE
+
+// Filename - index.js
+
+// Require the package
+const QRCode = require('qrcode')
+
+// Creating the data
+let data = {
+    name:"Employee Name",
+    age:27,
+    department:"Police",
+    id:"aisuoiqu3234738jdhf100223"
+}
+
+// Converting the data into String format
+let stringdata = JSON.stringify(data)
+
+// Print the QR code to terminal
+QRCode.toString(stringdata,{type:'terminal'},
+                    function (err, QRcode) {
+
+    if(err) return console.log("error occurred")
+
+    // Printing the generated code
+    console.log(QRcode)
+})
+  
+// Converting the data into base64 
+QRCode.toDataURL(stringdata, function (err, code) {
+    if(err) return console.log("error occurred")
+
+    // Printing the code
+    console.log(code)
+})
+
+
+
+// PDF GENERATOR GEEKS FOR GEEKS  (PDFKIT)
+//
+// Filename - index.js
+
+// Importing modules
+import PDFDocument from 'pdfkit'
+import fs from 'fs'
+
+// Create a document
+const doc = new PDFDocument();
+
+// Saving the pdf file in root directory.
+doc.pipe(fs.createWriteStream('example.pdf'));
+
+// Adding functionality
+doc
+    .fontSize(27)
+    .text('This the article for GeeksforGeeks', 100, 100);
+
+// Adding an image in the pdf.
+
+doc.image('download3.jpg', {
+    fit: [300, 300],
+    align: 'center',
+    valign: 'center'
+});
+
+doc
+    .addPage()
+    .fontSize(15)
+    .text('Generating PDF with the help of pdfkit', 100, 100);
+
+
+
+// Apply some transforms and render an SVG path with the 
+// 'even-odd' fill rule
+doc
+    .scale(0.6)
+    .translate(470, -380)
+    .path('M 250,75 L 323,301 131,161 369,161 177,301 z')
+    .fill('red', 'even-odd')
+    .restore();
+
+// Add some text with annotations
+doc
+    .addPage()
+    .fillColor('blue')
+    .text('The link for GeeksforGeeks website', 100, 100)
+    .link(100, 100, 160, 27, 'https://www.geeksforgeeks.org/');
+
+// Finalize PDF file
+doc.end();
+
+
+
+
+
+
+// USE PUPPETEER AND HTML TEMPLATE....
+const puppeteer = require("puppeteer");
+const fs = require("fs");
+
+async function generateDynamicPdf(data) {
+  const browser = await puppeteer.launch();
+  const page = await browser.newPage();
+
+  // Load the HTML template.
+  let html = fs.readFileSync("template.html", "utf8");
+
+  // Replace placeholders with dynamic data.
+  html = html
+    .replace("{{username}}", data.username)
+    .replace("{{amount}}", data.amount);
+
+  // Set the modified HTML content to the page.
+  await page.setContent(html, { waitUntil: "networkidle0" });
+
+  // Generate and save the PDF.
+  await page.pdf({
+    path: "dynamic_output.pdf",
+    format: "A4",
+    printBackground: true,
+  });
+
+  await browser.close();
+  console.log("Dynamic PDF generated successfully");
+}
+
+// Example dynamic data.
+const userData = { username: "John Doe", amount: "$1500" };
+generateDynamicPdf(userData);
+
+
+
+
+*/
 </script>
