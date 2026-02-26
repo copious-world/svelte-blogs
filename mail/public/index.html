@@ -773,27 +773,4 @@ $$SVG_CONTENT
 	}
 
 
-	let admin_ucwid = "this-is-a-test"
-
-	async function remove_contact(contact) {
-		let contact_handler_url = `${location.protocol}//${location.host}/captcha/transition/contact`
-		let body = {
-			"admin" : admin_ucwid,
-			"ucwid" : contact.ucwid,
-			"_tracking" : contact._tracking,
-			"remove" : true
-		}
-		try {
-			let resp = await postData(contact_handler_url, data,'include')
-			if ( resp.OK === "true" ) {
-				// reset the search results
-			} else {
-				// failed transmitio
-			}
-		} catch (e) {
-			// failed handling
-		}
-
-	}
-
 </script>

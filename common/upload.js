@@ -292,9 +292,6 @@ export async function dropper(ev) {
         }
         let [fname,blob64] = await drop(items,files)
         //
-        if ( typeof handle_data === 'function' ) {
-            await [fname,blob64]
-        }
     } catch (e) {
         console.log(e)
     }

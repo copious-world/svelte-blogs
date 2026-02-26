@@ -28,7 +28,6 @@
     ]
 
 
-
     let text_view = ""
     let code_view = ""
     let svg_text = ""
