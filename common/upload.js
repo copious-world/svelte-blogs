@@ -1,6 +1,5 @@
 /*
 
-
 function extract_sound_media_ext(file_src) {
 	let dot = file_src.lastIndexOf('.')
 	if ( dot < 0 ) return("mpeg") // default .. e.g. from a streaming service
@@ -291,6 +290,7 @@ export async function dropper(ev) {
             return [false,false]
         }
         let [fname,blob64] = await drop(items,files)
+		return [fname,blob64]
         //
     } catch (e) {
         console.log(e)
@@ -324,7 +324,6 @@ export let file_types = {
 
 
 
-
 export function convert_text(blob) {
 
     let p = new Promise((resolve,reject) => {
@@ -340,7 +339,6 @@ export function convert_text(blob) {
     })
 
     return p
-
 }
 
 

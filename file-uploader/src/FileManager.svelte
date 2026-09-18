@@ -560,7 +560,8 @@ async function onPosterSelected(e) {
             <div style="display:inline-block;float:left;text-align:left;width:fit-content;">
                 <button class="sel-box-button" on:click={close_file_selector}>cancel</button>
                 {#if poster_selector }
-                <span> upload poster: </span><input type="file" accept="{poster_accepted}"  style="font-size: xx-small;cursor:pointer;"  on:change={(e)=>onPosterSelected(e)} bind:this={posterinput} >
+                <span> upload poster: </span>
+                <input type="file" accept="{poster_accepted}"  style="font-size: xx-small;cursor:pointer;"  on:change={(e)=>onPosterSelected(e)} bind:this={posterinput} >
                 {/if}
             </div>
             <div style="display:inline-end;float:unset;text-align:center;width:auto;padding-top:4px;">
