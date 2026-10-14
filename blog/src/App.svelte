@@ -111,7 +111,7 @@
 	let article_count = 1
 	let article_index = 1
 
-	let box_delta = 1;		// how boxes to add when increasing the window
+	let box_delta = 1;		// how many boxes to add when increasing the window
 
 	function needs_data(start,end) {
 		if ( other_things.length > 0 ) {
@@ -293,6 +293,7 @@
 			</select>
 		</div>
 	</div>
+
 	<div style="border: solid 1px grey;padding: 4px;background-color:#F5F6EF;">
 		{#if going_session }
 		<div class="sel-titles blg-ctl-button" ><button on:click={present_assest_editing}>add entry</button></div>

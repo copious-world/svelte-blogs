@@ -2247,6 +2247,11 @@ async function session_startup_process() {
 }
 
 
+/**
+ * secondary links are being constructed for an uploader by a publisher that gives permission for the upload.
+ * The secondary transition is planted at the backend, and if a front end has its token, the upload action can take place.
+ */
+
 window.onload = (ev) => {  // loaded after the frame page loads
 	g_proxy.set_links({
 			"new_entry" : {
